@@ -39,4 +39,4 @@ diagnostic surfaces.
 
 | Id | Channel | Purpose |
 |---|---|---|
-| (none yet) | | |
+| 1 | `capture` (min importance) | CDM spike: short `connectedDevice` foreground service for the hub read after a presence wake (`PresenceCaptureService`) |

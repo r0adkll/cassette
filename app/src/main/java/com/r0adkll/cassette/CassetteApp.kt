@@ -2,10 +2,19 @@ package com.r0adkll.cassette
 
 import android.app.Application
 import android.os.BatteryManager
+import android.os.Build
+import android.os.Process
+import android.os.SystemClock
 import android.util.Log
 import com.r0adkll.cassette.axs.AxsReading
 import com.r0adkll.cassette.axs.FrameType
 import com.r0adkll.cassette.axs.SystemBatteryTable
+import com.r0adkll.cassette.cdm.CompanionPresence
+import com.r0adkll.cassette.cdm.EVENT_BLE_APPEARED
+import com.r0adkll.cassette.cdm.HubAddressTracker
+import com.r0adkll.cassette.cdm.PresenceCaptureService
+import com.r0adkll.cassette.cdm.matchAssociation
+import com.r0adkll.cassette.cdm.presenceEventName
 import com.r0adkll.cassette.data.CaptureSource
 import com.r0adkll.cassette.data.ReadingStore
 import com.r0adkll.cassette.data.needsGattBattery
@@ -17,13 +26,16 @@ import com.r0adkll.cassette.scan.GattReadResult
 import com.r0adkll.cassette.scan.ScanProfile
 import com.r0adkll.cassette.ridetest.GattKind
 import com.r0adkll.cassette.ridetest.GattOutcome
+import com.r0adkll.cassette.ridetest.PresenceReadPath
 import com.r0adkll.cassette.ridetest.RideEvent
 import com.r0adkll.cassette.ridetest.RideLog
 import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 class CassetteApp : Application() {
   val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -31,6 +43,9 @@ class CassetteApp : Application() {
   val scanner by lazy { AxsScanner(this) }
   val gattReader by lazy { BatteryGattReader(this) }
   val rideLog by lazy { RideLog(this, scope) }
+  /** CDM spike; null below API 36, where the request-based presence API doesn't exist. */
+  val presence: CompanionPresence? by lazy { if (Build.VERSION.SDK_INT >= 36) CompanionPresence(this, scope, rideLog) else null }
+  private val hubAddresses = HubAddressTracker()
 
   private val lastGattAttempt = ConcurrentHashMap<String, Long>()
   private val unsupported = ConcurrentHashMap.newKeySet<String>()
@@ -81,6 +96,7 @@ class CassetteApp : Application() {
       val state = store.state.first()
       // Serial-less frames are keyed by address; resolve them so a hub isn't read twice under two keys.
       val reading = state.resolveIdentity(incoming)
+      if (reading.frame == FrameType.STATUS) noteHubAddress(reading)
       if (reading.key in unsupported) continue
       val due =
         when (reading.frame) {
@@ -90,15 +106,70 @@ class CassetteApp : Application() {
         }
       if (!due || !claimAttempt(reading.key, now)) continue
 
-      if (reading.frame == FrameType.STATUS) readHubTable(reading, source) else readBatteryLevel(reading, source)
+      if (reading.frame == FrameType.STATUS) readHubTable(reading.key, reading.address, source) else readBatteryLevel(reading, source)
     }
   }
 
-  private suspend fun readHubTable(reading: AxsReading, source: CaptureSource) {
+  /** CDM spike: how long this process has been running, to tell cold starts from presence wakes. */
+  fun processAgeMillis(): Long = SystemClock.elapsedRealtime() - Process.getStartElapsedRealtime()
+
+  /** CDM spike: a presence event from [com.r0adkll.cassette.cdm.HubPresenceService]. Called on the main thread. */
+  fun onPresenceEvent(associationId: Int, event: Int) {
+    val at = System.currentTimeMillis()
+    val processAge = processAgeMillis()
+    scope.launch {
+      val presence = presence ?: return@launch
+      val address = presence.addressFor(associationId)
+      rideLog.append(RideEvent.Presence(at, associationId, address, event, presenceEventName(event), processAge))
+      if (event != EVENT_BLE_APPEARED || address == null) return@launch
+      when (presence.readPath.value) {
+        PresenceReadPath.BOUND_SERVICE -> readHubFromPresence(associationId, address, at, PresenceReadPath.BOUND_SERVICE)
+        PresenceReadPath.FOREGROUND_SERVICE -> {
+          val started = runCatching { PresenceCaptureService.start(this@CassetteApp, associationId, address, at) }
+          if (started.isFailure) {
+            // Fall back to the bound service so the wake still gets a read; the detail records why.
+            rideLog.append(RideEvent.Cdm(System.currentTimeMillis(), "fgs_start_failed", associationId, started.exceptionOrNull()?.toString()))
+            readHubFromPresence(associationId, address, at, PresenceReadPath.BOUND_SERVICE, detail = "fgs start failed")
+          }
+        }
+      }
+    }
+  }
+
+  /** CDM spike: reads the hub table for an associated [address] after it appeared at [appearedAt], and logs how it went. */
+  suspend fun readHubFromPresence(associationId: Int, address: String, appearedAt: Long, path: PresenceReadPath, detail: String? = null) {
+    val state = store.state.first()
+    // Use the hub's serial key when a scan has already heard it at this address, so the table lands on the right record.
+    val key =
+      state.devices.values.firstOrNull { it.latest.frame == FrameType.STATUS && it.latest.address.equals(address, ignoreCase = true) }?.latest?.key
+        ?: address.uppercase()
+    // A background scan delivery may be reading the hub right now; wait for it rather than connecting twice.
+    var waited = 0L
+    while (!claimAttempt(key, System.currentTimeMillis()) && waited < GATT_RETRY_MILLIS) {
+      delay(1_000)
+      waited += 1_000
+    }
+    val started = System.currentTimeMillis()
+    val outcome = readHubTable(key, address.uppercase(), CaptureSource.PRESENCE)
+    val now = System.currentTimeMillis()
+    val note = listOfNotNull(detail, "waited ${waited} ms for another read".takeIf { waited > 0 }, "process age ${processAgeMillis()} ms").joinToString("; ")
+    rideLog.append(RideEvent.PresenceRead(now, associationId, address, key, path, appearedAt, now - started, outcome, note))
+  }
+
+  /** CDM spike: logs a hub's scanned address next to the associated ones, once per process per hub and on change. */
+  private suspend fun noteHubAddress(reading: AxsReading) {
+    if (reading.address.isEmpty()) return
+    val change = hubAddresses.observe(reading.key, reading.address) ?: return
+    val associated = presence?.associatedAddresses().orEmpty()
+    val matched = matchAssociation(change.address, associated.map { it.associationId to it.address })
+    rideLog.append(RideEvent.HubAddress(System.currentTimeMillis(), change.key, change.address, change.previous, associated, matched))
+  }
+
+  private suspend fun readHubTable(key: String, address: String, source: CaptureSource): GattOutcome {
     val started = System.currentTimeMillis()
     // Firmware rarely changes and the background wake has a tight time budget, so only read it while the app is open.
     val wanted = listOfNotNull(SystemBatteryTable.CHARACTERISTIC, SystemBatteryTable.VERSIONS_CHARACTERISTIC.takeIf { source == CaptureSource.LIVE })
-    val result = gattReader.read(reading.address, wanted)
+    val result = gattReader.read(address, wanted)
     val values = (result as? GattReadResult.Values)?.values
     val table = values?.get(SystemBatteryTable.CHARACTERISTIC)?.let(SystemBatteryTable::parse)
     val versions = values?.get(SystemBatteryTable.VERSIONS_CHARACTERISTIC)?.let(SystemBatteryTable::parseVersions)
@@ -108,16 +179,17 @@ class CassetteApp : Application() {
         table == null -> GattOutcome.UNSUPPORTED
         else -> GattOutcome.OK
       }
-    logGatt(reading.key, GattKind.HUB_TABLE, source, started, outcome)
+    logGatt(key, GattKind.HUB_TABLE, source, started, outcome)
     when (outcome) {
       // Not a hub (e.g. a dropper post); don't keep connecting to it.
-      GattOutcome.UNSUPPORTED -> unsupported += reading.key
+      GattOutcome.UNSUPPORTED -> unsupported += key
       GattOutcome.OK -> {
-        Log.d(TAG, "Hub ${reading.key} table: $table")
-        store.recordHubTable(reading.key, table!!, versions, System.currentTimeMillis(), source)
+        Log.d(TAG, "Hub $key table: $table")
+        store.recordHubTable(key, table!!, versions, System.currentTimeMillis(), source)
       }
       GattOutcome.FAILED -> Unit
     }
+    return outcome
   }
 
   private suspend fun readBatteryLevel(reading: AxsReading, source: CaptureSource) {
