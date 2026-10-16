@@ -8,6 +8,7 @@ import com.r0adkll.cassette.data.CaptureState
 import com.r0adkll.cassette.ridetest.RideEvent
 import com.r0adkll.cassette.ridetest.RideSummary
 import com.r0adkll.cassette.ridetest.activeSession
+import com.r0adkll.cassette.ridetest.alwaysLogged
 import com.r0adkll.cassette.ridetest.summarizeSessions
 import com.r0adkll.cassette.scan.NearbyCandidate
 import com.r0adkll.cassette.scan.ScanProfile
@@ -61,7 +62,7 @@ class MainViewModel(private val app: CassetteApp) : ViewModel() {
   }
 
   fun clearRideTests() {
-    viewModelScope.launch { app.rideLog.clear() }
+    viewModelScope.launch { app.rideLog.clear { !it.alwaysLogged } }
   }
 
   fun toggleLiveScan() {

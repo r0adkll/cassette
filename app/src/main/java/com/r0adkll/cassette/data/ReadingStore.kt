@@ -91,6 +91,8 @@ data class HistoryPoint(
 enum class CaptureSource {
   LIVE,
   BACKGROUND,
+  /** CDM spike: a read started by a CompanionDeviceManager presence event. */
+  PRESENCE,
 }
 
 /** Latest reading per component plus a sparse battery history, persisted as JSON. */
