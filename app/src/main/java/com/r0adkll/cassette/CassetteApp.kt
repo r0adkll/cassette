@@ -12,6 +12,7 @@ import com.r0adkll.cassette.axs.SystemBatteryTable
 import com.r0adkll.cassette.cdm.CompanionPresence
 import com.r0adkll.cassette.cdm.EVENT_BLE_APPEARED
 import com.r0adkll.cassette.cdm.HubAddressTracker
+import com.r0adkll.cassette.cdm.HubPresence
 import com.r0adkll.cassette.cdm.PresenceCaptureService
 import com.r0adkll.cassette.cdm.matchAssociation
 import com.r0adkll.cassette.cdm.presenceEventName
@@ -44,7 +45,7 @@ class CassetteApp : Application() {
   val gattReader by lazy { BatteryGattReader(this) }
   val rideLog by lazy { RideLog(this, scope) }
   /** CDM spike; null below API 36, where the request-based presence API doesn't exist. */
-  val presence: CompanionPresence? by lazy { if (Build.VERSION.SDK_INT >= 36) CompanionPresence(this, scope, rideLog) else null }
+  val presence: HubPresence? by lazy { if (Build.VERSION.SDK_INT >= 36) CompanionPresence(this, scope, rideLog) else null }
   private val hubAddresses = HubAddressTracker()
 
   private val lastGattAttempt = ConcurrentHashMap<String, Long>()

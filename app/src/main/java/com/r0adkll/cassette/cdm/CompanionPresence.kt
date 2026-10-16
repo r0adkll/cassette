@@ -33,42 +33,69 @@ enum class AssociationFilter(val label: String) {
   NAME_ONLY("Name only"),
 }
 
+/** CDM spike: what the rest of the app uses, so callers needn't be gated to API 36 themselves. */
+interface HubPresence {
+  val associations: StateFlow<List<Association>>
+  /** Our own record of the associations we asked to observe; CDM can't be queried for it. */
+  val observing: StateFlow<Set<Int>>
+  /** Where the hub read after "appeared" runs; switchable so both paths can be compared. */
+  val readPath: StateFlow<PresenceReadPath>
+
+  fun setReadPath(path: PresenceReadPath)
+
+  fun refresh(): List<Association>
+
+  fun addressFor(associationId: Int): String?
+
+  fun associatedAddresses(): List<AssociatedAddress>
+
+  /**
+   * Shows the system chooser for AXS hubs. [onChooser] gets the IntentSender to launch from the activity;
+   * a created association is observed straight away.
+   */
+  fun associate(filter: AssociationFilter, onChooser: (IntentSender) -> Unit)
+
+  /** The chooser activity finished; the association itself arrives in the CDM callback. */
+  fun onChooserResult(resultCode: Int)
+
+  fun startObserving(associationId: Int)
+
+  fun stopObserving(associationId: Int)
+
+  fun disassociate(associationId: Int)
+}
+
 /**
  * CDM spike: associates AXS hubs (no bonding) and observes their presence with the API 36 request-based
  * presence API. Presence events arrive in [HubPresenceService]. The system persists observation across
  * reboots; [observing] is our own record of what we asked for, since CDM can't be queried for it.
  */
 @RequiresApi(36)
-class CompanionPresence(private val context: Context, private val scope: CoroutineScope, private val rideLog: RideLog) {
+class CompanionPresence(private val context: Context, private val scope: CoroutineScope, private val rideLog: RideLog) : HubPresence {
   private val cdm = context.getSystemService(CompanionDeviceManager::class.java)
   private val prefs = context.getSharedPreferences("cdm-spike", Context.MODE_PRIVATE)
 
   private val _associations = MutableStateFlow(load())
-  val associations: StateFlow<List<Association>> = _associations.asStateFlow()
+  override val associations: StateFlow<List<Association>> = _associations.asStateFlow()
 
   private val _observing = MutableStateFlow(prefs.getStringSet(KEY_OBSERVING, emptySet()).orEmpty().mapNotNull { it.toIntOrNull() }.toSet())
-  val observing: StateFlow<Set<Int>> = _observing.asStateFlow()
+  override val observing: StateFlow<Set<Int>> = _observing.asStateFlow()
 
   private val _readPath = MutableStateFlow(prefs.getString(KEY_READ_PATH, null)?.let { runCatching { PresenceReadPath.valueOf(it) }.getOrNull() } ?: PresenceReadPath.BOUND_SERVICE)
-  /** Where the hub read after "appeared" runs; switchable so both paths can be compared. */
-  val readPath: StateFlow<PresenceReadPath> = _readPath.asStateFlow()
+  override val readPath: StateFlow<PresenceReadPath> = _readPath.asStateFlow()
 
-  fun setReadPath(path: PresenceReadPath) {
+  override fun setReadPath(path: PresenceReadPath) {
     prefs.edit { putString(KEY_READ_PATH, path.name) }
     _readPath.value = path
   }
 
-  fun refresh(): List<Association> = load().also { _associations.value = it }
+  override fun refresh(): List<Association> = load().also { _associations.value = it }
 
-  fun addressFor(associationId: Int): String? = refresh().firstOrNull { it.id == associationId }?.address
+  override fun addressFor(associationId: Int): String? = refresh().firstOrNull { it.id == associationId }?.address
 
-  fun associatedAddresses(): List<AssociatedAddress> = refresh().map { AssociatedAddress(it.id, it.address) }
+  override fun associatedAddresses(): List<AssociatedAddress> = refresh().map { AssociatedAddress(it.id, it.address) }
 
-  /**
-   * Shows the system chooser for AXS hubs. [onChooser] gets the IntentSender to launch from the activity;
-   * a created association is observed straight away.
-   */
-  fun associate(filter: AssociationFilter, onChooser: (IntentSender) -> Unit) {
+  override fun associate(filter: AssociationFilter, onChooser: (IntentSender) -> Unit) {
     val scanFilter = ScanFilter.Builder().apply { if (filter != AssociationFilter.NAME_ONLY) setServiceUuid(HUB_SERVICE_UUID) }.build()
     val deviceFilter =
       BluetoothLeDeviceFilter.Builder()
@@ -101,25 +128,24 @@ class CompanionPresence(private val context: Context, private val scope: Corouti
     )
   }
 
-  /** The chooser activity finished; the association itself arrives in onAssociationCreated. */
-  fun onChooserResult(resultCode: Int) {
+  override fun onChooserResult(resultCode: Int) {
     if (resultCode != android.app.Activity.RESULT_OK) log(RideEvent.Cdm(System.currentTimeMillis(), "chooser_closed", detail = "result $resultCode"))
     refresh()
   }
 
-  fun startObserving(associationId: Int) {
+  override fun startObserving(associationId: Int) {
     val result = runCatching { cdm.startObservingDevicePresence(request(associationId)) }
     result.onSuccess { setObserving(associationId, true) }
     log(RideEvent.Cdm(System.currentTimeMillis(), if (result.isSuccess) "observe_started" else "observe_failed", associationId, result.exceptionOrNull()?.toString()))
   }
 
-  fun stopObserving(associationId: Int) {
+  override fun stopObserving(associationId: Int) {
     val result = runCatching { cdm.stopObservingDevicePresence(request(associationId)) }
     setObserving(associationId, false)
     log(RideEvent.Cdm(System.currentTimeMillis(), if (result.isSuccess) "observe_stopped" else "observe_stop_failed", associationId, result.exceptionOrNull()?.toString()))
   }
 
-  fun disassociate(associationId: Int) {
+  override fun disassociate(associationId: Int) {
     stopObserving(associationId)
     val result = runCatching { cdm.disassociate(associationId) }
     log(RideEvent.Cdm(System.currentTimeMillis(), if (result.isSuccess) "disassociated" else "disassociate_failed", associationId, result.exceptionOrNull()?.toString()))
