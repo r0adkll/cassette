@@ -1,0 +1,26 @@
+# 0008: Tooling and process
+
+Date: 2026-10-16 · Status: accepted
+
+## Decision
+
+- **Formatting:** ktfmt, KotlinLang style (4-space indent), via the ktfmt Gradle plugin: `ktfmtCheck` in CI,
+  `ktfmtFormat` locally, and a pre-push hook installed by a `bootstrap` task. Not ktlint, unlike Campfire. The
+  POC code (2-space) gets reformatted when the project is scaffolded.
+- **No Kover** or coverage gate. Protocol and battery logic are covered by fixture tests from captured bytes.
+
+Adopt from Campfire:
+- GitHub Actions: build and unit tests on pull requests;
+- CHANGELOG.md (Keep a Changelog) with the changelog plugin;
+- Renovate;
+- Danger checks;
+- baseline profiles;
+- the release script with Play/Fastlane.
+
+Commits keep their `Co-Authored-By` attribution lines. Unlike Campfire, Cassette doesn't adopt that rule.
+
+## Distribution
+
+Sideload only for now. CI builds a signed APK on merges to `master` and uploads it to Drop (our build
+distribution platform); until CI exists, install with adb. Play/Fastlane tooling is adopted but unused until
+a listing is decided.

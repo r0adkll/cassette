@@ -1,0 +1,31 @@
+# Architecture
+
+([0007](decisions/0007-platform-and-architecture.md)) Kotlin Multiplatform with Compose Multiplatform,
+Circuit + Metro, SQLDelight and DataStore Preferences, following Campfire's conventions and convention
+plugins (an included `gradle/build-logic` build).
+
+## Modules (proposed)
+
+Split into `api`/`impl` only where there's a real seam.
+
+```
+:app                                   app shells, DI graph, Android entry points
+:core                                  domain models, DI scopes, logging
+:protocol                              AXS/Quarq decoding (pure Kotlin) + capture fixtures
+:data:db                               SQLDelight schema, queries, migrations
+:data:ble (api/impl)                   scanning, GATT reads, scan profiles
+:features:bikes (api/impl/ui)          bike list, bike detail, add-bike
+:features:components (ui)              component detail, history
+:features:alerts (api/impl)            notification logic
+:features:diagnostics (ui)             raw data, ride tests
+:features:settings (ui)
+:common:compose                        design system
+:common:screens                        Circuit screen keys
+:surfaces:widget                       Glance widgets
+:surfaces:tile                         Quick Settings tile
+:surfaces:wear                         Wear app, tile, complication (milestone 2)
+```
+
+## Open
+
+- Background capture: PendingIntent scan vs CompanionDeviceManager ([0009](decisions/0009-background-capture.md)).
