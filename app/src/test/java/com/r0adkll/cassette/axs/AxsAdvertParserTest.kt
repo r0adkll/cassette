@@ -63,10 +63,11 @@ class AxsAdvertParserTest {
 
   @Test
   fun coinCellStatusFrameUsesDeviceTypeForSide() {
-    // flags2 0x02: device type only (no bridge). Type 0x00 = left drop-bar shifter.
+    // Synthetic frame (esphome's coin-cell values): flags2 0x02 = device type only (no bridge).
+    // Type 0x00 and model 1034 (0x040a) are both a left drop-bar shifter.
     val raw =
       adStructure(0xFF, bytes("33 09 00 00 01 02 00 04 05 c0 0a 03 80 ff")) +
-        adStructure(0x16, bytes("51 fe 0d 02 9f fc 91 3c 0b 04 00"))
+        adStructure(0x16, bytes("51 fe 0d 02 9f fc 91 3c 0a 04 00"))
 
     val reading = parse(raw)!!
 
@@ -106,6 +107,13 @@ class AxsAdvertParserTest {
     assertEquals("Quarq AGN12387", reading.key)
     assertEquals(7, reading.modelId) // quarq model code & 0x3f: DZero
     assertNull(reading.battery)
+  }
+
+  @Test
+  fun zeroPercentIsUnknownNotCritical() {
+    assertEquals(BatteryStatus.UNKNOWN, batteryStatus(millivolts = null, percent = 0))
+    assertEquals(BatteryStatus.CRITICAL, batteryStatus(millivolts = null, percent = 5))
+    assertEquals(BatteryStatus.LOW, batteryStatus(millivolts = null, percent = 20))
   }
 
   @Test

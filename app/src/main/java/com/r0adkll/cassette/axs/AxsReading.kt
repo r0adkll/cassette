@@ -139,12 +139,12 @@ enum class BatteryStatus {
 
 /**
  * Our own status for when a component doesn't report one. Thresholds are SRAM's app's: Battery Level percent
- * > 20 ok, 6–20 low, ≤ 5 critical; coin cells (its only voltage thresholds) ok > 2.4 V, low > 2.2 V.
+ * > 20 ok, 6–20 low, 1–5 critical, 0 unknown; coin cells (its only voltage thresholds) ok > 2.4 V, low > 2.2 V.
  * Packs have no SRAM voltage curve, so we use our estimate.
  */
 fun batteryStatus(millivolts: Int?, percent: Int?): BatteryStatus =
   when {
-    percent != null ->
+    percent != null && percent > 0 ->
       when {
         percent <= 5 -> BatteryStatus.CRITICAL
         percent <= 20 -> BatteryStatus.LOW
