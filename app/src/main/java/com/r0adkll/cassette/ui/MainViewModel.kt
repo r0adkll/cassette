@@ -1,10 +1,16 @@
 package com.r0adkll.cassette.ui
 
+import android.content.IntentSender
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.r0adkll.cassette.CassetteApp
+import com.r0adkll.cassette.cdm.Association
+import com.r0adkll.cassette.cdm.AssociationFilter
+import com.r0adkll.cassette.cdm.PresenceRow
+import com.r0adkll.cassette.cdm.presenceTimeline
 import com.r0adkll.cassette.data.CaptureSource
 import com.r0adkll.cassette.data.CaptureState
+import com.r0adkll.cassette.ridetest.PresenceReadPath
 import com.r0adkll.cassette.ridetest.RideEvent
 import com.r0adkll.cassette.ridetest.RideSummary
 import com.r0adkll.cassette.ridetest.activeSession
@@ -15,6 +21,10 @@ import com.r0adkll.cassette.scan.ScanProfile
 import com.r0adkll.cassette.scan.toCandidate
 import com.r0adkll.cassette.scan.toReading
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -52,6 +62,55 @@ class MainViewModel(private val app: CassetteApp) : ViewModel() {
         RideTestState(active = events.activeSession(), summaries = summarizeSessions(events, System.currentTimeMillis()))
       }
       .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RideTestState(active = null, summaries = emptyList()))
+
+  /** CDM spike card state; null below API 36. */
+  val cdm: StateFlow<CdmSpikeState?> =
+    (app.presence?.let { presence ->
+        combine(presence.associations, presence.observing, presence.readPath, app.rideLog.events, ticker) { associations, observing, path, events, _ ->
+          CdmSpikeState(
+            associations = associations,
+            observing = observing,
+            readPath = path,
+            timeline = presenceTimeline(events),
+            recentActions = events.filterIsInstance<RideEvent.Cdm>().takeLast(5).asReversed(),
+            hubAddresses = events.filterIsInstance<RideEvent.HubAddress>().associateBy { it.key }.values.sortedByDescending { it.at },
+          )
+        }
+      } ?: flowOf(null))
+      .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+  private val _chooser = Channel<IntentSender>(Channel.BUFFERED)
+  /** The CDM association chooser to launch from the activity. */
+  val chooser: Flow<IntentSender> = _chooser.receiveAsFlow()
+
+  fun linkHub(filter: AssociationFilter) {
+    app.presence?.associate(filter) { _chooser.trySend(it) }
+  }
+
+  fun onChooserResult(resultCode: Int) {
+    app.presence?.onChooserResult(resultCode)
+  }
+
+  fun setObserving(associationId: Int, observing: Boolean) {
+    val presence = app.presence ?: return
+    if (observing) presence.startObserving(associationId) else presence.stopObserving(associationId)
+  }
+
+  fun unlinkHub(associationId: Int) {
+    app.presence?.disassociate(associationId)
+  }
+
+  fun setPresenceReadPath(path: PresenceReadPath) {
+    app.presence?.setReadPath(path)
+  }
+
+  fun refreshAssociations() {
+    app.presence?.refresh()
+  }
+
+  fun clearCdmLog() {
+    viewModelScope.launch { app.rideLog.clear { it.alwaysLogged } }
+  }
 
   fun startRideTest(label: String, profile: ScanProfile) {
     viewModelScope.launch { app.startRideTest(label.ifBlank { "Untitled ride" }, profile) }
@@ -106,6 +165,16 @@ class MainViewModel(private val app: CassetteApp) : ViewModel() {
     viewModelScope.launch { app.store.clearReadings() }
   }
 }
+
+data class CdmSpikeState(
+  val associations: List<Association>,
+  val observing: Set<Int>,
+  val readPath: PresenceReadPath,
+  val timeline: List<PresenceRow>,
+  val recentActions: List<RideEvent.Cdm>,
+  /** The latest logged scanned address per hub. */
+  val hubAddresses: List<RideEvent.HubAddress>,
+)
 
 data class RideTestState(val active: RideEvent.SessionStarted?, val summaries: List<RideSummary>)
 

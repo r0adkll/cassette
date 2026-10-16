@@ -3,6 +3,7 @@ package com.r0adkll.cassette.ui
 import android.Manifest
 import android.text.format.DateUtils
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,6 +34,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -61,6 +63,7 @@ fun MainScreen(viewModel: MainViewModel, hasPermissions: () -> Boolean, isBlueto
   val liveScan by viewModel.liveScan.collectAsStateWithLifecycle()
   val candidates by viewModel.candidates.collectAsStateWithLifecycle()
   val rideTests by viewModel.rideTests.collectAsStateWithLifecycle()
+  val cdm by viewModel.cdm.collectAsStateWithLifecycle()
   var labeling by remember { mutableStateOf<DeviceRecord?>(null) }
 
   var permissionGranted by remember { mutableStateOf(hasPermissions()) }
@@ -68,8 +71,12 @@ fun MainScreen(viewModel: MainViewModel, hasPermissions: () -> Boolean, isBlueto
   LifecycleResumeEffect(Unit) {
     permissionGranted = hasPermissions()
     bluetoothOn = isBluetoothEnabled()
+    viewModel.refreshAssociations()
     onPauseOrDispose {}
   }
+  val chooserLauncher =
+    rememberLauncherForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { viewModel.onChooserResult(it.resultCode) }
+  LaunchedEffect(viewModel) { viewModel.chooser.collect { chooserLauncher.launch(IntentSenderRequest.Builder(it).build()) } }
   val permissionLauncher =
     rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
       permissionGranted = hasPermissions()
@@ -112,6 +119,16 @@ fun MainScreen(viewModel: MainViewModel, hasPermissions: () -> Boolean, isBlueto
           enabled = permissionGranted && bluetoothOn,
           onStart = viewModel::startRideTest,
           onStop = viewModel::stopRideTest,
+        )
+      }
+      item {
+        CdmSpikeCard(
+          state = cdm,
+          onLink = viewModel::linkHub,
+          onObserve = viewModel::setObserving,
+          onUnlink = viewModel::unlinkHub,
+          onReadPath = viewModel::setPresenceReadPath,
+          onClear = viewModel::clearCdmLog,
         )
       }
       val devices = state.devices.values.sortedByDescending { it.latest.timestampMillis }
