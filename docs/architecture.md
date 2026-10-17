@@ -37,7 +37,8 @@ screen). `:app:android` holds the Metro graph (`AndroidAppGraph`) and Circuit na
 GATT reads; Android implementation ported from the POC) and `:features:capture` (`api`/`impl`: recorder,
 battery refresher, capture controller) carry capture. `:features:settings` (`api`/`impl`/`ui`/`test`: DataStore Preferences settings and
 the Settings screen) and `:features:diagnostics:ui` (capture health, live adverts, hub tables, ride tests, share). The capture log (`CaptureLog`, JSON lines)
-lives in `:features:capture`; `:surfaces:widget` holds the Glance widgets (Android-only module); the Android `DiagnosticsSharer` and `PhoneBattery` live in `:app:android`. Background capture is the PendingIntent scan for
+lives in `:features:capture`; `:surfaces:widget` holds the Glance widgets and `:surfaces:tile` the Quick Settings tile (Android-only
+modules); the Android `DiagnosticsSharer` and `PhoneBattery` live in `:app:android`. Background capture is the PendingIntent scan for
 now; CompanionDeviceManager waits on the spike's device tests (#2). `:poc` is the proof of concept, kept until its features are ported.
 
 ## Open

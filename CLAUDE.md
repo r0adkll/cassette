@@ -20,6 +20,9 @@ ported. Don't build new features on the POC.
   launcher. Once: `adb shell appwidget grantbind --package com.r0adkll.cassette.debug`; then
   `adb shell am start -n com.r0adkll.cassette.debug/com.r0adkll.cassette.app.debug.WidgetPreviewActivity`.
   Glance caps a Row/Column at 10 children, and Responsive size mode only reports the size bucket.
+- Tile: `adb shell cmd statusbar add-tile com.r0adkll.cassette.debug/com.r0adkll.cassette.surfaces.tile.BikeTileService`
+  (then `click-tile`, and `remove-tile` when done); read its state from
+  `adb shell dumpsys activity service com.android.systemui/.SystemUIService`.
 - `scripts/ktfmt` checks formatting in under a second (`--format` fixes it), build-logic included. It is
   the only formatter: CI and the pre-push hook (`./gradlew bootstrap`) use it, and there is no Gradle
   ktfmt task. In the IDE, use the ktfmt plugin set to Google style.

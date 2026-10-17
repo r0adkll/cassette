@@ -72,7 +72,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Unit tests
-        run: ./gradlew jvmTest testAndroidHostTest :poc:testDebugUnitTest verifySqlDelightMigration
+        run: ./gradlew jvmTest testAndroidHostTest :poc:testDebugUnitTest :surfaces:tile:testDebugUnitTest verifySqlDelightMigration
 
       - name: Build
         run: ./gradlew :app:android:assembleDebug :poc:assembleDebug
