@@ -85,3 +85,24 @@ internal class InMemoryCaptureLog : com.r0adkll.cassette.capture.api.CaptureLog 
 
   override suspend fun export() = list.value.joinToString("\n")
 }
+
+internal class RecordingAlerts : com.r0adkll.cassette.alerts.api.Alerts {
+  val captured =
+    mutableListOf<
+      Pair<Set<com.r0adkll.cassette.core.BikeId>, Set<com.r0adkll.cassette.core.BikeId>>
+    >()
+
+  override suspend fun onCaptured(
+    bikes: Set<com.r0adkll.cassette.core.BikeId>,
+    woke: Set<com.r0adkll.cassette.core.BikeId>,
+  ) {
+    captured += bikes to woke
+  }
+
+  override suspend fun checkReminders() = Unit
+
+  override suspend fun snoozePreRide(
+    bike: com.r0adkll.cassette.core.BikeId,
+    until: kotlin.time.Instant,
+  ) = Unit
+}

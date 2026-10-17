@@ -10,7 +10,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.r0adkll.cassette.bikes.ui.code
 import com.r0adkll.cassette.bikes.ui.tone
-import com.r0adkll.cassette.bikes.ui.valueText
 import com.r0adkll.cassette.capture.api.BikeDiscovery
 import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.capture.api.Discovered
@@ -23,6 +22,7 @@ import com.r0adkll.cassette.core.BikeType
 import com.r0adkll.cassette.core.ComponentId
 import com.r0adkll.cassette.core.ReadMethod
 import com.r0adkll.cassette.core.status
+import com.r0adkll.cassette.core.valueText
 import com.slack.circuit.codegen.annotations.CircuitInject
 import com.slack.circuit.retained.collectAsRetainedState
 import com.slack.circuit.retained.rememberRetained

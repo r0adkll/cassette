@@ -3,17 +3,16 @@ package com.r0adkll.cassette.bikes.ui
 import com.r0adkll.cassette.bikes.api.BikeOverview
 import com.r0adkll.cassette.bikes.api.ComponentWithReading
 import com.r0adkll.cassette.common.compose.theme.StatusTone
-import com.r0adkll.cassette.core.BatteryReading
 import com.r0adkll.cassette.core.ReadMethod
-import com.r0adkll.cassette.core.displayPercent
 import com.r0adkll.cassette.core.isEstimate
 import com.r0adkll.cassette.core.isStale
 import com.r0adkll.cassette.core.level
 import com.r0adkll.cassette.core.severity
 import com.r0adkll.cassette.core.status
+import com.r0adkll.cassette.core.valueText
+import com.r0adkll.cassette.core.volts
 import com.r0adkll.cassette.protocol.BatteryStatus
 import com.r0adkll.cassette.protocol.ComponentKind
-import kotlin.math.roundToInt
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
@@ -118,17 +117,6 @@ private val ComponentWithReading.name: String
 internal val ComponentWithReading.value: String
   get() = latest?.valueText() ?: "—"
 
-/** "78%", "≈97%" for a pack estimate, or "2.91 V" for a coin cell. */
-internal fun BatteryReading.valueText(): String {
-  val percent = displayPercent
-  return when {
-    percent != null && isEstimate -> "≈$percent%"
-    percent != null -> "$percent%"
-    millivolts != null -> "${volts(millivolts!!)} V"
-    else -> "—"
-  }
-}
-
 private val ComponentWithReading.source: String
   get() {
     val reading = latest ?: return "No reading yet"
@@ -175,11 +163,6 @@ internal val ComponentKind.code: String
       ComponentKind.CONTROLLER,
       ComponentKind.UNKNOWN -> "?"
     }
-
-private fun volts(millivolts: Int): String {
-  val hundredths = (millivolts / 10.0).roundToInt()
-  return "${hundredths / 100}.${(hundredths % 100).toString().padStart(2, '0')}"
-}
 
 internal fun ago(elapsed: Duration): String =
   when {

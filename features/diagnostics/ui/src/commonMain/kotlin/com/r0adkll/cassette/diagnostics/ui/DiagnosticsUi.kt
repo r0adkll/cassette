@@ -98,6 +98,12 @@ fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
         onClick = { sink(DiagnosticsEvent.LoadSampleBike) },
       )
       SettingsRow(
+        "Simulate a low battery",
+        subtitle = "Front derailleur reads low, as if the bike just woke: tests notifications",
+        icon = LucideIcons.BellRing,
+        onClick = if (state.bike != null) ({ sink(DiagnosticsEvent.SimulateLowBattery) }) else null,
+      )
+      SettingsRow(
         if (state.confirmRemove) "Tap again to remove" else "Remove bike",
         subtitle = state.bike?.let { "${it.bike.name}, with its history" } ?: "No bike",
         icon = LucideIcons.X,

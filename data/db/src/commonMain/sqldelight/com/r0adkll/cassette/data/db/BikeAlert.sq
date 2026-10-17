@@ -1,0 +1,23 @@
+-- Per-bike notification bookkeeping (decision 0011): the pre-ride nudge's quiet period and how far the
+-- not-seen reminders have gone for the bike's current last-seen time.
+CREATE TABLE bike_alert (
+    bike_id INTEGER PRIMARY KEY REFERENCES bike(id) ON DELETE CASCADE,
+    -- epoch millis before which no pre-ride nudge is shown (12 hours after one, or a snooze)
+    pre_ride_not_before INTEGER,
+    -- 0 none, 14 or 30: the last not-seen reminder sent
+    reminded_days INTEGER NOT NULL DEFAULT 0,
+    -- the bike's last_seen_at when that reminder was sent; seeing the bike again resets the stage
+    reminded_for_seen_at INTEGER
+);
+
+select:
+SELECT * FROM bike_alert WHERE bike_id = ?;
+
+ensure:
+INSERT OR IGNORE INTO bike_alert (bike_id) VALUES (?);
+
+setPreRideNotBefore:
+UPDATE bike_alert SET pre_ride_not_before = :notBefore WHERE bike_id = :bikeId;
+
+setReminded:
+UPDATE bike_alert SET reminded_days = :days, reminded_for_seen_at = :seenAt WHERE bike_id = :bikeId;

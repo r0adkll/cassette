@@ -26,6 +26,7 @@ dependencies {
   implementation(project(":common:screens"))
   implementation(project(":data:ble"))
   implementation(project(":data:db"))
+  implementation(project(":features:alerts:impl"))
   implementation(project(":features:capture:api"))
   implementation(project(":features:capture:impl"))
   implementation(project(":features:settings:api"))

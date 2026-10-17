@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import com.r0adkll.cassette.alerts.api.Alerts
 import com.r0adkll.cassette.bikes.api.BikeOverview
 import com.r0adkll.cassette.bikes.api.BikeRepository
 import com.r0adkll.cassette.bikes.api.DeveloperTools
@@ -58,6 +59,9 @@ sealed interface DiagnosticsEvent : CircuitUiEvent {
 
   data object LoadSampleBike : DiagnosticsEvent
 
+  /** Records a low reading and runs the alerts as if the bike just woke. */
+  data object SimulateLowBattery : DiagnosticsEvent
+
   /** First tap asks, second removes. */
   data object RemoveBike : DiagnosticsEvent
 }
@@ -72,6 +76,7 @@ class DiagnosticsPresenter(
   private val developerTools: DeveloperTools,
   private val log: CaptureLog,
   private val sharer: DiagnosticsSharer,
+  private val alerts: Alerts,
   private val clock: Clock,
 ) : Presenter<DiagnosticsUiState> {
 
@@ -116,6 +121,14 @@ class DiagnosticsPresenter(
           scope.launch {
             settings.setScanProfile(event.profile)
             capture.ensureBackgroundCapture("profile changed")
+          }
+        DiagnosticsEvent.SimulateLowBattery ->
+          bike?.let { overview ->
+            scope.launch {
+              if (developerTools.simulateLowBattery(overview.bike.id)) {
+                alerts.onCaptured(setOf(overview.bike.id), woke = setOf(overview.bike.id))
+              }
+            }
           }
         DiagnosticsEvent.LoadSampleBike ->
           scope.launch {

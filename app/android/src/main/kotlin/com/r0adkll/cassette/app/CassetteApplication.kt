@@ -1,6 +1,10 @@
 package com.r0adkll.cassette.app
 
 import android.app.Application
+import com.r0adkll.cassette.alerts.api.Alerts
+import com.r0adkll.cassette.alerts.impl.AlertsHost
+import com.r0adkll.cassette.alerts.impl.AndroidNotifier
+import com.r0adkll.cassette.alerts.impl.ReminderWorker
 import com.r0adkll.cassette.app.di.AndroidAppGraph
 import com.r0adkll.cassette.data.ble.BackgroundDeliveryHandler
 import com.r0adkll.cassette.data.ble.BleHost
@@ -13,7 +17,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
-class CassetteApplication : Application(), BleHost, WidgetHost, TileHost {
+class CassetteApplication : Application(), BleHost, WidgetHost, TileHost, AlertsHost {
   /** Android entry points reach the graph through this (decision 0007). */
   val graph: AndroidAppGraph by lazy {
     createGraphFactory<AndroidAppGraph.Factory>().create(this)
@@ -26,6 +30,8 @@ class CassetteApplication : Application(), BleHost, WidgetHost, TileHost {
     super.onCreate()
     // Every process start, including background wakes, keeps widgets in step with the data.
     graph.widgetUpdater.start(bleScope)
+    AndroidNotifier.ensureChannels(this)
+    ReminderWorker.schedule(this)
   }
 
   override val backgroundDeliveryHandler: BackgroundDeliveryHandler
@@ -41,5 +47,11 @@ class CassetteApplication : Application(), BleHost, WidgetHost, TileHost {
     get() = graph
 
   override val tileScope: CoroutineScope
+    get() = bleScope
+
+  override val alerts: Alerts
+    get() = graph.alerts
+
+  override val alertsScope: CoroutineScope
     get() = bleScope
 }

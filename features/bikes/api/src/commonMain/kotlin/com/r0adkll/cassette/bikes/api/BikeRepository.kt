@@ -48,4 +48,10 @@ data class ComponentWithReading(val component: Component, val latest: BatteryRea
 interface DeveloperTools {
   /** Adds a bike holding the validation bike's real readings from 2026-10-16. */
   suspend fun loadSampleBike()
+
+  /**
+   * Records a low reading (7.40 V, reported low) for the bike's front derailleur, or its first
+   * component, to exercise alerts without hardware. Returns false if the bike has no components.
+   */
+  suspend fun simulateLowBattery(bike: BikeId): Boolean
 }
