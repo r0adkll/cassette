@@ -7,7 +7,7 @@
     android:viewportHeight="52">
     <group android:translateX="-29.5" android:translateY="-28">
         <path
-            android:pathData="M39,41 H67 A6,6 0 0 1 73,47 V61 A6,6 0 0 1 67,67 H39 A6,6 0 0 1 33,61 V47 A6,6 0 0 1 39,41 Z"
+            android:pathData="M39,39 H67 A6,6 0 0 1 73,45 V63 A6,6 0 0 1 67,69 H39 A6,6 0 0 1 33,63 V45 A6,6 0 0 1 39,39 Z"
             android:strokeColor="#FFFFFF"
             android:strokeWidth="3.6" />
         <path
