@@ -14,6 +14,11 @@ All notable changes to Cassette are documented here. The format follows
 - Domain models (`:core`) and the SQLDelight database (`:data:db`): bikes, components, battery history
   with year-long retention and daily down-sampling, and alert state.
 - `scripts/ktfmt`: the ktfmt CLI for fast format checks (CI and the pre-push hook), covering build-logic.
+- Capture: the background scan (PendingIntent, re-armed after reboot or update) and the 60-second
+  Refresh record known components, read the hub's battery table (every component, firmware, shift
+  counts) and the power meter's Battery Level into the database. Components join from the hub table
+  and are marked removed after 30 days unlisted. Ported from the POC into `:data:ble` and
+  `:features:capture`.
 - The bike screen: status block, component rows with reported or estimated values, and stale and unknown
   states, backed by the database (Circuit + Metro). A developer action loads the validation bike's
   readings until capture is ported.

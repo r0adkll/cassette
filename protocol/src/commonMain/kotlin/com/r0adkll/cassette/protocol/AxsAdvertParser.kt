@@ -195,5 +195,6 @@ internal fun ByteArray.u16le(index: Int): Int = u8(index) or (u8(index + 1) shl 
 internal fun ByteArray.u32le(index: Int): Long =
     u16le(index).toLong() or (u16le(index + 2).toLong() shl 16)
 
-internal fun ByteArray.toHex(): String =
+/** Space-separated lowercase hex, for logs and diagnostics. */
+fun ByteArray.toHex(): String =
     joinToString(" ") { (it.toInt() and 0xFF).toString(16).padStart(2, '0') }

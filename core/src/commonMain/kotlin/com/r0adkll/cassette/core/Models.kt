@@ -30,6 +30,8 @@ data class Bike(
     val hubSerial: Long?,
     val createdAt: Instant,
     val lastSeenAt: Instant?,
+    /** When the hub's battery table was last read. */
+    val hubReadAt: Instant? = null,
 )
 
 /** A component on a bike. Components absent from the hub table for 30 days get [removedAt]. */
@@ -50,6 +52,8 @@ data class Component(
     val addedAt: Instant,
     val lastSeenAt: Instant?,
     val removedAt: Instant?,
+    /** Last BLE address heard. */
+    val address: String? = null,
 )
 
 /** How a battery reading reached us. */

@@ -33,7 +33,10 @@ Built so far: `gradle/build-logic` (plugins `cassette.root` (ktfmt), `cassette.m
 `:protocol` (AXS decoding, shared, fixture tests on JVM and Android), `:common:compose` (design system) and
 `:app:android` (design gallery), `:core` (domain models, battery rules), `:data:db` (SQLDelight schema v1), `:common:screens` (Circuit
 screens, Parcelize via `cassette.parcelize`) and `:features:bikes` (`api`/`impl`/`ui`: repository and bike
-screen). `:app:android` holds the Metro graph (`AndroidAppGraph`) and Circuit navigation. `:poc` is the proof of concept, kept until its features are ported.
+screen). `:app:android` holds the Metro graph (`AndroidAppGraph`) and Circuit navigation. `:data:ble` (scanner and
+GATT reads; Android implementation ported from the POC) and `:features:capture` (`api`/`impl`: recorder,
+battery refresher, capture controller) carry capture. Background capture is the PendingIntent scan for
+now; CompanionDeviceManager waits on the spike's device tests (#2). `:poc` is the proof of concept, kept until its features are ported.
 
 ## Open
 

@@ -24,7 +24,9 @@ android {
 dependencies {
     implementation(project(":common:compose"))
     implementation(project(":common:screens"))
+    implementation(project(":data:ble"))
     implementation(project(":data:db"))
+    implementation(project(":features:capture:impl"))
     implementation(project(":features:bikes:impl"))
     implementation(project(":features:bikes:ui"))
     implementation(libs.circuit.foundation)

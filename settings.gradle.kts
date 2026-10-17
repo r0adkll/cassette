@@ -27,9 +27,15 @@ include(":common:screens")
 
 include(":core")
 
+include(":data:ble")
+
 include(":data:db")
 
 include(":features:bikes:api")
+
+include(":features:capture:api")
+
+include(":features:capture:impl")
 
 include(":features:bikes:impl")
 

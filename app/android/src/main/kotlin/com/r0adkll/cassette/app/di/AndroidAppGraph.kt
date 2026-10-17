@@ -2,7 +2,9 @@ package com.r0adkll.cassette.app.di
 
 import android.app.Application
 import app.cash.sqldelight.db.SqlDriver
+import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.core.CassetteDispatchers
+import com.r0adkll.cassette.data.ble.BackgroundDeliveryHandler
 import com.r0adkll.cassette.data.db.createAndroidDriver
 import com.slack.circuit.foundation.Circuit
 import com.slack.circuit.runtime.presenter.Presenter
@@ -17,6 +19,8 @@ import kotlinx.coroutines.Dispatchers
 @DependencyGraph(AppScope::class)
 interface AndroidAppGraph {
     val circuit: Circuit
+    val captureController: CaptureController
+    val backgroundDeliveryHandler: BackgroundDeliveryHandler
 
     @Provides
     @SingleIn(AppScope::class)

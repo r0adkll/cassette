@@ -3,6 +3,8 @@ package com.r0adkll.cassette.bikes.ui
 import com.r0adkll.cassette.bikes.api.BikeOverview
 import com.r0adkll.cassette.bikes.api.BikeRepository
 import com.r0adkll.cassette.bikes.api.DeveloperTools
+import com.r0adkll.cassette.capture.api.CaptureController
+import com.r0adkll.cassette.capture.api.RefreshProgress
 import com.r0adkll.cassette.common.screens.BikeScreen
 import com.r0adkll.cassette.common.screens.ComponentScreen
 import com.r0adkll.cassette.core.Bike
@@ -19,6 +21,7 @@ import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 
 class BikePresenterTest {
@@ -42,10 +45,20 @@ class BikePresenterTest {
             }
         }
 
+    private val capture =
+        object : CaptureController {
+            override val isReady = true
+
+            override fun refresh(): Flow<RefreshProgress> =
+                flowOf(RefreshProgress.Scanning(59, 0), RefreshProgress.Done(5, true))
+
+            override suspend fun ensureBackgroundCapture(reason: String) = Unit
+        }
+
     @Test
     fun loadingThenEmptyThenLoaded() = runTest {
         val navigator = FakeNavigator(BikeScreen())
-        val presenter = BikePresenter(BikeScreen(), navigator, repository, tools, clock)
+        val presenter = BikePresenter(BikeScreen(), navigator, repository, tools, capture, clock)
 
         presenter.test {
             assertIs<BikeUiState.Loading>(awaitItem())
