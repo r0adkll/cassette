@@ -1,6 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
+        <!-- Picks a bike widget's bike; opened by the launcher (decision 0010). -->
+        <activity
+            android:name="com.r0adkll.cassette.surfaces.widget.WidgetConfigActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:label="@string/bike_widget_label"
+            android:taskAffinity=""
+            android:theme="@android:style/Theme.Material.NoActionBar">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+
         <receiver
             android:name="com.r0adkll.cassette.surfaces.widget.BikeWidgetReceiver"
             android:exported="true"

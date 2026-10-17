@@ -33,7 +33,9 @@ Wear Data Layer. Refresh on the watch asks the phone to run its 60-second scan; 
 ## Widgets
 
 Glance, responsive wherever possible: small (bike name + weakest status), medium (every component's
-status), large (component list with last-seen time), and an all-bikes widget.
+status), large (component list with last-seen time), and an all-bikes widget. The bike widget picks its bike from the
+widget's settings ("Which bike?"): configuration is optional, so a new widget starts on the default bike, and a
+deleted bike falls back to it.
 
 ## Quick Settings tile
 
