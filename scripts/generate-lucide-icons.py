@@ -13,9 +13,14 @@ ICONS = [
     "activity", "arrow-left", "battery-low", "battery-medium", "battery-warning", "bell", "bell-ring",
     "bike", "bluetooth", "bluetooth-searching", "check", "chevron-down", "chevron-right", "circle-check",
     "circle-help", "cpu", "file-text", "history", "image-plus", "info", "layout-grid", "mountain",
-    "panel-top", "pin", "plus", "radio",
+    "panel-top", "pin", "radio",
     "refresh-cw", "route", "scan-line", "settings", "share-2", "signal", "x",
 ]
+# Cassette's own combinations of Lucide parts, in Lucide's grid and stroke: name -> (base icon,
+# extra SVG elements). bike-plus is "Add bike": Lucide's bike with a + in its empty top-left.
+COMBINED = {
+    "bike-plus": ("bike", ['<path d="M5 2v6" />', '<path d="M2 5h6" />']),
+}
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "common/compose/src/commonMain/kotlin/com/r0adkll/cassette/common/compose/icons/LucideIcons.kt"
 
@@ -68,12 +73,14 @@ def pascal(name):
 
 def main():
     props = []
-    for icon in ICONS:
-        url = f"https://unpkg.com/lucide-static@{VERSION}/icons/{icon}.svg"
+    for icon in ICONS + list(COMBINED):
+        base, extra = COMBINED.get(icon, (icon, []))
+        url = f"https://unpkg.com/lucide-static@{VERSION}/icons/{base}.svg"
         svg = urllib.request.urlopen(url).read().decode()
-        tags = re.findall(r"<(?:path|circle|rect|line|polyline|polygon|ellipse)\b[^>]*/>", svg)
+        tags = re.findall(r"<(?:path|circle|rect|line|polyline|polygon|ellipse)\b[^>]*/>", svg) + extra
         paths = "\n".join(f'            stroke("{to_path(t)}")' for t in tags)
-        props.append(f"""    /** Lucide `{icon}`. */
+        doc = f"Cassette's `{icon}`: Lucide `{base}` plus a +." if icon in COMBINED else f"Lucide `{icon}`."
+        props.append(f"""    /** {doc} */
     val {pascal(icon)}: ImageVector by lazy {{
         lucide("{pascal(icon)}") {{
 {paths}
@@ -121,7 +128,7 @@ private fun lucide(name: String, block: LucideBuilder.() -> Unit): ImageVector =
         .also {{ LucideBuilder(it).block() }}
         .build()
 """)
-    print(f"Wrote {len(ICONS)} icons to {OUT}")
+    print(f"Wrote {len(ICONS) + len(COMBINED)} icons to {OUT}")
 
     for directory, names in ANDROID_ICONS.items():
         directory.mkdir(parents=True, exist_ok=True)

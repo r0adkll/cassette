@@ -40,6 +40,7 @@ dependencies {
   implementation(project(":features:bikes:impl"))
   implementation(project(":features:bikes:ui"))
   implementation(libs.circuit.foundation)
+  implementation(libs.circuitx.gesture.navigation)
   implementation(libs.circuit.codegen.annotations)
   implementation(libs.metro.runtime)
   implementation(libs.androidx.activity.compose)

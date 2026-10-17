@@ -13,6 +13,7 @@ import com.r0adkll.cassette.settings.impl.SettingsFile
 import com.slack.circuit.foundation.Circuit
 import com.slack.circuit.runtime.presenter.Presenter
 import com.slack.circuit.runtime.ui.Ui
+import com.slack.circuitx.gesturenavigation.GestureNavigationDecorationFactory
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Provides
@@ -34,7 +35,12 @@ interface AndroidAppGraph {
     uiFactories: Set<Ui.Factory>,
     presenterFactories: Set<Presenter.Factory>,
   ): Circuit =
-    Circuit.Builder().addUiFactories(uiFactories).addPresenterFactories(presenterFactories).build()
+    Circuit.Builder()
+      .addUiFactories(uiFactories)
+      .addPresenterFactories(presenterFactories)
+      // Android's predictive back: the screen underneath shows as you swipe.
+      .setAnimatedNavDecoratorFactory(GestureNavigationDecorationFactory())
+      .build()
 
   @Provides
   @SingleIn(AppScope::class)

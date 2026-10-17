@@ -75,7 +75,7 @@ private fun TopBar(onAddBike: (() -> Unit)?, onSettings: () -> Unit) {
   ) {
     Kicker("Cassette", Modifier.weight(1f))
     // The empty state has its own Add bike button.
-    if (onAddBike != null) IconCircleButton(LucideIcons.Plus, "Add bike", onClick = onAddBike)
+    if (onAddBike != null) IconCircleButton(LucideIcons.BikePlus, "Add bike", onClick = onAddBike)
     IconCircleButton(LucideIcons.Settings, "Settings", onClick = onSettings)
   }
 }
