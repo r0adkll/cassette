@@ -156,7 +156,10 @@ jobs:
           apk: android-debug.apk
 
       - name: Link the Build
-        run: echo "Drop Build: ${{ steps.upload.outputs.build-url }}" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          BUILD_URL: ${{ steps.upload.outputs.build-url }}
+        run: |
+          echo "Drop Build: $BUILD_URL" >> "$GITHUB_STEP_SUMMARY"
 
   ios:
     name: iOS compile
