@@ -9,6 +9,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
@@ -22,7 +24,9 @@ import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.state.getAppWidgetState
 import androidx.glance.background
+import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -35,6 +39,7 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.width
+import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
@@ -44,25 +49,42 @@ import com.r0adkll.cassette.bikes.ui.toLoaded
 import com.r0adkll.cassette.common.compose.components.word
 import com.r0adkll.cassette.common.screens.DeepLinks
 import com.r0adkll.cassette.common.screens.deepLinkIntent
+import com.r0adkll.cassette.core.BikeId
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 /**
- * The default bike, one widget that adapts to its size (decision 0010): small shows the status
- * block, medium a bar per component, large a thick bar per component with the value inside.
+ * One bike, in a widget that adapts to its size (decision 0010): small shows the status block,
+ * medium a bar per component, large a thick bar per component with the value inside. Each instance
+ * picks its bike ([WidgetConfigActivity]); none picked, or a deleted bike, means the default bike.
  */
 class BikeWidget : GlanceAppWidget() {
+  override val stateDefinition = PreferencesGlanceStateDefinition
+
   // Exact, not Responsive: the bars are bitmaps drawn at the widget's real size, and Responsive
   // only
   // reports the size bucket.
   override val sizeMode = SizeMode.Exact
 
+  @OptIn(ExperimentalCoroutinesApi::class)
   override suspend fun provideGlance(context: Context, id: GlanceId) {
     val graph = context.widgets
-    val flow = graph.bikeRepository.observeOverview(null).map { it?.toLoaded(graph.clock.now()) }
-    val initial = flow.first()
+    fun overview(bikeId: Long?) =
+      graph.bikeRepository
+        .observeOverview(bikeId?.let(::BikeId))
+        .flatMapLatest { picked ->
+          if (picked != null || bikeId == null) flowOf(picked)
+          else graph.bikeRepository.observeOverview(null)
+        }
+        .map { it?.toLoaded(graph.clock.now()) }
+    val initial =
+      overview(getAppWidgetState<Preferences>(context, stateDefinition, id)[BIKE_ID]).first()
     provideContent {
-      val state by remember { flow }.collectAsState(initial)
+      val bikeId = currentState(BIKE_ID)
+      val state by remember(bikeId) { overview(bikeId) }.collectAsState(initial)
       Content(state)
     }
   }
@@ -323,6 +345,9 @@ class BikeWidget : GlanceAppWidget() {
     const val GAP = 8
     /** Glance's 10-child cap per container. */
     const val MAX_ROWS = 10
+
+    /** The instance's bike; absent means the default bike. */
+    val BIKE_ID = longPreferencesKey("bike_id")
   }
 }
 

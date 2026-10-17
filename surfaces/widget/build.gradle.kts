@@ -20,6 +20,7 @@ dependencies {
   implementation(project(":common:compose"))
   implementation(project(":common:screens"))
   implementation(libs.androidx.glance.appwidget)
+  implementation(libs.androidx.activity.compose)
   // The shared UI state types are Circuit states.
   implementation(libs.circuit.runtime)
   implementation(libs.metro.runtime)

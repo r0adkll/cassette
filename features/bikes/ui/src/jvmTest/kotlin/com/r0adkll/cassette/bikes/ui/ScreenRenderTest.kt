@@ -16,6 +16,8 @@ import com.r0adkll.cassette.bikes.ui.component.ComponentDetailModel
 import com.r0adkll.cassette.bikes.ui.component.ComponentUi
 import com.r0adkll.cassette.bikes.ui.component.ComponentUiState
 import com.r0adkll.cassette.bikes.ui.component.HistoryRange
+import com.r0adkll.cassette.bikes.ui.picker.BikeOption
+import com.r0adkll.cassette.bikes.ui.picker.BikePicker
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.compose.theme.StatusTone
 import com.r0adkll.cassette.core.BikeType
@@ -95,6 +97,21 @@ class ScreenRenderTest {
     for (dark in listOf(true, false)) {
       render("component-${if (dark) "dark" else "light"}", dark) {
         ComponentUi(ComponentUiState(model) {})
+      }
+    }
+  }
+
+  @Test
+  fun widgetBikePicker() {
+    val options =
+      listOf(
+        BikeOption(null, "Default bike", "Follows Settings · now Road bike", null),
+        BikeOption(1, "Road bike", "Charge soon. Seen 2 min ago", StatusTone.Low),
+        BikeOption(2, "Gravel bike", "All good. Seen 3 days ago", StatusTone.Good),
+      )
+    for (dark in listOf(true, false)) {
+      render("widget-bike-picker-${if (dark) "dark" else "light"}", dark) {
+        BikePicker(options, selected = 2, onPick = {}, onClose = {})
       }
     }
   }
