@@ -6,6 +6,7 @@ import com.r0adkll.cassette.core.Component
 import com.r0adkll.cassette.core.ReadMethod
 import com.r0adkll.cassette.data.db.CassetteDatabase
 import com.r0adkll.cassette.data.db.toDomain
+import com.r0adkll.cassette.protocol.AdvertBattery
 import com.r0adkll.cassette.protocol.AxsReading
 import com.r0adkll.cassette.protocol.BatteryStatus
 import com.r0adkll.cassette.protocol.ComponentKind
@@ -163,6 +164,24 @@ class CaptureRecorder(
                         cutoff = (at - REMOVED_AFTER).toEpochMilliseconds(),
                     )
                 }
+            }
+        }
+
+    /** Battery from an advert we handled ourselves (the hub heard while adding a bike). */
+    suspend fun applyAdvertBattery(componentKey: String, battery: AdvertBattery, at: Instant) =
+        withContext(dispatchers.io) {
+            lock.withLock {
+                val component =
+                    db.componentQueries.selectByKey(componentKey).executeAsOneOrNull()
+                        ?: return@withLock
+                insertSample(
+                    component.id,
+                    at.toEpochMilliseconds(),
+                    battery.millivolts,
+                    battery.percent,
+                    battery.reportedStatus,
+                    ReadMethod.Advert,
+                )
             }
         }
 

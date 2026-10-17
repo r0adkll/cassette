@@ -82,7 +82,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: design-gallery
-          path: common/compose/build/gallery/*.png
+          path: |
+            common/compose/build/gallery/*.png
+            features/*/ui/build/screens/*.png
           if-no-files-found: ignore
 
       - name: Upload APKs
