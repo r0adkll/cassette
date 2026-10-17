@@ -27,3 +27,8 @@ All use SRAM red as the hero:
 | Editorial / Swiss | Light, bold grotesk type, strong grid, red blocks, generous whitespace. Feels like a race poster. |
 | Technical / blueprint | Component line drawings, monospace details, a schematic of the bike with live status. |
 | Soft modern | Expressive Material 3, rounded layered cards, red tonal palette. The safest option. |
+
+## Chosen direction
+
+Instrument cluster with the editorial status header and soft-modern charts: see
+[0012](decisions/0012-visual-direction.md).
