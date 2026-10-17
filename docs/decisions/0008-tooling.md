@@ -21,6 +21,6 @@ Commits keep their `Co-Authored-By` attribution lines. Unlike Campfire, Cassette
 
 ## Distribution
 
-Sideload only for now. CI builds a signed APK on merges to `master` and uploads it to Drop (our build
+Sideload only for now. CI builds a signed APK on merges to `main` and uploads it to Drop (our build
 distribution platform); until CI exists, install with adb. Play/Fastlane tooling is adopted but unused until
 a listing is decided.
