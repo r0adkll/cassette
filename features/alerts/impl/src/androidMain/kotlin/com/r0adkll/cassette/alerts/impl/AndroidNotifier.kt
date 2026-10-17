@@ -103,7 +103,7 @@ class AndroidNotifier(private val application: Application) : Notifier {
       )
     val notification =
       NotificationCompat.Builder(application, channel)
-        .setSmallIcon(R.drawable.lucide_battery_medium)
+        .setSmallIcon(R.drawable.ic_notification)
         .setColor(CASSETTE_RED)
         .setContentTitle(title)
         .setContentText(text)

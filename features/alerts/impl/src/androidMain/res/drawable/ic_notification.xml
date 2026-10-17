@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Notification small icon: the app icon's mark as a white silhouette (Android tints it). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="52"
+    android:viewportHeight="52">
+    <group android:translateX="-29.5" android:translateY="-28">
+        <path
+            android:pathData="M39,41 H67 A6,6 0 0 1 73,47 V61 A6,6 0 0 1 67,67 H39 A6,6 0 0 1 33,61 V47 A6,6 0 0 1 39,41 Z"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="3.6" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M74.5,50.8 A1.8,1.8 0 0 1 78.1,50.8 V57.2 A1.8,1.8 0 0 1 74.5,57.2 Z M41.7,52.5 A1.5,1.5 0 0 1 44.7,52.5 V55.5 A1.5,1.5 0 0 1 41.7,55.5 Z M46.6,51 A1.5,1.5 0 0 1 49.6,51 V57 A1.5,1.5 0 0 1 46.6,57 Z M51.5,49.5 A1.5,1.5 0 0 1 54.5,49.5 V58.5 A1.5,1.5 0 0 1 51.5,58.5 Z M56.4,48 A1.5,1.5 0 0 1 59.4,48 V60 A1.5,1.5 0 0 1 56.4,60 Z M61.3,46.5 A1.5,1.5 0 0 1 64.3,46.5 V61.5 A1.5,1.5 0 0 1 61.3,61.5 Z" />
+    </group>
+</vector>
