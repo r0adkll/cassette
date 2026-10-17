@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <receiver
+            android:name="com.r0adkll.cassette.surfaces.widget.BikeWidgetReceiver"
+            android:exported="true"
+            android:label="@string/bike_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/bike_widget" />
+        </receiver>
+
+        <receiver
+            android:name="com.r0adkll.cassette.surfaces.widget.AllBikesWidgetReceiver"
+            android:exported="true"
+            android:label="@string/all_bikes_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/all_bikes_widget" />
+        </receiver>
+    </application>
+</manifest>
