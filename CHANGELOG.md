@@ -15,6 +15,9 @@ All notable changes to Cassette are documented here. The format follows
   with year-long retention and daily down-sampling, and alert state.
 - `scripts/ktfmt`: the ktfmt CLI, the only formatter (CI and the pre-push hook), covering build-logic.
   Google style: 2-space indents.
+- Onboarding: a welcome (with "Unofficial. Not affiliated with SRAM."), one explainer each for Nearby
+  devices and notifications (allow, not now, or open settings once Android stops asking), then
+  add-bike. Shown once; replaces the permission prompt at launch.
 - Notifications: battery alerts when a component drops to low or charge now (once per change), a
   heads-up pre-ride nudge when the bike wakes with something already low (at most every 12 hours,
   "Snooze until tomorrow"), and not-seen reminders at 14 and 30 days, each with its switch in Settings.

@@ -8,6 +8,7 @@ import com.r0adkll.cassette.capture.impl.CaptureLogFile
 import com.r0adkll.cassette.core.CassetteDispatchers
 import com.r0adkll.cassette.data.ble.BackgroundDeliveryHandler
 import com.r0adkll.cassette.data.db.createAndroidDriver
+import com.r0adkll.cassette.settings.api.CassetteSettings
 import com.r0adkll.cassette.settings.impl.SettingsFile
 import com.slack.circuit.foundation.Circuit
 import com.slack.circuit.runtime.presenter.Presenter
@@ -25,6 +26,7 @@ interface AndroidAppGraph {
   val captureController: CaptureController
   val backgroundDeliveryHandler: BackgroundDeliveryHandler
   val alerts: Alerts
+  val settings: CassetteSettings
 
   @Provides
   @SingleIn(AppScope::class)

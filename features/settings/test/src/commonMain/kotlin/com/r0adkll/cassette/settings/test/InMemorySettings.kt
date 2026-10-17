@@ -16,6 +16,11 @@ class InMemorySettings : CassetteSettings {
   override val pinnedBike = MutableStateFlow<BikeId?>(null)
   override val notifications = MutableStateFlow(NotificationSettings())
   override val captureHealth = MutableStateFlow(CaptureHealth(null, null, null, 0))
+  override val onboarded = MutableStateFlow(false)
+
+  override suspend fun setOnboarded() {
+    onboarded.value = true
+  }
 
   override suspend fun setBackgroundCapture(enabled: Boolean) {
     backgroundCapture.value = enabled
