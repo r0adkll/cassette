@@ -55,6 +55,10 @@ dependencies {
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.wear.compose.material3)
   implementation(libs.androidx.wear.compose.foundation)
+  implementation(libs.androidx.wear.tiles)
+  implementation(libs.androidx.concurrent.futures.ktx)
+  implementation(libs.androidx.wear.protolayout)
+  implementation(libs.androidx.wear.protolayout.material3)
   implementation(libs.play.services.wearable)
   implementation(libs.kotlinx.coroutines.play.services)
 
