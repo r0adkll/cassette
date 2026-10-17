@@ -18,6 +18,7 @@ dependencies {
   // Shares the bike screen's wording (toLoaded); its state types are Circuit states.
   implementation(project(":features:bikes:ui"))
   implementation(project(":features:capture:api"))
+  implementation(project(":features:settings:api"))
   implementation(project(":common:compose"))
   implementation(libs.circuit.runtime)
   implementation(libs.metro.runtime)

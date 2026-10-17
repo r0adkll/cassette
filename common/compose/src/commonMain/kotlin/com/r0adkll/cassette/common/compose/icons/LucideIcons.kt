@@ -92,7 +92,9 @@ object LucideIcons {
 
   /** Lucide `bluetooth`. */
   val Bluetooth: ImageVector by lazy {
-    lucide("Bluetooth") { stroke("m7 7 10 10-5 5V2l5 5L7 17") }
+    lucide("Bluetooth") {
+      stroke("m7 7 10 10-5 5V2l5 5L7 17")
+    }
   }
 
   /** Lucide `bluetooth-searching`. */
@@ -105,13 +107,25 @@ object LucideIcons {
   }
 
   /** Lucide `check`. */
-  val Check: ImageVector by lazy { lucide("Check") { stroke("M20 6 9 17l-5-5") } }
+  val Check: ImageVector by lazy {
+    lucide("Check") {
+      stroke("M20 6 9 17l-5-5")
+    }
+  }
 
   /** Lucide `chevron-down`. */
-  val ChevronDown: ImageVector by lazy { lucide("ChevronDown") { stroke("m6 9 6 6 6-6") } }
+  val ChevronDown: ImageVector by lazy {
+    lucide("ChevronDown") {
+      stroke("m6 9 6 6 6-6")
+    }
+  }
 
   /** Lucide `chevron-right`. */
-  val ChevronRight: ImageVector by lazy { lucide("ChevronRight") { stroke("m9 18 6-6-6-6") } }
+  val ChevronRight: ImageVector by lazy {
+    lucide("ChevronRight") {
+      stroke("m9 18 6-6-6-6")
+    }
+  }
 
   /** Lucide `circle-check`. */
   val CircleCheck: ImageVector by lazy {
@@ -190,8 +204,40 @@ object LucideIcons {
     }
   }
 
+  /** Lucide `layout-grid`. */
+  val LayoutGrid: ImageVector by lazy {
+    lucide("LayoutGrid") {
+      stroke(
+        "M4.0 3.0h5.0a1.0 1.0 0 0 1 1.0 1.0v5.0a1.0 1.0 0 0 1 -1.0 1.0h-5.0a1.0 1.0 0 0 1 -1.0 -1.0v-5.0a1.0 1.0 0 0 1 1.0 -1.0Z"
+      )
+      stroke(
+        "M15.0 3.0h5.0a1.0 1.0 0 0 1 1.0 1.0v5.0a1.0 1.0 0 0 1 -1.0 1.0h-5.0a1.0 1.0 0 0 1 -1.0 -1.0v-5.0a1.0 1.0 0 0 1 1.0 -1.0Z"
+      )
+      stroke(
+        "M15.0 14.0h5.0a1.0 1.0 0 0 1 1.0 1.0v5.0a1.0 1.0 0 0 1 -1.0 1.0h-5.0a1.0 1.0 0 0 1 -1.0 -1.0v-5.0a1.0 1.0 0 0 1 1.0 -1.0Z"
+      )
+      stroke(
+        "M4.0 14.0h5.0a1.0 1.0 0 0 1 1.0 1.0v5.0a1.0 1.0 0 0 1 -1.0 1.0h-5.0a1.0 1.0 0 0 1 -1.0 -1.0v-5.0a1.0 1.0 0 0 1 1.0 -1.0Z"
+      )
+    }
+  }
+
   /** Lucide `mountain`. */
-  val Mountain: ImageVector by lazy { lucide("Mountain") { stroke("m8 3 4 8 5-5 5 15H2L8 3z") } }
+  val Mountain: ImageVector by lazy {
+    lucide("Mountain") {
+      stroke("m8 3 4 8 5-5 5 15H2L8 3z")
+    }
+  }
+
+  /** Lucide `panel-top`. */
+  val PanelTop: ImageVector by lazy {
+    lucide("PanelTop") {
+      stroke(
+        "M5.0 3.0h14.0a2.0 2.0 0 0 1 2.0 2.0v14.0a2.0 2.0 0 0 1 -2.0 2.0h-14.0a2.0 2.0 0 0 1 -2.0 -2.0v-14.0a2.0 2.0 0 0 1 2.0 -2.0Z"
+      )
+      stroke("M3 9h18")
+    }
+  }
 
   /** Lucide `pin`. */
   val Pin: ImageVector by lazy {

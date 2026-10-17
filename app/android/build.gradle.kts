@@ -36,6 +36,7 @@ dependencies {
   implementation(project(":features:settings:ui"))
   implementation(project(":surfaces:tile"))
   implementation(project(":surfaces:widget"))
+  implementation(project(":features:bikes:api"))
   implementation(project(":features:bikes:impl"))
   implementation(project(":features:bikes:ui"))
   implementation(libs.circuit.foundation)

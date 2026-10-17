@@ -1,5 +1,7 @@
 package com.r0adkll.cassette.bikes.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,23 +14,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.ComponentRow
 import com.r0adkll.cassette.common.compose.components.IconCircleButton
 import com.r0adkll.cassette.common.compose.components.Kicker
+import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.StatusBlock
 import com.r0adkll.cassette.common.compose.components.StatusBlockMeta
 import com.r0adkll.cassette.common.compose.components.StatusBlockText
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.screens.BikeScreen
+import com.r0adkll.cassette.settings.api.Tip
 import com.slack.circuit.codegen.annotations.CircuitInject
 import dev.zacsweers.metro.AppScope
 
@@ -103,8 +110,78 @@ private fun LoadedBike(state: BikeUiState.Loaded) {
     }
     Spacer(Modifier.height(10.dp))
     RefreshButton(state.refresh, onClick = { state.eventSink(BikeEvent.Refresh) })
+    state.tip?.let { tip ->
+      Spacer(Modifier.height(10.dp))
+      TipPanel(
+        tip,
+        onAccept = { state.eventSink(BikeEvent.AcceptTip(tip)) },
+        onDismiss = { state.eventSink(BikeEvent.DismissTip(tip)) },
+      )
+    }
   }
 }
+
+/** One quiet suggestion: what it is, why, and a way to say no. */
+@Composable
+private fun TipPanel(tip: Tip, onAccept: () -> Unit, onDismiss: () -> Unit) {
+  val colors = CassetteTheme.colors
+  val (icon, title, body, action) =
+    when (tip) {
+      Tip.Widget ->
+        TipCopy(
+          LucideIcons.LayoutGrid,
+          "Add a widget",
+          "See your batteries on the home screen without opening the app.",
+          "Add widget",
+        )
+      Tip.QuickSettingsTile ->
+        TipCopy(
+          LucideIcons.PanelTop,
+          "Add the Quick Settings tile",
+          "Check the weakest battery from the shade, and tap it to refresh.",
+          "Add tile",
+        )
+    }
+  Panel {
+    Row(
+      Modifier.padding(top = 4.dp),
+      verticalAlignment = Alignment.Top,
+      horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+      Box(
+        Modifier.size(40.dp).clip(CircleShape).background(colors.track),
+        contentAlignment = Alignment.Center,
+      ) {
+        Icon(icon, null, tint = colors.text, modifier = Modifier.size(20.dp))
+      }
+      Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Kicker("Tip")
+        Text(title, style = CassetteTheme.type.itemTitle, color = colors.text)
+        Text(body, style = CassetteTheme.type.bodySmall, color = colors.muted)
+      }
+      Icon(
+        LucideIcons.X,
+        contentDescription = "Dismiss",
+        tint = colors.muted,
+        modifier =
+          Modifier.size(32.dp).clip(CircleShape).clickable(onClick = onDismiss).padding(7.dp),
+      )
+    }
+    CassetteButton(
+      action,
+      onClick = onAccept,
+      primary = false,
+      modifier = Modifier.padding(bottom = 4.dp),
+    )
+  }
+}
+
+private data class TipCopy(
+  val icon: ImageVector,
+  val title: String,
+  val body: String,
+  val action: String,
+)
 
 @Composable
 private fun RefreshButton(refresh: RefreshButton, onClick: () -> Unit) {

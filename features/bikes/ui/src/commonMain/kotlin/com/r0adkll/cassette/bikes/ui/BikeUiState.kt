@@ -1,6 +1,7 @@
 package com.r0adkll.cassette.bikes.ui
 
 import com.r0adkll.cassette.common.compose.theme.StatusTone
+import com.r0adkll.cassette.settings.api.Tip
 import com.slack.circuit.runtime.CircuitUiEvent
 import com.slack.circuit.runtime.CircuitUiState
 
@@ -20,6 +21,8 @@ sealed interface BikeUiState : CircuitUiState {
     val status: BikeStatus,
     val components: List<ComponentRowModel>,
     val refresh: RefreshButton = RefreshButton.Idle,
+    /** At most one tip at a time, under the components. */
+    val tip: Tip? = null,
     override val eventSink: (BikeEvent) -> Unit,
   ) : BikeUiState
 }
@@ -59,4 +62,9 @@ sealed interface BikeEvent : CircuitUiEvent {
   data object Refresh : BikeEvent
 
   data object AddBike : BikeEvent
+
+  /** The tip's button: ask the system to add it. Either way the tip is done. */
+  data class AcceptTip(val tip: Tip) : BikeEvent
+
+  data class DismissTip(val tip: Tip) : BikeEvent
 }

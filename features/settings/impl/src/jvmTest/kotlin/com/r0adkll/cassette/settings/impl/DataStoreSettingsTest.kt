@@ -3,6 +3,7 @@ package com.r0adkll.cassette.settings.impl
 import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.data.ble.ScanProfile
 import com.r0adkll.cassette.settings.api.NotificationSettings
+import com.r0adkll.cassette.settings.api.Tip
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -41,5 +42,11 @@ class DataStoreSettingsTest {
 
     settings.setPinnedBike(null)
     assertNull(settings.pinnedBike.first())
+
+    assertEquals(emptySet(), settings.dismissedTips.first())
+    settings.dismissTip(Tip.Widget)
+    settings.dismissTip(Tip.QuickSettingsTile)
+    settings.dismissTip(Tip.Widget)
+    assertEquals(setOf(Tip.Widget, Tip.QuickSettingsTile), settings.dismissedTips.first())
   }
 }

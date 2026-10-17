@@ -21,6 +21,7 @@ import com.r0adkll.cassette.bikes.ui.picker.BikePicker
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.compose.theme.StatusTone
 import com.r0adkll.cassette.core.BikeType
+import com.r0adkll.cassette.settings.api.Tip
 import java.io.File
 import kotlin.test.Test
 import org.jetbrains.skia.EncodedImageFormat
@@ -97,6 +98,53 @@ class ScreenRenderTest {
     for (dark in listOf(true, false)) {
       render("component-${if (dark) "dark" else "light"}", dark) {
         ComponentUi(ComponentUiState(model) {})
+      }
+    }
+  }
+
+  @Test
+  fun bikeWithTip() {
+    val rows =
+      listOf(
+        ComponentRowModel(
+          1,
+          "RD",
+          "Rear derailleur",
+          "Reported · fw 2.55.8",
+          "78%",
+          0.78f,
+          StatusTone.Good,
+        ),
+        ComponentRowModel(
+          2,
+          "FD",
+          "Front derailleur",
+          "Estimated from 7.40 V",
+          "≈11%",
+          0.11f,
+          StatusTone.Low,
+        ),
+      )
+    for (tip in Tip.entries) {
+      for (dark in listOf(true, false)) {
+        render("bike-tip-${tip.name.lowercase()}-${if (dark) "dark" else "light"}", dark) {
+          BikeUi(
+            BikeUiState.Loaded(
+              bikeId = 1,
+              name = "Road bike",
+              position = "1 OF 1",
+              status =
+                BikeStatus(
+                  StatusTone.Low,
+                  "Charge soon.",
+                  "Front derailleur at ≈11%.",
+                  "Seen 2 min ago",
+                ),
+              components = rows,
+              tip = tip,
+            ) {}
+          )
+        }
       }
     }
   }

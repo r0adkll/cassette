@@ -9,6 +9,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.r0adkll.cassette.bikes.api.BikeOverview
 import com.r0adkll.cassette.bikes.api.BikeRepository
+import com.r0adkll.cassette.bikes.api.HomeSurfaces
 import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.capture.api.RefreshProgress
 import com.r0adkll.cassette.common.screens.AddBikeScreen
@@ -16,6 +17,8 @@ import com.r0adkll.cassette.common.screens.BikeScreen
 import com.r0adkll.cassette.common.screens.ComponentScreen
 import com.r0adkll.cassette.common.screens.SettingsScreen
 import com.r0adkll.cassette.core.BikeId
+import com.r0adkll.cassette.settings.api.CassetteSettings
+import com.r0adkll.cassette.settings.api.Tip
 import com.slack.circuit.codegen.annotations.CircuitInject
 import com.slack.circuit.retained.collectAsRetainedState
 import com.slack.circuit.runtime.Navigator
@@ -36,6 +39,8 @@ class BikePresenter(
   private val repository: BikeRepository,
   private val capture: CaptureController,
   private val clock: Clock,
+  private val settings: CassetteSettings,
+  private val surfaces: HomeSurfaces,
 ) : Presenter<BikeUiState> {
 
   @Composable
@@ -58,11 +63,30 @@ class BikePresenter(
 
     var refresh by remember { mutableStateOf<RefreshButton>(RefreshButton.Idle) }
 
+    val dismissed by settings.dismissedTips.collectAsRetainedState(initial = null)
+    val tip =
+      remember(dismissed) {
+        val done = dismissed ?: return@remember null
+        when {
+          Tip.Widget !in done && surfaces.canOfferWidget() -> Tip.Widget
+          Tip.QuickSettingsTile !in done && surfaces.canOfferTile() -> Tip.QuickSettingsTile
+          else -> null
+        }
+      }
+
     val eventSink: (BikeEvent) -> Unit = { event ->
       when (event) {
         is BikeEvent.OpenComponent -> navigator.goTo(ComponentScreen(event.id))
         BikeEvent.OpenSettings -> navigator.goTo(SettingsScreen)
         BikeEvent.AddBike -> navigator.goTo(AddBikeScreen)
+        is BikeEvent.AcceptTip -> {
+          when (event.tip) {
+            Tip.Widget -> surfaces.requestWidget()
+            Tip.QuickSettingsTile -> surfaces.requestTile()
+          }
+          scope.launch { settings.dismissTip(event.tip) }
+        }
+        is BikeEvent.DismissTip -> scope.launch { settings.dismissTip(event.tip) }
         BikeEvent.Refresh ->
           if (refresh !is RefreshButton.Scanning) {
             scope.launch {
@@ -81,7 +105,7 @@ class BikePresenter(
 
     val loaded = overview ?: return BikeUiState.Loading(eventSink)
     val bike = loaded.overview ?: return BikeUiState.Empty(eventSink)
-    return bike.toLoaded(now, eventSink).copy(refresh = refresh)
+    return bike.toLoaded(now, eventSink).copy(refresh = refresh, tip = tip)
   }
 
   /** Wraps the nullable overview so "loading" and "no bike" are different states. */

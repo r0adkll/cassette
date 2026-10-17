@@ -31,12 +31,23 @@ interface CassetteSettings {
 
   suspend fun setOnboarded()
 
+  /** Tips on the bike screen that have been acted on or dismissed; they don't come back. */
+  val dismissedTips: Flow<Set<Tip>>
+
+  suspend fun dismissTip(tip: Tip)
+
   /** What background capture has been doing, for Diagnostics. */
   val captureHealth: Flow<CaptureHealth>
 
   suspend fun recordArm(result: String, at: Instant)
 
   suspend fun recordDelivery(readings: Int, at: Instant)
+}
+
+/** The bike screen's tips, offered after onboarding (decision 0011). */
+enum class Tip {
+  Widget,
+  QuickSettingsTile,
 }
 
 /** One switch per notification channel (decision 0011). */
