@@ -5,6 +5,13 @@ All notable changes to Cassette are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Builds uploaded to Drop are the R8-optimised `internal` build type (same app id, key and icon as the
+  debug build), built in a separate, non-required CI job after the compile passes. The Wear app gets
+  the same build type, kept as a CI artifact so it pairs with the phone's Drop build. Release builds
+  use R8 too.
+
 ### Added
 
 - Wear complications (decision 0013): the default bike's weakest component as a ranged value ("78",

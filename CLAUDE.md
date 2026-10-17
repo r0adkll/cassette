@@ -12,7 +12,8 @@ ported. Don't build new features on the POC.
 
 ## Build
 
-- `./gradlew :app:android:assembleDebug`: the app (currently the design-system gallery).
+- `./gradlew :app:android:assembleDebug`: the app. `assembleInternal` (here and in `:app:wear`) is the
+  R8-optimised build CI uploads to Drop (same app id and key as debug); check R8 changes on a device with it.
 - `./gradlew :common:compose:jvmTest`: renders the gallery to `common/compose/build/gallery/*.png` in every
   status state, light and dark. Feature UI modules render their screens to `build/screens/` the same way
   (e.g. `:features:bikes:ui:jvmTest`). Use them to check UI without a device; CI uploads both.
