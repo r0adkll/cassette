@@ -37,6 +37,7 @@ val StatusTone.icon: ImageVector
             StatusTone.Low -> LucideIcons.BatteryLow
             StatusTone.Critical -> LucideIcons.BatteryWarning
             StatusTone.Stale -> LucideIcons.History
+            StatusTone.Unknown -> LucideIcons.CircleHelp
         }
 
 /** The word that always accompanies a status colour, so colour is never the only signal. */
@@ -47,6 +48,7 @@ val StatusTone.word: String
             StatusTone.Low -> "LOW"
             StatusTone.Critical -> "CHARGE NOW"
             StatusTone.Stale -> "OLD"
+            StatusTone.Unknown -> "UNKNOWN"
         }
 
 /** Content colour inside a [StatusBlock]. */

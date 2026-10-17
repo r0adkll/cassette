@@ -23,9 +23,17 @@ include(":app:android")
 
 include(":common:compose")
 
+include(":common:screens")
+
 include(":core")
 
 include(":data:db")
+
+include(":features:bikes:api")
+
+include(":features:bikes:impl")
+
+include(":features:bikes:ui")
 
 include(":protocol")
 

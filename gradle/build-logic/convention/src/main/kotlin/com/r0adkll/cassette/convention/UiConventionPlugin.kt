@@ -20,8 +20,18 @@ class UiConventionPlugin : Plugin<Project> {
             extensions.configure<KotlinMultiplatformExtension> {
                 sourceSets["commonMain"].dependencies {
                     implementation(project(":common:compose"))
+                    implementation(project(":common:screens"))
                     implementation(libs.findLibrary("circuit-runtime").get())
                     implementation(libs.findLibrary("circuit-foundation").get())
+                    implementation(libs.findLibrary("circuit-retained").get())
+                    implementation(libs.findLibrary("circuit-codegen-annotations").get())
+                    implementation(libs.findLibrary("metro-runtime").get())
+                }
+                sourceSets["commonTest"].dependencies {
+                    implementation(libs.findLibrary("kotlin-test").get())
+                    implementation(libs.findLibrary("circuit-test").get())
+                    implementation(libs.findLibrary("turbine").get())
+                    implementation(libs.findLibrary("kotlinx-coroutines-test").get())
                 }
             }
         }

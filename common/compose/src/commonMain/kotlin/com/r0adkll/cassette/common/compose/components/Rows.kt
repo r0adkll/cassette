@@ -161,14 +161,16 @@ private fun thickFill(tone: StatusTone) =
             StatusTone.Good -> androidx.compose.ui.graphics.Color(0xFF1D5C38)
             StatusTone.Low -> androidx.compose.ui.graphics.Color(0xFF6B4800)
             StatusTone.Critical -> androidx.compose.ui.graphics.Color(0xFF8A0019)
-            StatusTone.Stale -> androidx.compose.ui.graphics.Color(0xFF2A2A2F)
+            StatusTone.Stale,
+            StatusTone.Unknown -> androidx.compose.ui.graphics.Color(0xFF2A2A2F)
         }
     } else {
         when (tone) {
             StatusTone.Good -> androidx.compose.ui.graphics.Color(0xFFBFE8CC)
             StatusTone.Low -> androidx.compose.ui.graphics.Color(0xFFFFE0A3)
             StatusTone.Critical -> androidx.compose.ui.graphics.Color(0xFFFFC7CE)
-            StatusTone.Stale -> androidx.compose.ui.graphics.Color(0xFFE2E2DE)
+            StatusTone.Stale,
+            StatusTone.Unknown -> androidx.compose.ui.graphics.Color(0xFFE2E2DE)
         }
     }
 

@@ -13,6 +13,8 @@ enum class StatusTone {
     Critical,
     /** Not seen for long enough that the reading may be out of date. */
     Stale,
+    /** No reading yet, or the component reports "unknown". */
+    Unknown,
 }
 
 /**
@@ -43,7 +45,8 @@ data class CassetteColors(
             StatusTone.Good -> good
             StatusTone.Low -> low
             StatusTone.Critical -> critical
-            StatusTone.Stale -> stale
+            StatusTone.Stale,
+            StatusTone.Unknown -> stale
         }
 
     /** Fill and content colours for the full-width status block. */
@@ -52,7 +55,8 @@ data class CassetteColors(
             StatusTone.Good -> BlockColors(Color(0xFF2DB36A), Color(0xFF03200F))
             StatusTone.Low -> BlockColors(Color(0xFFFFB020), Color(0xFF1A1200))
             StatusTone.Critical -> BlockColors(brand, Color.White)
-            StatusTone.Stale -> BlockColors(panel, muted, outline = line)
+            StatusTone.Stale,
+            StatusTone.Unknown -> BlockColors(panel, muted, outline = line)
         }
 }
 
