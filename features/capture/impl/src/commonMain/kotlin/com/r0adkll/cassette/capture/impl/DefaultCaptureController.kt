@@ -1,7 +1,10 @@
 package com.r0adkll.cassette.capture.impl
 
 import com.r0adkll.cassette.capture.api.CaptureController
+import com.r0adkll.cassette.capture.api.CaptureEvent
+import com.r0adkll.cassette.capture.api.CaptureLog
 import com.r0adkll.cassette.capture.api.RefreshProgress
+import com.r0adkll.cassette.capture.api.Sighting
 import com.r0adkll.cassette.data.ble.AdvertScanner
 import com.r0adkll.cassette.data.ble.ArmResult
 import com.r0adkll.cassette.data.ble.BackgroundDeliveryHandler
@@ -32,6 +35,7 @@ class DefaultCaptureController(
   private val refresher: BatteryRefresher,
   private val db: CassetteDatabase,
   private val settings: CassetteSettings,
+  private val log: CaptureLog,
   private val clock: Clock,
 ) : CaptureController {
 
@@ -91,7 +95,9 @@ class DefaultCaptureController(
     val enabled = settings.backgroundCapture.first()
     if (!hasBike || !enabled) {
       scanner.stopBackground()
-      settings.recordArm(if (!hasBike) "Off: no bike yet" else "Off in Settings", clock.now())
+      val why = if (!hasBike) "Off: no bike yet" else "Off in Settings"
+      settings.recordArm(why, clock.now())
+      log.append(CaptureEvent.Armed(clock.now().toEpochMilliseconds(), "", why, reason, ok = false))
       return
     }
     val profile = settings.scanProfile.first()
@@ -104,11 +110,37 @@ class DefaultCaptureController(
         is ArmResult.Failed -> "Not armed: scan error ${result.code}"
       }
     settings.recordArm("$description · $reason", clock.now())
+    log.append(
+      CaptureEvent.Armed(
+        clock.now().toEpochMilliseconds(),
+        profile.name,
+        description,
+        reason,
+        ok = result == ArmResult.Armed,
+      )
+    )
   }
 
   /** One background wake: record what was heard and read batteries that are due. */
-  suspend fun onBackgroundDelivery(readings: List<AxsReading>) {
+  suspend fun onBackgroundDelivery(readings: List<AxsReading>, errorCode: Int = 0) {
     settings.recordDelivery(readings.size, clock.now())
+    log.append(
+      CaptureEvent.Delivery(
+        at = clock.now().toEpochMilliseconds(),
+        sightings =
+          readings.map {
+            Sighting(
+              it.key,
+              it.frame.name,
+              it.timestampMillis,
+              it.rssi,
+              it.manufacturerHex,
+              it.serviceDataHex,
+            )
+          },
+        error = errorCode,
+      )
+    )
     val heard = recorder.record(readings)
     refresher.refresh(heard, CaptureMode.Background)
   }
@@ -120,10 +152,14 @@ class DefaultCaptureController(
 
 @ContributesBinding(AppScope::class)
 @Inject
-class CaptureBackgroundDeliveryHandler(private val controller: DefaultCaptureController) :
-  BackgroundDeliveryHandler {
-  override suspend fun onDelivery(
-    readings: List<com.r0adkll.cassette.protocol.AxsReading>,
-    errorCode: Int,
-  ) = controller.onBackgroundDelivery(readings)
+class CaptureBackgroundDeliveryHandler(
+  private val controller: DefaultCaptureController,
+  private val log: CaptureLog,
+  private val clock: Clock,
+) : BackgroundDeliveryHandler {
+  override suspend fun onDelivery(readings: List<AxsReading>, errorCode: Int) =
+    controller.onBackgroundDelivery(readings, errorCode)
+
+  override suspend fun onBudgetExceeded() =
+    log.append(CaptureEvent.BudgetExceeded(clock.now().toEpochMilliseconds()))
 }

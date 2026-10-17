@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.ChoiceChips
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
@@ -67,6 +68,12 @@ fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
             ?: "Add a bike first",
         icon = LucideIcons.Cpu,
         onClick = if (state.bike != null) ({ sink(DiagnosticsEvent.OpenHubTables) }) else null,
+      )
+      SettingsRow(
+        "Ride tests",
+        subtitle = "Capture log: ${state.logEvents} events",
+        icon = LucideIcons.Route,
+        onClick = { sink(DiagnosticsEvent.OpenRideTests) },
         divider = false,
       )
     }
@@ -98,8 +105,14 @@ fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
         divider = false,
       )
     }
+    CassetteButton(
+      if (state.sharing) "Preparing…" else "Share diagnostics",
+      onClick = { sink(DiagnosticsEvent.Share) },
+      icon = LucideIcons.Share,
+    )
     Text(
-      "Share diagnostics (a zip of raw captures) and ride tests are still in the proof-of-concept app.",
+      "A zip through the share sheet: the capture log, a copy of the database and device info. " +
+        "Nothing is uploaded.",
       style = CassetteTheme.type.bodySmall,
       color = colors.muted,
     )

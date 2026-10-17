@@ -15,6 +15,10 @@ All notable changes to Cassette are documented here. The format follows
   with year-long retention and daily down-sampling, and alert state.
 - `scripts/ktfmt`: the ktfmt CLI, the only formatter (CI and the pre-push hook), covering build-logic.
   Google style: 2-space indents.
+- Capture log: background arms, wakes (with the raw adverts heard), GATT reads (with timing and the
+  hub table's bytes) and wakes that ran out of time, kept as capped JSON lines. Ride tests mark
+  sessions in it and summarise wake rate, gaps, read success and phone battery used (ported from the
+  POC). "Share diagnostics" zips the log, a database snapshot and device info into the share sheet.
 - Settings: default bike (pin one, or follow the most recently seen), background capture on/off,
   notification switches, diagnostics, licences. Stored with DataStore Preferences.
 - Diagnostics: capture health (armed, last background wake, hub read), live adverts with raw bytes and

@@ -67,3 +67,21 @@ internal object Fixtures {
 
   fun bytes(hex: String) = hex.split(" ").map { it.toInt(16).toByte() }.toByteArray()
 }
+
+internal class InMemoryCaptureLog : com.r0adkll.cassette.capture.api.CaptureLog {
+  val list =
+    kotlinx.coroutines.flow.MutableStateFlow(
+      emptyList<com.r0adkll.cassette.capture.api.CaptureEvent>()
+    )
+  override val events = list
+
+  override suspend fun append(event: com.r0adkll.cassette.capture.api.CaptureEvent) {
+    list.value = list.value + event
+  }
+
+  override suspend fun clear() {
+    list.value = emptyList()
+  }
+
+  override suspend fun export() = list.value.joinToString("\n")
+}

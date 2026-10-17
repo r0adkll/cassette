@@ -3,6 +3,7 @@ package com.r0adkll.cassette.app.di
 import android.app.Application
 import app.cash.sqldelight.db.SqlDriver
 import com.r0adkll.cassette.capture.api.CaptureController
+import com.r0adkll.cassette.capture.impl.CaptureLogFile
 import com.r0adkll.cassette.core.CassetteDispatchers
 import com.r0adkll.cassette.data.ble.BackgroundDeliveryHandler
 import com.r0adkll.cassette.data.db.createAndroidDriver
@@ -34,6 +35,10 @@ interface AndroidAppGraph {
   @Provides
   @SingleIn(AppScope::class)
   fun provideSqlDriver(application: Application): SqlDriver = createAndroidDriver(application)
+
+  @Provides
+  fun provideCaptureLogFile(application: Application): CaptureLogFile =
+    CaptureLogFile(application.filesDir.resolve("capture-log.jsonl").absolutePath)
 
   @Provides
   fun provideSettingsFile(application: Application): SettingsFile =

@@ -19,6 +19,8 @@ import com.slack.circuit.runtime.screen.StaticScreen
 
 @Parcelize data object LiveAdvertsScreen : ParcelableScreen
 
+@Parcelize data object RideTestsScreen : ParcelableScreen
+
 /** The hub tables of [bikeId]'s hub, read on open. */
 @Parcelize data class HubTablesScreen(val bikeId: Long) : ParcelableScreen
 

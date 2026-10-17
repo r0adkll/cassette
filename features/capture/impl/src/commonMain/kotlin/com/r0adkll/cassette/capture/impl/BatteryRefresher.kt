@@ -1,11 +1,16 @@
 package com.r0adkll.cassette.capture.impl
 
+import com.r0adkll.cassette.capture.api.CaptureEvent
+import com.r0adkll.cassette.capture.api.CaptureLog
+import com.r0adkll.cassette.capture.api.GattKind
+import com.r0adkll.cassette.capture.api.GattOutcome
 import com.r0adkll.cassette.data.ble.BATTERY_LEVEL_CHARACTERISTIC
 import com.r0adkll.cassette.data.ble.GattClient
 import com.r0adkll.cassette.data.ble.GattResult
 import com.r0adkll.cassette.data.db.CassetteDatabase
 import com.r0adkll.cassette.protocol.FrameType
 import com.r0adkll.cassette.protocol.SystemBatteryTable
+import com.r0adkll.cassette.protocol.toHex
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
@@ -13,6 +18,7 @@ import kotlin.time.Clock
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -37,6 +43,7 @@ class BatteryRefresher(
   private val recorder: CaptureRecorder,
   private val gatt: GattClient,
   private val db: CassetteDatabase,
+  private val log: CaptureLog,
   private val clock: Clock,
 ) {
   private val lastAttempt = mutableMapOf<Long, kotlin.time.Instant>()
@@ -79,8 +86,20 @@ class BatteryRefresher(
               mode == CaptureMode.Live
             },
           )
-        val values = (gatt.read(address, wanted) as? GattResult.Values)?.values ?: continue
-        val table = values[SystemBatteryTable.CHARACTERISTIC]?.let(SystemBatteryTable::parse)
+        val started = clock.now()
+        val values = (gatt.read(address, wanted) as? GattResult.Values)?.values
+        val raw = values?.get(SystemBatteryTable.CHARACTERISTIC)
+        val table = raw?.let(SystemBatteryTable::parse)
+        logRead(
+          component.key,
+          GattKind.HubTable,
+          mode,
+          started,
+          values,
+          table != null,
+          raw?.toHex(),
+        )
+        if (values == null) continue
         if (table == null) {
           // Answered, but no table: not a hub; don't keep connecting.
           lock.withLock { unsupported += component.id.value }
@@ -91,13 +110,15 @@ class BatteryRefresher(
         recorder.applyHubTable(item.bike, table, versions, clock.now())
         hubRead = true
       } else {
+        val started = clock.now()
         val values =
           (gatt.read(address, listOf(BATTERY_LEVEL_CHARACTERISTIC)) as? GattResult.Values)?.values
-            ?: continue
         val level =
-          values[BATTERY_LEVEL_CHARACTERISTIC]?.firstOrNull()?.toInt()?.and(0xFF)?.takeIf {
+          values?.get(BATTERY_LEVEL_CHARACTERISTIC)?.firstOrNull()?.toInt()?.and(0xFF)?.takeIf {
             it <= 100
           }
+        logRead(component.key, GattKind.BatteryLevel, mode, started, values, level != null, null)
+        if (values == null) continue
         if (level == null) {
           lock.withLock { unsupported += component.id.value }
           continue
@@ -107,6 +128,34 @@ class BatteryRefresher(
       }
     }
     return RefreshOutcome(hubRead, powerMeterRead)
+  }
+
+  private suspend fun logRead(
+    key: String,
+    kind: GattKind,
+    mode: CaptureMode,
+    started: Instant,
+    values: Map<String, ByteArray>?,
+    parsed: Boolean,
+    hex: String?,
+  ) {
+    val outcome =
+      when {
+        values == null -> GattOutcome.Failed
+        !parsed -> GattOutcome.Unsupported
+        else -> GattOutcome.Ok
+      }
+    log.append(
+      CaptureEvent.Gatt(
+        at = clock.now().toEpochMilliseconds(),
+        key = key,
+        kind = kind,
+        background = mode == CaptureMode.Background,
+        durationMillis = (clock.now() - started).inWholeMilliseconds,
+        outcome = outcome,
+        hex = hex,
+      )
+    )
   }
 
   /** Guards concurrent deliveries and backs off after a failed read. */

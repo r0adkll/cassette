@@ -12,6 +12,7 @@ kotlin {
       implementation(project(":data:db"))
       implementation(project(":features:settings:api"))
       implementation(libs.metro.runtime)
+      implementation(libs.okio)
     }
     commonTest.dependencies {
       implementation(libs.kotlin.test)
