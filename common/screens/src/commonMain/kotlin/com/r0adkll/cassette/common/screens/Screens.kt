@@ -15,5 +15,12 @@ import com.slack.circuit.runtime.screen.StaticScreen
 
 @Parcelize data object DiagnosticsScreen : ParcelableScreen
 
+@Parcelize data object LicencesScreen : ParcelableScreen
+
+@Parcelize data object LiveAdvertsScreen : ParcelableScreen
+
+/** The hub tables of [bikeId]'s hub, read on open. */
+@Parcelize data class HubTablesScreen(val bikeId: Long) : ParcelableScreen
+
 /** The design-system gallery, kept as a developer screen. No presenter. */
 @Parcelize data object DesignGalleryScreen : StaticScreen, ParcelableScreen

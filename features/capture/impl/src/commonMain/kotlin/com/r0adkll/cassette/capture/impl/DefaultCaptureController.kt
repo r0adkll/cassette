@@ -5,9 +5,9 @@ import com.r0adkll.cassette.capture.api.RefreshProgress
 import com.r0adkll.cassette.data.ble.AdvertScanner
 import com.r0adkll.cassette.data.ble.ArmResult
 import com.r0adkll.cassette.data.ble.BackgroundDeliveryHandler
-import com.r0adkll.cassette.data.ble.ScanProfile
 import com.r0adkll.cassette.data.db.CassetteDatabase
 import com.r0adkll.cassette.protocol.AxsReading
+import com.r0adkll.cassette.settings.api.CassetteSettings
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
@@ -18,6 +18,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
@@ -30,6 +31,7 @@ class DefaultCaptureController(
   private val recorder: CaptureRecorder,
   private val refresher: BatteryRefresher,
   private val db: CassetteDatabase,
+  private val settings: CassetteSettings,
   private val clock: Clock,
 ) : CaptureController {
 
@@ -86,27 +88,33 @@ class DefaultCaptureController(
 
   override suspend fun ensureBackgroundCapture(reason: String) {
     val hasBike = db.bikeQueries.selectAll().executeAsList().isNotEmpty()
-    if (!hasBike) {
+    val enabled = settings.backgroundCapture.first()
+    if (!hasBike || !enabled) {
       scanner.stopBackground()
+      settings.recordArm(if (!hasBike) "Off: no bike yet" else "Off in Settings", clock.now())
       return
     }
-    val result = scanner.startBackground(BACKGROUND_PROFILE)
-    if (result != ArmResult.Armed)
-      println("CassetteScan: background scan not armed ($reason): $result")
+    val profile = settings.scanProfile.first()
+    val result = scanner.startBackground(profile)
+    val description =
+      when (result) {
+        ArmResult.Armed -> "Armed (${profile.name})"
+        ArmResult.BluetoothOff -> "Not armed: Bluetooth is off"
+        ArmResult.NoPermission -> "Not armed: Nearby devices not allowed"
+        is ArmResult.Failed -> "Not armed: scan error ${result.code}"
+      }
+    settings.recordArm("$description · $reason", clock.now())
   }
 
   /** One background wake: record what was heard and read batteries that are due. */
   suspend fun onBackgroundDelivery(readings: List<AxsReading>) {
+    settings.recordDelivery(readings.size, clock.now())
     val heard = recorder.record(readings)
     refresher.refresh(heard, CaptureMode.Background)
   }
 
   private companion object {
     val REFRESH_LENGTH = 60.seconds
-    /**
-     * Validated on two rides (no gaps over 46 s); ride tests compare the others (decision 0009).
-     */
-    val BACKGROUND_PROFILE = ScanProfile.AllLowPower
   }
 }
 

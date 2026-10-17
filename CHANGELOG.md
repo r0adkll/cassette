@@ -15,6 +15,11 @@ All notable changes to Cassette are documented here. The format follows
   with year-long retention and daily down-sampling, and alert state.
 - `scripts/ktfmt`: the ktfmt CLI, the only formatter (CI and the pre-push hook), covering build-logic.
   Google style: 2-space indents.
+- Settings: default bike (pin one, or follow the most recently seen), background capture on/off,
+  notification switches, diagnostics, licences. Stored with DataStore Preferences.
+- Diagnostics: capture health (armed, last background wake, hub read), live adverts with raw bytes and
+  frame filters, the hub's battery and firmware tables (decoded and raw), scan profile, and developer
+  actions (load the sample bike, remove a bike).
 - Component screen: the big value and status, voltage, shift count, firmware, model, serial and last
   read, and a 30-day / 90-day / 1-year history chart that marks charges and coin-cell replacements.
 - Add a bike: wake it, Cassette finds the hub and reads its component list, then name and type it,

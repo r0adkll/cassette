@@ -10,11 +10,13 @@ kotlin {
       api(project(":features:capture:api"))
       implementation(project(":data:ble"))
       implementation(project(":data:db"))
+      implementation(project(":features:settings:api"))
       implementation(libs.metro.runtime)
     }
     commonTest.dependencies {
       implementation(libs.kotlin.test)
       implementation(libs.kotlinx.coroutines.test)
+      implementation(project(":features:settings:test"))
       implementation(libs.turbine)
     }
   }

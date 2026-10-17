@@ -6,6 +6,7 @@ import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.core.CassetteDispatchers
 import com.r0adkll.cassette.data.ble.BackgroundDeliveryHandler
 import com.r0adkll.cassette.data.db.createAndroidDriver
+import com.r0adkll.cassette.settings.impl.SettingsFile
 import com.slack.circuit.foundation.Circuit
 import com.slack.circuit.runtime.presenter.Presenter
 import com.slack.circuit.runtime.ui.Ui
@@ -33,6 +34,10 @@ interface AndroidAppGraph {
   @Provides
   @SingleIn(AppScope::class)
   fun provideSqlDriver(application: Application): SqlDriver = createAndroidDriver(application)
+
+  @Provides
+  fun provideSettingsFile(application: Application): SettingsFile =
+    SettingsFile(application.filesDir.resolve("settings.preferences_pb").absolutePath)
 
   @Provides
   @SingleIn(AppScope::class)

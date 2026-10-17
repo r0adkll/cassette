@@ -15,6 +15,7 @@ import com.r0adkll.cassette.protocol.BatteryStatus
 import com.r0adkll.cassette.protocol.ComponentKind
 import com.r0adkll.cassette.protocol.FrameType
 import com.r0adkll.cassette.protocol.SystemBatteryTable
+import com.r0adkll.cassette.settings.test.InMemorySettings
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -162,7 +163,8 @@ class CaptureTest {
     bikeWithHub()
     gatt.values = mapOf(SystemBatteryTable.CHARACTERISTIC to Fixtures.RED_TABLE)
     val scanner = FakeScanner()
-    val controller = DefaultCaptureController(scanner, recorder, refresher, db, clock)
+    val controller =
+      DefaultCaptureController(scanner, recorder, refresher, db, InMemorySettings(), clock)
 
     controller.refresh().test {
       scanner.adverts.emit(rdStatus())
@@ -177,7 +179,8 @@ class CaptureTest {
   @Test
   fun backgroundCaptureNeedsABike() = runTest {
     val scanner = FakeScanner()
-    val controller = DefaultCaptureController(scanner, recorder, refresher, db, clock)
+    val controller =
+      DefaultCaptureController(scanner, recorder, refresher, db, InMemorySettings(), clock)
     controller.ensureBackgroundCapture("test")
     assertNull(scanner.armed)
 
@@ -241,4 +244,22 @@ class CaptureTest {
       serviceDataHex = null,
       modelId = 7,
     )
+
+  @Test
+  fun backgroundCaptureFollowsSettings() = runTest {
+    bikeWithHub()
+    val scanner = FakeScanner()
+    val settings = InMemorySettings()
+    val controller = DefaultCaptureController(scanner, recorder, refresher, db, settings, clock)
+
+    settings.setScanProfile(com.r0adkll.cassette.data.ble.ScanProfile.Batched30s)
+    controller.ensureBackgroundCapture("test")
+    assertEquals(com.r0adkll.cassette.data.ble.ScanProfile.Batched30s, scanner.armed)
+    assertTrue(settings.captureHealth.value.armResult!!.startsWith("Armed"))
+
+    settings.setBackgroundCapture(false)
+    controller.ensureBackgroundCapture("test")
+    assertNull(scanner.armed)
+    assertEquals("Off in Settings", settings.captureHealth.value.armResult)
+  }
 }
