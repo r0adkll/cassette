@@ -14,6 +14,7 @@ kotlin {
     }
     androidMain.dependencies {
       implementation(libs.androidx.core.ktx)
+      implementation(project(":common:screens"))
       implementation(libs.androidx.work.runtime)
     }
     commonTest.dependencies {

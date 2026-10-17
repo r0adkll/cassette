@@ -10,5 +10,6 @@ kotlin {
       api(project(":core"))
       api(libs.circuit.runtime)
     }
+    commonTest.dependencies { implementation(libs.kotlin.test) }
   }
 }

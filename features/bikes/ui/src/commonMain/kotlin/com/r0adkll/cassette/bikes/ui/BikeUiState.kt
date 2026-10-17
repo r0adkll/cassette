@@ -13,6 +13,7 @@ sealed interface BikeUiState : CircuitUiState {
   data class Empty(override val eventSink: (BikeEvent) -> Unit) : BikeUiState
 
   data class Loaded(
+    val bikeId: Long,
     val name: String,
     /** "1 OF 2" */
     val position: String,

@@ -18,6 +18,7 @@ dependencies {
   implementation(project(":features:bikes:api"))
   implementation(project(":features:bikes:ui"))
   implementation(project(":common:compose"))
+  implementation(project(":common:screens"))
   implementation(libs.androidx.glance.appwidget)
   // The shared UI state types are Circuit states.
   implementation(libs.circuit.runtime)

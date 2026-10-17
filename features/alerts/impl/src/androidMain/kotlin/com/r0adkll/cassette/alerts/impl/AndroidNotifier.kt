@@ -13,6 +13,8 @@ import com.r0adkll.cassette.alerts.api.BatteryAlert
 import com.r0adkll.cassette.alerts.api.NotSeenReminder
 import com.r0adkll.cassette.alerts.api.Notifier
 import com.r0adkll.cassette.alerts.api.PreRideNudge
+import com.r0adkll.cassette.common.screens.DeepLinks
+import com.r0adkll.cassette.common.screens.deepLinkIntent
 import com.r0adkll.cassette.features.alerts.impl.R
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
@@ -38,7 +40,13 @@ class AndroidNotifier(private val application: Application) : Notifier {
         AlertLevel.ChargeNow ->
           "${alert.value} left on ${alert.bikeName}. It may stop working on your next ride."
       }
-    post(BATTERY_ALERTS, BATTERY_ALERT_ID + alert.component.value.toInt(), title, text) {}
+    post(
+      BATTERY_ALERTS,
+      BATTERY_ALERT_ID + alert.component.value.toInt(),
+      DeepLinks.component(alert.bike.value, alert.component.value),
+      title,
+      text,
+    ) {}
   }
 
   override fun preRide(nudge: PreRideNudge) {
@@ -57,6 +65,7 @@ class AndroidNotifier(private val application: Application) : Notifier {
     post(
       PRE_RIDE,
       id,
+      DeepLinks.bike(nudge.bike.value),
       "${nudge.bikeName} is awake",
       "${first.name} is ${if (first.level == AlertLevel.ChargeNow) "nearly empty" else "low"} (${first.value})$more. Charge it before you ride.",
     ) {
@@ -68,6 +77,7 @@ class AndroidNotifier(private val application: Application) : Notifier {
     post(
       REMINDERS,
       REMINDER_ID + reminder.bike.value.toInt(),
+      DeepLinks.bike(reminder.bike.value),
       "Haven't seen ${reminder.bikeName} in ${reminder.days} days",
       "Wake it so Cassette can check the batteries.",
     ) {}
@@ -76,6 +86,7 @@ class AndroidNotifier(private val application: Application) : Notifier {
   private fun post(
     channel: String,
     id: Int,
+    link: String,
     title: String,
     text: String,
     extra: NotificationCompat.Builder.() -> Unit,
@@ -87,7 +98,7 @@ class AndroidNotifier(private val application: Application) : Notifier {
       PendingIntent.getActivity(
         application,
         id,
-        application.packageManager.getLaunchIntentForPackage(application.packageName),
+        application.deepLinkIntent(link),
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
       )
     val notification =
