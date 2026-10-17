@@ -59,8 +59,13 @@ jobs:
   android:
     name: Test and build
     runs-on: ubuntu-latest
+    outputs:
+      signed: ${{ steps.keystore.outputs.signed }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Drop's version codes count first-parent commits.
+          fetch-depth: 0
 
       - name: Set up JDK
         uses: actions/setup-java@v6
@@ -74,8 +79,26 @@ jobs:
       - name: Unit tests
         run: ./gradlew jvmTest testAndroidHostTest :poc:testDebugUnitTest :surfaces:tile:testDebugUnitTest verifySqlDelightMigration
 
+      - name: Internal signing key
+        id: keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.CASSETTE_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "No internal key: the APK keeps the debug key and isn't uploaded to Drop."
+            echo "signed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/internal.keystore"
+          echo "CASSETTE_KEYSTORE=$RUNNER_TEMP/internal.keystore" >> "$GITHUB_ENV"
+          echo "signed=true" >> "$GITHUB_OUTPUT"
+
       - name: Build
         run: ./gradlew :app:android:assembleDebug :poc:assembleDebug
+        env:
+          CASSETTE_KEYSTORE_PASSWORD: ${{ secrets.CASSETTE_KEYSTORE_PASSWORD }}
+          CASSETTE_KEY_ALIAS: ${{ secrets.CASSETTE_KEY_ALIAS }}
+          CASSETTE_KEY_PASSWORD: ${{ secrets.CASSETTE_KEY_PASSWORD }}
 
       - name: Upload design gallery
         if: always()
@@ -95,12 +118,48 @@ jobs:
             app/android/build/outputs/apk/debug/*.apk
             poc/build/outputs/apk/debug/*.apk
 
+      - name: Upload the Cassette APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: cassette-apk
+          path: app/android/build/outputs/apk/debug/android-debug.apk
+
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v7
         with:
           name: test-reports
           path: '**/build/reports/tests/'
+
+  # Uploads the internally signed APK to Drop (decision 0008): main to the main channel, pull
+  # requests to pr/<number>. Needs the internal key, and an OIDC token, which forks can't get.
+  drop:
+    name: Upload to Drop
+    needs: android
+    if: >-
+      needs.android.outputs.signed == 'true' &&
+      (github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          name: cassette-apk
+
+      - name: Upload
+        id: upload
+        uses: r0adkll/drop/action@v0
+        with:
+          server: https://drop.thescavengers.software
+          apk: android-debug.apk
+
+      - name: Link the Build
+        env:
+          BUILD_URL: ${{ steps.upload.outputs.build-url }}
+        run: |
+          echo "Drop Build: $BUILD_URL" >> "$GITHUB_STEP_SUMMARY"
 
   ios:
     name: iOS compile

@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.r0adkll.cassette.common.compose.theme.CassetteRed
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 
 /** The one primary action on a screen ("REFRESH NOW"), or an outlined secondary one. */
@@ -71,18 +72,38 @@ fun CassetteButton(
   }
 }
 
-/** A round 44dp icon button on a panel: back, settings, close. */
+/**
+ * A round 44dp icon button on a panel: back, settings, close. [badge] adds a red dot, for something
+ * waiting behind it (an app update behind Settings).
+ */
 @Composable
 fun IconCircleButton(
   icon: ImageVector,
   contentDescription: String,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
+  badge: Boolean = false,
 ) {
+  Box(modifier) {
+    CircleButton(icon, contentDescription, onClick)
+    if (badge)
+      Box(
+        Modifier.align(Alignment.TopEnd)
+          .size(12.dp)
+          .clip(CircleShape)
+          .background(CassetteTheme.colors.background)
+          .padding(2.dp)
+          .clip(CircleShape)
+          .background(CassetteRed)
+      )
+  }
+}
+
+@Composable
+private fun CircleButton(icon: ImageVector, contentDescription: String, onClick: () -> Unit) {
   val colors = CassetteTheme.colors
   Box(
-    modifier
-      .size(44.dp)
+    Modifier.size(44.dp)
       .clip(CircleShape)
       .background(colors.panel)
       .border(1.dp, colors.line, CircleShape)

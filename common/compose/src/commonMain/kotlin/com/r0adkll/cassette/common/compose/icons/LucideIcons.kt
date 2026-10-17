@@ -164,6 +164,15 @@ object LucideIcons {
     }
   }
 
+  /** Lucide `download`. */
+  val Download: ImageVector by lazy {
+    lucide("Download") {
+      stroke("M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4")
+      stroke("M7 10 L12 15 L17 10")
+      stroke("M12.0 15.0L12.0 3.0")
+    }
+  }
+
   /** Lucide `file-text`. */
   val FileText: ImageVector by lazy {
     lucide("FileText") {

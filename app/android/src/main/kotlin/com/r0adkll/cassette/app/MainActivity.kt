@@ -15,11 +15,13 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
+import com.r0adkll.cassette.common.compose.LocalAppUpdates
 import com.r0adkll.cassette.common.compose.LocalPermissionController
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.screens.BikeScreen
 import com.r0adkll.cassette.common.screens.DeepLinks
 import com.r0adkll.cassette.common.screens.OnboardingScreen
+import com.r0adkll.drop.ui.DropUpdateSheet
 import com.slack.circuit.backstack.rememberSaveableBackStack
 import com.slack.circuit.foundation.CircuitCompositionLocals
 import com.slack.circuit.foundation.NavigableCircuitContent
@@ -43,6 +45,8 @@ class MainActivity : ComponentActivity() {
     enableEdgeToEdge()
     super.onCreate(savedInstanceState)
     lifecycleScope.launch { app.graph.captureController.ensureBackgroundCapture("app opened") }
+    val updates = app.updates
+    if (savedInstanceState == null) updates.check()
 
     val circuit = app.graph.circuit
     // A restored activity keeps its back stack; only a fresh start follows the launching link.
@@ -53,7 +57,10 @@ class MainActivity : ComponentActivity() {
         Box(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) {
           val initial by produceState<List<Screen>?>(null) { value = firstScreens(launchLink) }
           initial?.let { start ->
-            CompositionLocalProvider(LocalPermissionController provides permissions) {
+            CompositionLocalProvider(
+              LocalPermissionController provides permissions,
+              LocalAppUpdates provides updates,
+            ) {
               CircuitCompositionLocals(circuit) {
                 val backStack = rememberSaveableBackStack(start)
                 val navigator = rememberCircuitNavigator(backStack)
@@ -74,6 +81,8 @@ class MainActivity : ComponentActivity() {
                       OpaqueScreens(circuit.defaultNavDecoration, background)
                     },
                 )
+                if (updates.sheetOpen)
+                  DropUpdateSheet(drop = updates.drop, onDismiss = updates::closeSheet)
               }
             }
           }

@@ -19,11 +19,15 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.r0adkll.cassette.common.compose.LocalAppUpdates
+import com.r0adkll.cassette.common.compose.UpdateStatus
 import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.ComponentRow
 import com.r0adkll.cassette.common.compose.components.IconCircleButton
@@ -76,7 +80,13 @@ private fun TopBar(onAddBike: (() -> Unit)?, onSettings: () -> Unit) {
     Kicker("Cassette", Modifier.weight(1f))
     // The empty state has its own Add bike button.
     if (onAddBike != null) IconCircleButton(LucideIcons.BikePlus, "Add bike", onClick = onAddBike)
-    IconCircleButton(LucideIcons.Settings, "Settings", onClick = onSettings)
+    val update by LocalAppUpdates.current.status.collectAsState()
+    IconCircleButton(
+      LucideIcons.Settings,
+      if (update is UpdateStatus.Available) "Settings, app update available" else "Settings",
+      onClick = onSettings,
+      badge = update is UpdateStatus.Available,
+    )
   }
 }
 
