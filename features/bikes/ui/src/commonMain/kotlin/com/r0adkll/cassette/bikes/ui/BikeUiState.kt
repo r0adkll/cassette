@@ -58,7 +58,4 @@ sealed interface BikeEvent : CircuitUiEvent {
   data object Refresh : BikeEvent
 
   data object AddBike : BikeEvent
-
-  /** Developer action until capture is ported; see DeveloperTools. */
-  data object LoadSampleBike : BikeEvent
 }

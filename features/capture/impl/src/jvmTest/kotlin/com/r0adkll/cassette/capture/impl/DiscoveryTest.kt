@@ -13,6 +13,7 @@ import com.r0adkll.cassette.protocol.BatteryStatus
 import com.r0adkll.cassette.protocol.ComponentKind
 import com.r0adkll.cassette.protocol.FrameType
 import com.r0adkll.cassette.protocol.SystemBatteryTable
+import com.r0adkll.cassette.settings.test.InMemorySettings
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -42,6 +43,7 @@ class DiscoveryTest {
       recorder,
       BatteryRefresher(recorder, gatt, db, clock),
       db,
+      InMemorySettings(),
       clock,
     )
   private val discovery =

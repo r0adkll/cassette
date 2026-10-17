@@ -3,7 +3,6 @@ package com.r0adkll.cassette.bikes.ui
 import com.r0adkll.cassette.bikes.api.BikeOverview
 import com.r0adkll.cassette.bikes.api.BikeRepository
 import com.r0adkll.cassette.bikes.api.ComponentDetail
-import com.r0adkll.cassette.bikes.api.DeveloperTools
 import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.capture.api.RefreshProgress
 import com.r0adkll.cassette.common.screens.BikeScreen
@@ -17,7 +16,6 @@ import com.slack.circuit.test.test
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
@@ -40,13 +38,8 @@ class BikePresenterTest {
       override fun observeOverview(id: BikeId?): Flow<BikeOverview?> = overviews
 
       override fun observeComponent(id: ComponentId, since: Instant) = emptyFlow<ComponentDetail?>()
-    }
-  private var sampleLoads = 0
-  private val tools =
-    object : DeveloperTools {
-      override suspend fun loadSampleBike() {
-        sampleLoads++
-      }
+
+      override suspend fun deleteBike(id: BikeId) = Unit
     }
 
   private val capture =
@@ -62,14 +55,13 @@ class BikePresenterTest {
   @Test
   fun loadingThenEmptyThenLoaded() = runTest {
     val navigator = FakeNavigator(BikeScreen())
-    val presenter = BikePresenter(BikeScreen(), navigator, repository, tools, capture, clock)
+    val presenter = BikePresenter(BikeScreen(), navigator, repository, capture, clock)
 
     presenter.test {
       assertIs<BikeUiState.Loading>(awaitItem())
 
       overviews.emit(null)
-      val empty = assertIs<BikeUiState.Empty>(awaitItem())
-      empty.eventSink(BikeEvent.LoadSampleBike)
+      assertIs<BikeUiState.Empty>(awaitItem())
 
       overviews.emit(
         BikeOverview(
@@ -86,6 +78,5 @@ class BikePresenterTest {
       assertEquals(ComponentScreen(7), navigator.awaitNextScreen())
       cancelAndIgnoreRemainingEvents()
     }
-    assertTrue(sampleLoads == 1)
   }
 }

@@ -37,6 +37,16 @@ include(":features:capture:api")
 
 include(":features:capture:impl")
 
+include(":features:diagnostics:ui")
+
+include(":features:settings:api")
+
+include(":features:settings:impl")
+
+include(":features:settings:test")
+
+include(":features:settings:ui")
+
 include(":features:bikes:impl")
 
 include(":features:bikes:ui")

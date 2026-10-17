@@ -13,6 +13,7 @@ import com.r0adkll.cassette.core.CassetteDispatchers
 import com.r0adkll.cassette.core.ComponentId
 import com.r0adkll.cassette.data.db.CassetteDatabase
 import com.r0adkll.cassette.data.db.toDomain
+import com.r0adkll.cassette.settings.api.CassetteSettings
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
@@ -22,9 +23,11 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @SingleIn(AppScope::class)
@@ -33,6 +36,7 @@ import kotlinx.coroutines.flow.map
 class DatabaseBikeRepository(
   private val db: CassetteDatabase,
   private val dispatchers: CassetteDispatchers,
+  private val settings: CassetteSettings,
 ) : BikeRepository {
 
   override fun observeBikes(): Flow<List<Bike>> =
@@ -41,9 +45,12 @@ class DatabaseBikeRepository(
     }
 
   override fun observeOverview(id: BikeId?): Flow<BikeOverview?> =
-    observeBikes()
-      .map { bikes ->
-        val bike = if (id == null) bikes.firstOrNull() else bikes.firstOrNull { it.id == id }
+    combine(observeBikes(), settings.pinnedBike) { bikes, pinned ->
+        // Default: the pinned bike if it still exists, else the most recently seen.
+        val wanted = id ?: pinned
+        val bike =
+          wanted?.let { w -> bikes.firstOrNull { it.id == w } }
+            ?: bikes.takeIf { id == null }?.firstOrNull()
         bike?.let { it to bikes.size }
       }
       .distinctUntilChanged()
@@ -91,4 +98,9 @@ class DatabaseBikeRepository(
           }
         }
       }
+
+  override suspend fun deleteBike(id: BikeId) {
+    withContext(dispatchers.io) { db.bikeQueries.delete(id.value) }
+    if (settings.pinnedBike.first() == id) settings.setPinnedBike(null)
+  }
 }

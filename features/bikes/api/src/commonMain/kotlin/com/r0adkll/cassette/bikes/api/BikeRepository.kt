@@ -20,6 +20,9 @@ interface BikeRepository {
 
   /** A component with its bike, latest reading and history since [since]; null if it's gone. */
   fun observeComponent(id: ComponentId, since: Instant): Flow<ComponentDetail?>
+
+  /** Deletes the bike with its components and history. */
+  suspend fun deleteBike(id: BikeId)
 }
 
 data class ComponentDetail(

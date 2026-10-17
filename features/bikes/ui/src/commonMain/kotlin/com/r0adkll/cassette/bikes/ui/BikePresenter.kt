@@ -9,13 +9,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.r0adkll.cassette.bikes.api.BikeOverview
 import com.r0adkll.cassette.bikes.api.BikeRepository
-import com.r0adkll.cassette.bikes.api.DeveloperTools
 import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.capture.api.RefreshProgress
 import com.r0adkll.cassette.common.screens.AddBikeScreen
 import com.r0adkll.cassette.common.screens.BikeScreen
 import com.r0adkll.cassette.common.screens.ComponentScreen
-import com.r0adkll.cassette.common.screens.DesignGalleryScreen
+import com.r0adkll.cassette.common.screens.SettingsScreen
 import com.r0adkll.cassette.core.BikeId
 import com.slack.circuit.codegen.annotations.CircuitInject
 import com.slack.circuit.retained.collectAsRetainedState
@@ -35,7 +34,6 @@ class BikePresenter(
   private val screen: BikeScreen,
   private val navigator: Navigator,
   private val repository: BikeRepository,
-  private val developerTools: DeveloperTools,
   private val capture: CaptureController,
   private val clock: Clock,
 ) : Presenter<BikeUiState> {
@@ -63,8 +61,7 @@ class BikePresenter(
     val eventSink: (BikeEvent) -> Unit = { event ->
       when (event) {
         is BikeEvent.OpenComponent -> navigator.goTo(ComponentScreen(event.id))
-        // Settings arrives with the settings feature; the gallery stands in for now.
-        BikeEvent.OpenSettings -> navigator.goTo(DesignGalleryScreen)
+        BikeEvent.OpenSettings -> navigator.goTo(SettingsScreen)
         BikeEvent.AddBike -> navigator.goTo(AddBikeScreen)
         BikeEvent.Refresh ->
           if (refresh !is RefreshButton.Scanning) {
@@ -78,11 +75,6 @@ class BikePresenter(
                   }
               }
             }
-          }
-        BikeEvent.LoadSampleBike ->
-          scope.launch {
-            developerTools.loadSampleBike()
-            capture.ensureBackgroundCapture("sample bike loaded")
           }
       }
     }

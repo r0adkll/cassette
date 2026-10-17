@@ -150,13 +150,8 @@ private fun EmptyBike(eventSink: (BikeEvent) -> Unit) {
     verticalArrangement = Arrangement.spacedBy(10.dp),
   ) {
     CassetteButton("Add bike", onClick = { eventSink(BikeEvent.AddBike) })
-    CassetteButton(
-      "Load sample bike",
-      onClick = { eventSink(BikeEvent.LoadSampleBike) },
-      primary = false,
-    )
     Text(
-      "Developer: the validation bike's readings from 16 Oct, until capture is ported.",
+      "Developers: Settings → Diagnostics can load the validation bike's readings.",
       style = CassetteTheme.type.bodySmall,
       color = colors.muted,
     )

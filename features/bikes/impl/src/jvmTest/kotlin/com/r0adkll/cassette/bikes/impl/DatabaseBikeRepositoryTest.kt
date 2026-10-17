@@ -7,6 +7,7 @@ import com.r0adkll.cassette.core.ComponentId
 import com.r0adkll.cassette.data.db.CassetteDatabase
 import com.r0adkll.cassette.data.db.createInMemoryDriver
 import com.r0adkll.cassette.protocol.ComponentKind
+import com.r0adkll.cassette.settings.test.InMemorySettings
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,7 +31,7 @@ class DatabaseBikeRepositoryTest {
   fun overviewFollowsTheDefaultBike() = runTest {
     val dispatcher = StandardTestDispatcher(testScheduler)
     val dispatchers = CassetteDispatchers(dispatcher, dispatcher, dispatcher)
-    val repository = DatabaseBikeRepository(db, dispatchers)
+    val repository = DatabaseBikeRepository(db, dispatchers, InMemorySettings())
 
     repository.observeOverview(null).test {
       assertNull(awaitItem())
@@ -63,11 +64,11 @@ class DatabaseBikeRepositoryTest {
     tools.loadSampleBike()
     tools.loadSampleBike()
 
-    DatabaseBikeRepository(db, dispatchers).observeBikes().test {
+    DatabaseBikeRepository(db, dispatchers, InMemorySettings()).observeBikes().test {
       assertEquals(1, awaitItem().size)
       cancelAndIgnoreRemainingEvents()
     }
-    DatabaseBikeRepository(db, dispatchers).observeOverview(BikeId(999)).test {
+    DatabaseBikeRepository(db, dispatchers, InMemorySettings()).observeOverview(BikeId(999)).test {
       assertNull(awaitItem())
       cancelAndIgnoreRemainingEvents()
     }
@@ -81,7 +82,7 @@ class DatabaseBikeRepositoryTest {
     val rd = db.componentQueries.selectByKey("1405188718").executeAsOne()
     db.batterySampleQueries.insert(rd.id, 1_000, 7_950, 92, "OK", "Advert")
 
-    DatabaseBikeRepository(db, dispatchers)
+    DatabaseBikeRepository(db, dispatchers, InMemorySettings())
       .observeComponent(ComponentId(rd.id), Instant.fromEpochMilliseconds(0))
       .test {
         val detail = awaitItem()!!
@@ -90,5 +91,25 @@ class DatabaseBikeRepositoryTest {
         assertEquals(listOf(92, 78), detail.history.map { it.percent })
         cancelAndIgnoreRemainingEvents()
       }
+  }
+
+  @Test
+  fun aPinnedBikeIsTheDefaultUntilItIsDeleted() = runTest {
+    val dispatcher = StandardTestDispatcher(testScheduler)
+    val dispatchers = CassetteDispatchers(dispatcher, dispatcher, dispatcher)
+    val settings = InMemorySettings()
+    val repository = DatabaseBikeRepository(db, dispatchers, settings)
+    DatabaseDeveloperTools(db, dispatchers, clock).loadSampleBike()
+    db.bikeQueries.insert("Gravel bike", "Gravel", null, 2, 0, 0)
+    val gravel = BikeId(db.bikeQueries.lastInsertedId().executeAsOne())
+    settings.setPinnedBike(gravel)
+
+    repository.observeOverview(null).test {
+      assertEquals("Gravel bike", awaitItem()?.bike?.name)
+      repository.deleteBike(gravel)
+      assertEquals("Road bike", awaitItem()?.bike?.name)
+      cancelAndIgnoreRemainingEvents()
+    }
+    assertNull(settings.pinnedBike.value)
   }
 }
