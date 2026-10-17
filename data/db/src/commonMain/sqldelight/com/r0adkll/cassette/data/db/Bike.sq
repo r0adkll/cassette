@@ -1,0 +1,37 @@
+CREATE TABLE bike (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    -- BikeType name
+    type TEXT NOT NULL,
+    photo_path TEXT,
+    hub_serial INTEGER UNIQUE,
+    -- epoch milliseconds
+    created_at INTEGER NOT NULL,
+    last_seen_at INTEGER
+);
+
+-- Most recently seen first: the default bike (decision 0010).
+selectAll:
+SELECT * FROM bike ORDER BY last_seen_at IS NULL, last_seen_at DESC, id;
+
+selectById:
+SELECT * FROM bike WHERE id = ?;
+
+selectByHubSerial:
+SELECT * FROM bike WHERE hub_serial = ?;
+
+insert:
+INSERT INTO bike (name, type, photo_path, hub_serial, created_at, last_seen_at)
+VALUES (?, ?, ?, ?, ?, ?);
+
+lastInsertedId:
+SELECT last_insert_rowid();
+
+updateDetails:
+UPDATE bike SET name = :name, type = :type, photo_path = :photoPath WHERE id = :id;
+
+markSeen:
+UPDATE bike SET last_seen_at = max(coalesce(last_seen_at, 0), :at) WHERE id = :id;
+
+delete:
+DELETE FROM bike WHERE id = ?;

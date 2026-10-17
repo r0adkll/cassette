@@ -1,0 +1,42 @@
+CREATE TABLE battery_sample (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    component_id INTEGER NOT NULL REFERENCES component(id) ON DELETE CASCADE,
+    at INTEGER NOT NULL,
+    millivolts INTEGER,
+    percent INTEGER,
+    -- BatteryStatus name, when the component reports one
+    reported_status TEXT,
+    -- ReadMethod name
+    method TEXT NOT NULL
+);
+
+CREATE INDEX battery_sample_component_at ON battery_sample(component_id, at);
+
+insert:
+INSERT INTO battery_sample (component_id, at, millivolts, percent, reported_status, method)
+VALUES (?, ?, ?, ?, ?, ?);
+
+-- The newest reading per component on a bike.
+latestForBike:
+SELECT s.* FROM battery_sample s
+JOIN component c ON c.id = s.component_id
+WHERE c.bike_id = :bikeId AND c.removed_at IS NULL
+  AND s.id = (SELECT id FROM battery_sample WHERE component_id = s.component_id ORDER BY at DESC, id DESC LIMIT 1);
+
+latestForComponent:
+SELECT * FROM battery_sample WHERE component_id = ? ORDER BY at DESC, id DESC LIMIT 1;
+
+historyForComponent:
+SELECT * FROM battery_sample WHERE component_id = :componentId AND at >= :since ORDER BY at, id;
+
+-- History keeps a year (decision 0010).
+deleteOlderThan:
+DELETE FROM battery_sample WHERE at < :cutoff;
+
+-- Before :cutoff (30 days), keep only the last reading of each component's day.
+downsampleBefore:
+DELETE FROM battery_sample
+WHERE at < :cutoff
+  AND id NOT IN (
+    SELECT max(id) FROM battery_sample WHERE at < :cutoff GROUP BY component_id, at / 86400000
+  );

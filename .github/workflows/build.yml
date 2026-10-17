@@ -53,7 +53,7 @@ jobs:
         run: ./gradlew ktfmtCheck
 
       - name: Unit tests
-        run: ./gradlew jvmTest testAndroidHostTest :poc:testDebugUnitTest
+        run: ./gradlew jvmTest testAndroidHostTest :poc:testDebugUnitTest verifySqlDelightMigration
 
       - name: Build
         run: ./gradlew :app:android:assembleDebug :poc:assembleDebug
