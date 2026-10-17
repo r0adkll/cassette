@@ -43,6 +43,8 @@ include(":features:capture:impl")
 
 include(":features:diagnostics:ui")
 
+include(":features:onboarding:ui")
+
 include(":features:settings:api")
 
 include(":features:settings:impl")

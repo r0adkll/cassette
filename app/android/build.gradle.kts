@@ -31,6 +31,7 @@ dependencies {
   implementation(project(":features:capture:impl"))
   implementation(project(":features:settings:api"))
   implementation(project(":features:diagnostics:ui"))
+  implementation(project(":features:onboarding:ui"))
   implementation(project(":features:settings:impl"))
   implementation(project(":features:settings:ui"))
   implementation(project(":surfaces:tile"))

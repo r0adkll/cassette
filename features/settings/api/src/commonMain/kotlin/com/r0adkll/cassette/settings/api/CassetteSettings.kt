@@ -26,6 +26,11 @@ interface CassetteSettings {
 
   suspend fun setNotifications(settings: NotificationSettings)
 
+  /** Whether first-run onboarding has been done (or skipped because a bike already exists). */
+  val onboarded: Flow<Boolean>
+
+  suspend fun setOnboarded()
+
   /** What background capture has been doing, for Diagnostics. */
   val captureHealth: Flow<CaptureHealth>
 

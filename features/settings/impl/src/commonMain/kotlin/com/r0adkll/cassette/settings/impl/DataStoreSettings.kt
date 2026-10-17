@@ -70,6 +70,12 @@ class DataStoreSettings(file: SettingsFile) : CassetteSettings {
     }
   }
 
+  override val onboarded: Flow<Boolean> = store.data.map { it[ONBOARDED] ?: false }
+
+  override suspend fun setOnboarded() {
+    store.edit { it[ONBOARDED] = true }
+  }
+
   override val captureHealth: Flow<CaptureHealth> =
     store.data.map {
       CaptureHealth(
@@ -98,6 +104,7 @@ class DataStoreSettings(file: SettingsFile) : CassetteSettings {
     val BACKGROUND = booleanPreferencesKey("background_capture")
     val PROFILE = stringPreferencesKey("scan_profile")
     val PINNED_BIKE = longPreferencesKey("pinned_bike")
+    val ONBOARDED = booleanPreferencesKey("onboarded")
     val ALERTS = booleanPreferencesKey("notify_battery_alerts")
     val PRE_RIDE = booleanPreferencesKey("notify_pre_ride")
     val REMINDERS = booleanPreferencesKey("notify_not_seen")

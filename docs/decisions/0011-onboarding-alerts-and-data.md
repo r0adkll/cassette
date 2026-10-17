@@ -5,7 +5,8 @@ Date: 2026-10-16 · Status: accepted
 ## First run
 
 1. Welcome: what Cassette does, and "Unofficial, not affiliated with SRAM".
-2. Permissions, one explainer each: Nearby devices (scan + connect), Notifications.
+2. Permissions, together on one screen: Nearby devices (scan + connect) and Notifications, each with its own
+   Allow (iteration 6, see [0012](0012-visual-direction.md)).
 3. Add the first bike ([0010](0010-product-details.md)), including the system companion-device dialog that
    links the bike's hub.
 4. Done: background capture on, with a tip to wake the bike now and then.

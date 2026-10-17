@@ -11,6 +11,12 @@ import com.slack.circuit.runtime.screen.StaticScreen
 
 @Parcelize data object AddBikeScreen : ParcelableScreen
 
+/** First run (decision 0011): the welcome, then [OnboardingPermissionsScreen], then add-bike. */
+@Parcelize data object OnboardingScreen : ParcelableScreen
+
+/** First run: both permissions explained and asked for on one screen. */
+@Parcelize data object OnboardingPermissionsScreen : ParcelableScreen
+
 @Parcelize data object SettingsScreen : ParcelableScreen
 
 @Parcelize data object DiagnosticsScreen : ParcelableScreen
