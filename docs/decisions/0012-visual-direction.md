@@ -94,6 +94,8 @@ SRAM-app quality, which must be our own (never SRAM's artwork).
 - **Small surfaces (iteration 7, D · Battery cassette)**: a battery outline whose fill is a cassette seen
   side-on. Used as the notification small icon, as a white silhouette.
 - The debug build uses the same launcher icon on near-black, to tell it apart from a release install.
+- The welcome poster shows the tape to the right of its title, drawn straight on the red (the poster is its
+  shell); `CassetteMarks.Tape` in `:common:compose` mirrors the launcher foreground.
 - Rejected: iteration 7's cog stacks (they read as a speaker when small) and monogram, battery cassette as the
   launcher icon; iteration 8's black shell, line art and reels-only concepts; splined reel hubs (noise at
   launcher size).
