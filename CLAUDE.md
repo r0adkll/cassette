@@ -27,7 +27,10 @@ ported. Don't build new features on the POC.
   emulator. It shares the phone app's id and key, which the Data Layer needs. Without a paired phone, the
   debug build loads sample data: `adb shell am broadcast -n
   com.r0adkll.cassette.debug/com.r0adkll.cassette.wear.debug.SampleDataReceiver --es state good` (or `low`,
-  `critical`, `stale`, `one`, `empty`, `scanning`, `notready`, `clear`).
+  `critical`, `stale`, `one`, `empty`, `scanning`, `notready`, `clear`). The Wear tile: `adb shell am broadcast
+  -a com.google.android.wearable.app.DEBUG_SURFACE --es operation add-tile --ecn component
+  com.r0adkll.cassette.debug/com.r0adkll.cassette.wear.tile.BikeTileService`, then `-a
+  com.google.android.wearable.app.DEBUG_SYSUI --es operation show-tile --ei index 0`.
 - `scripts/ktfmt` checks formatting in under a second (`--format` fixes it), build-logic included. It is
   the only formatter: CI and the pre-push hook (`./gradlew bootstrap`) use it, and there is no Gradle
   ktfmt task. In the IDE, use the ktfmt plugin set to Google style.

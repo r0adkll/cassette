@@ -7,6 +7,9 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Added
 
+- Wear tile (decision 0013): the default bike's status icon, headline, weakest component and when it was
+  seen, in our colours. Refresh asks the phone to scan and counts down on the tile; tapping the tile
+  opens the app at that bike. It updates whenever the phone sends new data.
 - Wear app (decision 0013): your bikes with their weakest status, then a bike's status block and a bar
   per component, worded and coloured like the phone. Refresh asks the phone to run its 60-second scan
   and counts down on the watch; it says so when the phone can't be reached or can't scan. Debug builds

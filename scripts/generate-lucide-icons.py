@@ -24,10 +24,14 @@ COMBINED = {
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "common/compose/src/commonMain/kotlin/com/r0adkll/cassette/common/compose/icons/LucideIcons.kt"
 
-# Android vector drawables for surfaces that can't use ImageVector (Quick Settings tile), as
+# Android vector drawables for surfaces that can't use ImageVector (Quick Settings tile, Wear tile and
+# complications), as
 # res/drawable/lucide_<name>.xml in each module.
 ANDROID_ICONS = {
     ROOT / "surfaces/tile/src/main/res/drawable": [
+        "circle-check", "battery-low", "battery-warning", "history", "circle-help", "refresh-cw", "bike",
+    ],
+    ROOT / "app/wear/src/main/res/drawable": [
         "circle-check", "battery-low", "battery-warning", "history", "circle-help", "refresh-cw", "bike",
     ],
 }

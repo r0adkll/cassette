@@ -55,3 +55,21 @@ fun watchRefresh(
   }
   return WatchRefresh.Idle
 }
+
+/**
+ * When the current Refresh state lapses by itself (a scan ends, a message expires, the phone never
+ * answered); null when it's idle. The tile shows the next state from then.
+ */
+fun watchRefreshEndsAt(
+  phone: WearRefresh?,
+  askedAt: Instant?,
+  noPhoneAt: Instant?,
+  now: Instant,
+): Instant? =
+  when (watchRefresh(phone, askedAt, noPhoneAt, now)) {
+    WatchRefresh.Idle -> null
+    WatchRefresh.Asking -> askedAt!! + ASKING_FOR
+    is WatchRefresh.Scanning -> Instant.fromEpochMilliseconds(phone!!.until!!)
+    WatchRefresh.PhoneNotReady -> Instant.fromEpochMilliseconds(phone!!.at) + MESSAGE_FOR
+    WatchRefresh.NoPhone -> noPhoneAt!! + MESSAGE_FOR
+  }

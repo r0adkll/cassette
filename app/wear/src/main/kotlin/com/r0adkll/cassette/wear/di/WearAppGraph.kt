@@ -2,6 +2,7 @@ package com.r0adkll.cassette.wear.di
 
 import android.app.Application
 import com.r0adkll.cassette.wear.data.PhoneData
+import com.r0adkll.cassette.wear.tile.TileRefresh
 import com.slack.circuit.foundation.Circuit
 import com.slack.circuit.runtime.presenter.Presenter
 import com.slack.circuit.runtime.ui.Ui
@@ -16,6 +17,7 @@ interface WearAppGraph {
   val circuit: Circuit
   val phoneData: PhoneData
   val clock: Clock
+  val tileRefresh: TileRefresh
 
   @Provides
   @SingleIn(AppScope::class)

@@ -41,4 +41,16 @@ class WatchRefreshTest {
     assertEquals(WatchRefresh.PhoneNotReady, watchRefresh(notReady, now - 3.seconds, null, now))
     assertEquals(WatchRefresh.Idle, watchRefresh(notReady, null, null, now + 10.seconds))
   }
+
+  @Test
+  fun eachStateKnowsWhenItLapses() {
+    assertEquals(null, watchRefreshEndsAt(null, null, null, now))
+    assertEquals(now + 12.seconds, watchRefreshEndsAt(null, now - 3.seconds, null, now))
+    val scanning = WearRefresh(WearRefresh.State.Scanning, until = ms + 41_000, at = ms - 19_000)
+    assertEquals(now + 41.seconds, watchRefreshEndsAt(scanning, null, null, now))
+    assertEquals(now + 6.seconds, watchRefreshEndsAt(null, null, now - 2.seconds, now))
+    // What follows is idle.
+    val end = watchRefreshEndsAt(scanning, null, null, now)!!
+    assertEquals(WatchRefresh.Idle, watchRefresh(scanning, null, null, end))
+  }
 }
