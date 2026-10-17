@@ -40,8 +40,9 @@ class CaptureTest {
       override fun now() = this@CaptureTest.now
     }
   private val gatt = FakeGatt()
+  private val captureLog = InMemoryCaptureLog()
   private val recorder = CaptureRecorder(db, dispatchers)
-  private val refresher = BatteryRefresher(recorder, gatt, db, clock)
+  private val refresher = BatteryRefresher(recorder, gatt, db, captureLog, clock)
 
   @AfterTest fun close() = driver.close()
 
@@ -107,6 +108,12 @@ class CaptureTest {
       components.single { it.kind == ComponentKind.REAR_DERAILLEUR }.actuations,
     )
     assertEquals(1, gatt.reads)
+    val logged =
+      captureLog.list.value
+        .filterIsInstance<com.r0adkll.cassette.capture.api.CaptureEvent.Gatt>()
+        .single()
+    assertEquals(com.r0adkll.cassette.capture.api.GattOutcome.Ok, logged.outcome)
+    assertTrue(logged.hex!!.startsWith("01 04 6e 7a c1 53"))
   }
 
   @Test
@@ -164,7 +171,15 @@ class CaptureTest {
     gatt.values = mapOf(SystemBatteryTable.CHARACTERISTIC to Fixtures.RED_TABLE)
     val scanner = FakeScanner()
     val controller =
-      DefaultCaptureController(scanner, recorder, refresher, db, InMemorySettings(), clock)
+      DefaultCaptureController(
+        scanner,
+        recorder,
+        refresher,
+        db,
+        InMemorySettings(),
+        captureLog,
+        clock,
+      )
 
     controller.refresh().test {
       scanner.adverts.emit(rdStatus())
@@ -180,7 +195,15 @@ class CaptureTest {
   fun backgroundCaptureNeedsABike() = runTest {
     val scanner = FakeScanner()
     val controller =
-      DefaultCaptureController(scanner, recorder, refresher, db, InMemorySettings(), clock)
+      DefaultCaptureController(
+        scanner,
+        recorder,
+        refresher,
+        db,
+        InMemorySettings(),
+        captureLog,
+        clock,
+      )
     controller.ensureBackgroundCapture("test")
     assertNull(scanner.armed)
 
@@ -250,7 +273,8 @@ class CaptureTest {
     bikeWithHub()
     val scanner = FakeScanner()
     val settings = InMemorySettings()
-    val controller = DefaultCaptureController(scanner, recorder, refresher, db, settings, clock)
+    val controller =
+      DefaultCaptureController(scanner, recorder, refresher, db, settings, captureLog, clock)
 
     settings.setScanProfile(com.r0adkll.cassette.data.ble.ScanProfile.Batched30s)
     controller.ensureBackgroundCapture("test")

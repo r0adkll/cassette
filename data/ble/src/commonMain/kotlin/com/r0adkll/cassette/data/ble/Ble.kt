@@ -74,7 +74,10 @@ sealed interface GattResult {
 const val BATTERY_LEVEL_CHARACTERISTIC = "00002a19-0000-1000-8000-00805f9b34fb"
 
 /** Receives what the background scan heard. The app's capture feature implements it. */
-fun interface BackgroundDeliveryHandler {
+interface BackgroundDeliveryHandler {
   /** Called on a background thread with a time budget of about 8 seconds. */
   suspend fun onDelivery(readings: List<AxsReading>, errorCode: Int)
+
+  /** The delivery's work didn't finish within its budget; logged for ride tests. */
+  suspend fun onBudgetExceeded() = Unit
 }

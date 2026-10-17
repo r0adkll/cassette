@@ -10,9 +10,12 @@ import com.r0adkll.cassette.bikes.api.BikeOverview
 import com.r0adkll.cassette.bikes.api.BikeRepository
 import com.r0adkll.cassette.bikes.api.DeveloperTools
 import com.r0adkll.cassette.capture.api.CaptureController
+import com.r0adkll.cassette.capture.api.CaptureLog
+import com.r0adkll.cassette.capture.api.DiagnosticsSharer
 import com.r0adkll.cassette.common.screens.DiagnosticsScreen
 import com.r0adkll.cassette.common.screens.HubTablesScreen
 import com.r0adkll.cassette.common.screens.LiveAdvertsScreen
+import com.r0adkll.cassette.common.screens.RideTestsScreen
 import com.r0adkll.cassette.data.ble.ScanProfile
 import com.r0adkll.cassette.settings.api.CaptureHealth
 import com.r0adkll.cassette.settings.api.CassetteSettings
@@ -35,6 +38,8 @@ data class DiagnosticsUiState(
   val bike: BikeOverview?,
   val now: Instant,
   val confirmRemove: Boolean,
+  val logEvents: Int,
+  val sharing: Boolean,
   val eventSink: (DiagnosticsEvent) -> Unit,
 ) : CircuitUiState
 
@@ -44,6 +49,10 @@ sealed interface DiagnosticsEvent : CircuitUiEvent {
   data object OpenLiveAdverts : DiagnosticsEvent
 
   data object OpenHubTables : DiagnosticsEvent
+
+  data object OpenRideTests : DiagnosticsEvent
+
+  data object Share : DiagnosticsEvent
 
   data class SetProfile(val profile: ScanProfile) : DiagnosticsEvent
 
@@ -61,6 +70,8 @@ class DiagnosticsPresenter(
   private val bikes: BikeRepository,
   private val capture: CaptureController,
   private val developerTools: DeveloperTools,
+  private val log: CaptureLog,
+  private val sharer: DiagnosticsSharer,
   private val clock: Clock,
 ) : Presenter<DiagnosticsUiState> {
 
@@ -74,12 +85,31 @@ class DiagnosticsPresenter(
     val profile by remember { settings.scanProfile }.collectAsRetainedState(ScanProfile.AllLowPower)
     val bike by remember { bikes.observeOverview(null) }.collectAsRetainedState(null)
     var confirmRemove by remember { mutableStateOf(false) }
+    val events by remember { log.events }.collectAsRetainedState(emptyList())
+    var sharing by remember { mutableStateOf(false) }
 
-    return DiagnosticsUiState(health, capture.isReady, profile, bike, clock.now(), confirmRemove) {
-      event ->
+    return DiagnosticsUiState(
+      health,
+      capture.isReady,
+      profile,
+      bike,
+      clock.now(),
+      confirmRemove,
+      events.size,
+      sharing,
+    ) { event ->
       when (event) {
         DiagnosticsEvent.Back -> navigator.pop()
         DiagnosticsEvent.OpenLiveAdverts -> navigator.goTo(LiveAdvertsScreen)
+        DiagnosticsEvent.OpenRideTests -> navigator.goTo(RideTestsScreen)
+        DiagnosticsEvent.Share ->
+          if (!sharing) {
+            sharing = true
+            scope.launch {
+              sharer.share()
+              sharing = false
+            }
+          }
         DiagnosticsEvent.OpenHubTables ->
           bike?.let { navigator.goTo(HubTablesScreen(it.bike.id.value)) }
         is DiagnosticsEvent.SetProfile ->

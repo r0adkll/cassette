@@ -36,14 +36,16 @@ class DiscoveryTest {
     }
   private val scanner = FakeScanner()
   private val gatt = FakeGatt()
+  private val captureLog = InMemoryCaptureLog()
   private val recorder = CaptureRecorder(db, dispatchers)
   private val controller =
     DefaultCaptureController(
       scanner,
       recorder,
-      BatteryRefresher(recorder, gatt, db, clock),
+      BatteryRefresher(recorder, gatt, db, captureLog, clock),
       db,
       InMemorySettings(),
+      captureLog,
       clock,
     )
   private val discovery =

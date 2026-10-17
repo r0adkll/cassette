@@ -32,7 +32,11 @@ class ScanResultReceiver : BroadcastReceiver() {
         // goAsync() allows about 10 s; leave a margin.
         withTimeoutOrNull(BUDGET_MILLIS) {
           host.backgroundDeliveryHandler.onDelivery(readings, error)
-        } ?: Log.d(TAG, "Background delivery ran out of time")
+        }
+          ?: run {
+            Log.d(TAG, "Background delivery ran out of time")
+            host.backgroundDeliveryHandler.onBudgetExceeded()
+          }
       } finally {
         pending.finish()
       }
