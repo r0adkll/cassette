@@ -64,7 +64,7 @@ SRAM-app quality, which must be our own (never SRAM's artwork).
 - **Quick Settings tile**: Android draws it, so status shows as the Lucide status icon plus words in the
   subtitle. States: good, low, refreshing (60 s countdown), not seen (inactive).
 - **Notifications**: SRAM red accent; pre-ride heads-up with "Snooze until tomorrow", status-change alerts,
-  not-seen reminders, and a minimised capture notice. The small icon waits on the app icon.
+  not-seen reminders, and a minimised capture notice. The small icon is the app icon's mark.
 - **Settings**: default bike, background capture and refresh length, one switch per notification channel,
   diagnostics, licences (Barlow, Lucide), "Unofficial. Not affiliated with SRAM."
 - **Diagnostics**: capture-health panel, then live adverts (monospace hex, frame tag, RSSI, filters), nearby
@@ -84,6 +84,21 @@ SRAM-app quality, which must be our own (never SRAM's artwork).
   line in amber. Continue is always enabled. States are re-read when the app resumes, so a change made in
   system settings shows straight away.
 - Two screens, then add bike. Rejected: A · Product hero, B · Everywhere, P2 · One button.
+
+## App icon (iterations 7 and 8, approved 2026-10-17)
+
+- **Launcher icon (iteration 8, A2 · Red shell)**: a cassette tape filling the icon. The red background is
+  the shell; a white label (its top shade follows the rounded corners) holds a dark window with two white
+  cog reels (U-shaped valleys, plain round hubs); a rounded tape head in darker red sits just below, with
+  four screw dots. Adaptive icon with a monochrome layer (the tape in outline, solid reels) for themed icons.
+- **Small surfaces (iteration 7, D · Battery cassette)**: a battery outline whose fill is a cassette seen
+  side-on. Used as the notification small icon, as a white silhouette.
+- The debug build uses the same launcher icon on near-black, to tell it apart from a release install.
+- The welcome poster shows the tape to the right of its title, drawn straight on the red (the poster is its
+  shell); `CassetteMarks.Tape` in `:common:compose` mirrors the launcher foreground.
+- Rejected: iteration 7's cog stacks (they read as a speaker when small) and monogram, battery cassette as the
+  launcher icon; iteration 8's black shell, line art and reels-only concepts; splined reel hubs (noise at
+  launcher size).
 
 Defaults taken where nothing was decided: power-meter choice by signal strength; scan profile lives only in
 Diagnostics; no activity log on the bike screen yet.

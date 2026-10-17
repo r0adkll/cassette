@@ -1,5 +1,6 @@
 package com.r0adkll.cassette.onboarding.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,6 +36,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
@@ -48,6 +50,7 @@ import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.IconCircleButton
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
+import com.r0adkll.cassette.common.compose.icons.CassetteMarks
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteRed
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
@@ -149,11 +152,20 @@ fun WelcomeUi(state: WelcomeUiState, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.spacedBy(18.dp),
       ) {
         Text("CASSETTE", style = CassetteTheme.type.label, color = Color.White)
-        Text(
-          "Know\nbefore\nyou ride.",
-          style = CassetteTheme.type.display.copy(fontSize = 66.sp, lineHeight = 0.88.em),
-          color = Color.White,
-        )
+        Row(verticalAlignment = Alignment.Top) {
+          Text(
+            "Know\nbefore\nyou ride.",
+            style = CassetteTheme.type.display.copy(fontSize = 66.sp, lineHeight = 0.88.em),
+            color = Color.White,
+          )
+          Spacer(Modifier.weight(1f))
+          // The tape, drawn straight on the red: the poster is its shell.
+          Image(
+            rememberVectorPainter(CassetteMarks.Tape),
+            contentDescription = null,
+            modifier = Modifier.size(112.dp),
+          )
+        }
         Text(
           "Battery levels for your SRAM AXS bike, without the guesswork.",
           style = CassetteTheme.type.body,
