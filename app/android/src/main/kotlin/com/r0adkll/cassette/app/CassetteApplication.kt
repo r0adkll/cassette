@@ -4,6 +4,8 @@ import android.app.Application
 import com.r0adkll.cassette.app.di.AndroidAppGraph
 import com.r0adkll.cassette.data.ble.BackgroundDeliveryHandler
 import com.r0adkll.cassette.data.ble.BleHost
+import com.r0adkll.cassette.surfaces.tile.TileComponent
+import com.r0adkll.cassette.surfaces.tile.TileHost
 import com.r0adkll.cassette.surfaces.widget.WidgetComponent
 import com.r0adkll.cassette.surfaces.widget.WidgetHost
 import dev.zacsweers.metro.createGraphFactory
@@ -11,7 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
-class CassetteApplication : Application(), BleHost, WidgetHost {
+class CassetteApplication : Application(), BleHost, WidgetHost, TileHost {
   /** Android entry points reach the graph through this (decision 0007). */
   val graph: AndroidAppGraph by lazy {
     createGraphFactory<AndroidAppGraph.Factory>().create(this)
@@ -34,4 +36,10 @@ class CassetteApplication : Application(), BleHost, WidgetHost {
 
   override val widgetComponent: WidgetComponent
     get() = graph
+
+  override val tileComponent: TileComponent
+    get() = graph
+
+  override val tileScope: CoroutineScope
+    get() = bleScope
 }
