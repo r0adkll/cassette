@@ -33,12 +33,20 @@ class AndroidGattClient(private val application: Application) : GattClient {
         get() =
             application.checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) ==
                 PackageManager.PERMISSION_GRANTED &&
-                application.getSystemService(BluetoothManager::class.java)?.adapter?.isEnabled == true
+                application.getSystemService(BluetoothManager::class.java)?.adapter?.isEnabled ==
+                    true
 
-    override suspend fun read(address: String, characteristics: List<String>, timeout: Duration): GattResult {
+    override suspend fun read(
+        address: String,
+        characteristics: List<String>,
+        timeout: Duration,
+    ): GattResult {
         if (!isReady) return GattResult.Failed
-        val adapter = application.getSystemService(BluetoothManager::class.java)?.adapter ?: return GattResult.Failed
-        val device = runCatching { adapter.getRemoteDevice(address) }.getOrNull() ?: return GattResult.Failed
+        val adapter =
+            application.getSystemService(BluetoothManager::class.java)?.adapter
+                ?: return GattResult.Failed
+        val device =
+            runCatching { adapter.getRemoteDevice(address) }.getOrNull() ?: return GattResult.Failed
         val wanted = characteristics.map(UUID::fromString)
         val result = withTimeoutOrNull(timeout) { connectAndRead(device, wanted) }
         if (result == null) Log.d(TAG, "GATT $address timed out")
@@ -73,20 +81,26 @@ class AndroidGattClient(private val application: Application) : GattClient {
 
             val callback =
                 object : BluetoothGattCallback() {
-                    override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
+                    override fun onConnectionStateChange(
+                        gatt: BluetoothGatt,
+                        status: Int,
+                        newState: Int,
+                    ) {
                         Log.d(TAG, "GATT $address state=$newState status=$status")
                         when {
                             status != BluetoothGatt.GATT_SUCCESS -> finish(GattResult.Failed)
                             newState == BluetoothProfile.STATE_CONNECTED ->
                                 if (!gatt.discoverServices()) finish(GattResult.Failed)
-                            newState == BluetoothProfile.STATE_DISCONNECTED -> finish(GattResult.Failed)
+                            newState == BluetoothProfile.STATE_DISCONNECTED ->
+                                finish(GattResult.Failed)
                         }
                     }
 
                     override fun onServicesDiscovered(gatt: BluetoothGatt, status: Int) {
                         if (status != BluetoothGatt.GATT_SUCCESS) return finish(GattResult.Failed)
                         services = gatt.services.map { it.uuid.toString() }
-                        val available = gatt.services.flatMap { it.characteristics }.associateBy { it.uuid }
+                        val available =
+                            gatt.services.flatMap { it.characteristics }.associateBy { it.uuid }
                         wanted.mapNotNullTo(queue) { available[it] }
                         readNext(gatt)
                     }
@@ -97,8 +111,12 @@ class AndroidGattClient(private val application: Application) : GattClient {
                         value: ByteArray,
                         status: Int,
                     ) {
-                        Log.d(TAG, "GATT $address read ${characteristic.uuid} status=$status value=[${value.toHex()}]")
-                        if (status == BluetoothGatt.GATT_SUCCESS) values[characteristic.uuid.toString()] = value
+                        Log.d(
+                            TAG,
+                            "GATT $address read ${characteristic.uuid} status=$status value=[${value.toHex()}]",
+                        )
+                        if (status == BluetoothGatt.GATT_SUCCESS)
+                            values[characteristic.uuid.toString()] = value
                         readNext(gatt)
                     }
 
@@ -109,7 +127,12 @@ class AndroidGattClient(private val application: Application) : GattClient {
                         status: Int,
                     ) {
                         @Suppress("DEPRECATION")
-                        onCharacteristicRead(gatt, characteristic, characteristic.value ?: ByteArray(0), status)
+                        onCharacteristicRead(
+                            gatt,
+                            characteristic,
+                            characteristic.value ?: ByteArray(0),
+                            status,
+                        )
                     }
                 }
 

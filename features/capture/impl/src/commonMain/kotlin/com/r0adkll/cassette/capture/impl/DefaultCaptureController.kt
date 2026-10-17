@@ -61,9 +61,14 @@ class DefaultCaptureController(
                         }
                         if (refresher.refresh(heard, CaptureMode.Live).hubRead) hubRead = true
                     }
-                    val left = (REFRESH_LENGTH - (clock.now() - started)).inWholeSeconds.toInt().coerceAtLeast(0)
+                    val left =
+                        (REFRESH_LENGTH - (clock.now() - started))
+                            .inWholeSeconds
+                            .toInt()
+                            .coerceAtLeast(0)
                     send(RefreshProgress.Scanning(left, heardIds.size))
-                    if (hubRead && everythingReadSince(bikeIds, started.toEpochMilliseconds())) break
+                    if (hubRead && everythingReadSince(bikeIds, started.toEpochMilliseconds()))
+                        break
                     delay(1.seconds)
                 }
             }
@@ -78,7 +83,10 @@ class DefaultCaptureController(
         bikeIds.isNotEmpty() &&
             bikeIds.all { bikeId ->
                 db.componentQueries.selectForBike(bikeId).executeAsList().all { component ->
-                    val latest = db.batterySampleQueries.latestForComponent(component.id).executeAsOneOrNull()
+                    val latest =
+                        db.batterySampleQueries
+                            .latestForComponent(component.id)
+                            .executeAsOneOrNull()
                     latest != null && latest.at >= since
                 }
             }
@@ -90,7 +98,8 @@ class DefaultCaptureController(
             return
         }
         val result = scanner.startBackground(BACKGROUND_PROFILE)
-        if (result != ArmResult.Armed) println("CassetteScan: background scan not armed ($reason): $result")
+        if (result != ArmResult.Armed)
+            println("CassetteScan: background scan not armed ($reason): $result")
     }
 
     /** One background wake: record what was heard and read batteries that are due. */
@@ -101,14 +110,20 @@ class DefaultCaptureController(
 
     private companion object {
         val REFRESH_LENGTH = 60.seconds
-        /** Validated on two rides (no gaps over 46 s); ride tests compare the others (decision 0009). */
+        /**
+         * Validated on two rides (no gaps over 46 s); ride tests compare the others (decision
+         * 0009).
+         */
         val BACKGROUND_PROFILE = ScanProfile.AllLowPower
     }
 }
 
 @ContributesBinding(AppScope::class)
 @Inject
-class CaptureBackgroundDeliveryHandler(private val controller: DefaultCaptureController) : BackgroundDeliveryHandler {
-    override suspend fun onDelivery(readings: List<com.r0adkll.cassette.protocol.AxsReading>, errorCode: Int) =
-        controller.onBackgroundDelivery(readings)
+class CaptureBackgroundDeliveryHandler(private val controller: DefaultCaptureController) :
+    BackgroundDeliveryHandler {
+    override suspend fun onDelivery(
+        readings: List<com.r0adkll.cassette.protocol.AxsReading>,
+        errorCode: Int,
+    ) = controller.onBackgroundDelivery(readings)
 }

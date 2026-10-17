@@ -3,7 +3,8 @@ package com.r0adkll.cassette.data.ble
 import kotlinx.coroutines.CoroutineScope
 
 /**
- * Implemented by the Application so receivers, which Android creates, reach the graph (decision 0007).
+ * Implemented by the Application so receivers, which Android creates, reach the graph (decision
+ * 0007).
  */
 interface BleHost {
     val bleScope: CoroutineScope

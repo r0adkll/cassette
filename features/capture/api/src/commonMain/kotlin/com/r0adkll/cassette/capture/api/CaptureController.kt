@@ -9,7 +9,8 @@ interface CaptureController {
 
     /**
      * A 60-second scan while the app is open: records every known component it hears and reads the
-     * hub's battery table and the power meter. Completes when the time is up or everything was read.
+     * hub's battery table and the power meter. Completes when the time is up or everything was
+     * read.
      */
     fun refresh(): Flow<RefreshProgress>
 

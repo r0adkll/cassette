@@ -26,8 +26,9 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.mapNotNull
 
 /**
- * Filtered BLE scans for AXS adverts. Filters run on the Bluetooth controller where supported, which
- * is what lets the [PendingIntent] scan keep running with the screen off and the app process dead.
+ * Filtered BLE scans for AXS adverts. Filters run on the Bluetooth controller where supported,
+ * which is what lets the [PendingIntent] scan keep running with the screen off and the app process
+ * dead.
  */
 @SuppressLint("MissingPermission") // Every entry point checks hasScanPermission() first.
 @SingleIn(AppScope::class)
@@ -41,41 +42,42 @@ class AndroidAdvertScanner(private val application: Application) : AdvertScanner
         get() = adapter?.isEnabled == true && hasScanPermission()
 
     private fun hasScanPermission(): Boolean =
-        application.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED
+        application.checkSelfPermission(Manifest.permission.BLUETOOTH_SCAN) ==
+            PackageManager.PERMISSION_GRANTED
 
     /**
      * Unfiltered so components that don't match the AXS filters (a power meter advertising as a
      * standard sensor) still show up. Android pauses unfiltered scans with the screen off, which is
      * fine while the app is open.
      */
-    override fun live(): Flow<AxsReading> =
-        callbackFlow {
-                val scanner = adapter?.takeIf { it.isEnabled }?.bluetoothLeScanner
-                if (scanner == null || !hasScanPermission()) {
-                    close(IllegalStateException("Bluetooth is off or the scan permission is missing"))
-                    return@callbackFlow
+    override fun live(): Flow<AxsReading> = callbackFlow {
+        val scanner = adapter?.takeIf { it.isEnabled }?.bluetoothLeScanner
+        if (scanner == null || !hasScanPermission()) {
+            close(IllegalStateException("Bluetooth is off or the scan permission is missing"))
+            return@callbackFlow
+        }
+        val callback =
+            object : ScanCallback() {
+                override fun onScanResult(callbackType: Int, result: ScanResult) {
+                    trySend(result)
                 }
-                val callback =
-                    object : ScanCallback() {
-                        override fun onScanResult(callbackType: Int, result: ScanResult) {
-                            trySend(result)
-                        }
 
-                        override fun onBatchScanResults(results: List<ScanResult>) {
-                            results.forEach { trySend(it) }
-                        }
+                override fun onBatchScanResults(results: List<ScanResult>) {
+                    results.forEach { trySend(it) }
+                }
 
-                        override fun onScanFailed(errorCode: Int) {
-                            close(IllegalStateException("Scan failed with error $errorCode"))
-                        }
-                    }
-                scanner.startScan(emptyList(), LIVE_SETTINGS, callback)
-                awaitClose { runCatching { scanner.stopScan(callback) } }
+                override fun onScanFailed(errorCode: Int) {
+                    close(IllegalStateException("Scan failed with error $errorCode"))
+                }
             }
-            .mapNotNull { it.toReading() }
+        scanner.startScan(emptyList(), LIVE_SETTINGS, callback)
+        awaitClose { runCatching { scanner.stopScan(callback) } }
+    }
+        .mapNotNull { it.toReading() }
 
     override fun startBackground(profile: ScanProfile): ArmResult {
-        val scanner = adapter?.takeIf { it.isEnabled }?.bluetoothLeScanner ?: return ArmResult.BluetoothOff
+        val scanner =
+            adapter?.takeIf { it.isEnabled }?.bluetoothLeScanner ?: return ArmResult.BluetoothOff
         if (!hasScanPermission()) return ArmResult.NoPermission
         // Re-registering the same PendingIntent with new settings isn't reliable; stop first.
         stopBackground()
@@ -92,7 +94,8 @@ class AndroidAdvertScanner(private val application: Application) : AdvertScanner
         PendingIntent.getBroadcast(
             application,
             ScanResultReceiver.REQUEST_CODE,
-            Intent(application, ScanResultReceiver::class.java).setAction(ScanResultReceiver.ACTION),
+            Intent(application, ScanResultReceiver::class.java)
+                .setAction(ScanResultReceiver.ACTION),
             // Mutable so the Bluetooth stack can attach the results.
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
         )
@@ -103,7 +106,9 @@ class AndroidAdvertScanner(private val application: Application) : AdvertScanner
         // OR'd: some sessions send manufacturer data without the service data.
         val FILTERS =
             listOf(
-                ScanFilter.Builder().setManufacturerData(AxsAdvertParser.COMPANY_ID, ByteArray(0)).build(),
+                ScanFilter.Builder()
+                    .setManufacturerData(AxsAdvertParser.COMPANY_ID, ByteArray(0))
+                    .build(),
                 ScanFilter.Builder().setServiceData(SERVICE_UUID, ByteArray(0)).build(),
             )
 
@@ -117,16 +122,21 @@ private fun ScanProfile.settings(): ScanSettings =
         .apply {
             when (this@settings) {
                 ScanProfile.AllLowPower ->
-                    setScanMode(ScanSettings.SCAN_MODE_LOW_POWER).setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
+                    setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
+                        .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
                 ScanProfile.AllBalanced ->
-                    setScanMode(ScanSettings.SCAN_MODE_BALANCED).setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
+                    setScanMode(ScanSettings.SCAN_MODE_BALANCED)
+                        .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
                 ScanProfile.Batched30s ->
                     setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
                         .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
                         .setReportDelay(30_000L)
                 ScanProfile.FirstAndLost ->
                     setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
-                        .setCallbackType(ScanSettings.CALLBACK_TYPE_FIRST_MATCH or ScanSettings.CALLBACK_TYPE_MATCH_LOST)
+                        .setCallbackType(
+                            ScanSettings.CALLBACK_TYPE_FIRST_MATCH or
+                                ScanSettings.CALLBACK_TYPE_MATCH_LOST
+                        )
                         .setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE)
                         .setNumOfMatches(ScanSettings.MATCH_NUM_ONE_ADVERTISEMENT)
             }
@@ -139,7 +149,8 @@ internal fun ScanResult.toReading(): AxsReading? {
     // timestampNanos is elapsed-realtime; background results can arrive well after they were heard.
     val ageMillis = (SystemClock.elapsedRealtimeNanos() - timestampNanos) / 1_000_000
     val reading =
-        AxsAdvertParser.parse(raw, rssi, device.address, System.currentTimeMillis() - ageMillis) ?: return null
+        AxsAdvertParser.parse(raw, rssi, device.address, System.currentTimeMillis() - ageMillis)
+            ?: return null
     Log.d(
         TAG,
         "${reading.key} ${reading.frame} ${reading.kind} ${reading.battery?.millivolts ?: "-"}mV " +

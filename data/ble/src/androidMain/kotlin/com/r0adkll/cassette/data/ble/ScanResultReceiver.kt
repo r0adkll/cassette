@@ -17,7 +17,11 @@ class ScanResultReceiver : BroadcastReceiver() {
         val error = intent.getIntExtra(BluetoothLeScanner.EXTRA_ERROR_CODE, 0)
         if (error != 0) Log.w(TAG, "Background scan reported error $error")
         val readings =
-            IntentCompat.getParcelableArrayListExtra(intent, BluetoothLeScanner.EXTRA_LIST_SCAN_RESULT, ScanResult::class.java)
+            IntentCompat.getParcelableArrayListExtra(
+                    intent,
+                    BluetoothLeScanner.EXTRA_LIST_SCAN_RESULT,
+                    ScanResult::class.java,
+                )
                 .orEmpty()
                 .mapNotNull { it.toReading() }
         Log.d(TAG, "Background delivery: ${readings.size} AXS readings")
@@ -26,8 +30,9 @@ class ScanResultReceiver : BroadcastReceiver() {
         host.bleScope.launch {
             try {
                 // goAsync() allows about 10 s; leave a margin.
-                withTimeoutOrNull(BUDGET_MILLIS) { host.backgroundDeliveryHandler.onDelivery(readings, error) }
-                    ?: Log.d(TAG, "Background delivery ran out of time")
+                withTimeoutOrNull(BUDGET_MILLIS) {
+                    host.backgroundDeliveryHandler.onDelivery(readings, error)
+                } ?: Log.d(TAG, "Background delivery ran out of time")
             } finally {
                 pending.finish()
             }
@@ -45,12 +50,18 @@ class ScanResultReceiver : BroadcastReceiver() {
 /** System-held scans don't survive a reboot or an app update, so re-arm after either. */
 class RearmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action != Intent.ACTION_BOOT_COMPLETED && intent.action != Intent.ACTION_MY_PACKAGE_REPLACED) return
+        if (
+            intent.action != Intent.ACTION_BOOT_COMPLETED &&
+                intent.action != Intent.ACTION_MY_PACKAGE_REPLACED
+        )
+            return
         val host = context.applicationContext as BleHost
         val pending = goAsync()
         host.bleScope.launch {
             try {
-                host.rearmBackgroundCapture(reason = intent.action.orEmpty().substringAfterLast('.'))
+                host.rearmBackgroundCapture(
+                    reason = intent.action.orEmpty().substringAfterLast('.')
+                )
             } finally {
                 pending.finish()
             }

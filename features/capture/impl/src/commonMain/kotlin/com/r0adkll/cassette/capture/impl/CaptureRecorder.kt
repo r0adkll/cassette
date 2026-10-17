@@ -27,12 +27,15 @@ import kotlinx.coroutines.withContext
 data class Heard(val reading: AxsReading, val component: Component, val bike: Bike)
 
 /**
- * Writes what we hear into the database. Only components of known bikes are recorded; everything else
- * is someone else's bike (add-bike discovers new ones from the live scan).
+ * Writes what we hear into the database. Only components of known bikes are recorded; everything
+ * else is someone else's bike (add-bike discovers new ones from the live scan).
  */
 @SingleIn(AppScope::class)
 @Inject
-class CaptureRecorder(private val db: CassetteDatabase, private val dispatchers: CassetteDispatchers) {
+class CaptureRecorder(
+    private val db: CassetteDatabase,
+    private val dispatchers: CassetteDispatchers,
+) {
     private val lastWrite = mutableMapOf<Long, Long>()
     private val lock = Mutex()
 
@@ -49,7 +52,8 @@ class CaptureRecorder(private val db: CassetteDatabase, private val dispatchers:
             db.transaction {
                 db.componentQueries.markSeen(
                     at = at,
-                    // Not every frame says everything (beacons have no device type); keep what we know.
+                    // Not every frame says everything (beacons have no device type); keep what we
+                    // know.
                     kind = reading.kind.takeIf { it != ComponentKind.UNKNOWN }?.name,
                     modelId = reading.modelId?.toLong(),
                     deviceType = reading.classByte?.toLong(),
@@ -62,7 +66,14 @@ class CaptureRecorder(private val db: CassetteDatabase, private val dispatchers:
                 }
                 db.bikeQueries.markSeen(at, bike.id)
                 reading.battery?.let {
-                    insertSample(row.id, at, it.millivolts, it.percent, it.reportedStatus, ReadMethod.Advert)
+                    insertSample(
+                        row.id,
+                        at,
+                        it.millivolts,
+                        it.percent,
+                        it.reportedStatus,
+                        ReadMethod.Advert,
+                    )
                 }
             }
             lastWrite[row.id] = at
@@ -73,19 +84,21 @@ class CaptureRecorder(private val db: CassetteDatabase, private val dispatchers:
     }
 
     /**
-     * By serial (or a Quarq's name). Frames without a serial are keyed by address, so they resolve to
-     * the component last heard at that address.
+     * By serial (or a Quarq's name). Frames without a serial are keyed by address, so they resolve
+     * to the component last heard at that address.
      */
     private fun findComponent(reading: AxsReading) =
         db.componentQueries.selectByKey(reading.key).executeAsOneOrNull()
-            ?: reading.address.takeIf { reading.serial == null && it.isNotEmpty() }?.let {
-                db.componentQueries.selectByAddress(it).executeAsList().firstOrNull()
-            }
+            ?: reading.address
+                .takeIf { reading.serial == null && it.isNotEmpty() }
+                ?.let {
+                    db.componentQueries.selectByAddress(it).executeAsList().firstOrNull()
+                }
 
     /**
-     * Applies the hub's tables (decision 0010): every listed component is seen, new ones join the bike,
-     * and components the hub hasn't listed for 30 days are marked removed. The hub's own row skips
-     * battery, since its adverts carry voltage, percent and status.
+     * Applies the hub's tables (decision 0010): every listed component is seen, new ones join the
+     * bike, and components the hub hasn't listed for 30 days are marked removed. The hub's own row
+     * skips battery, since its adverts carry voltage, percent and status.
      */
     suspend fun applyHubTable(
         bike: Bike,
@@ -132,7 +145,14 @@ class CaptureRecorder(private val db: CassetteDatabase, private val dispatchers:
                                 existing.id
                             }
                         if (row.serial != table.masterSerial) {
-                            insertSample(id, now, row.millivolts, null, row.reportedStatus, ReadMethod.Hub)
+                            insertSample(
+                                id,
+                                now,
+                                row.millivolts,
+                                null,
+                                row.reportedStatus,
+                                ReadMethod.Hub,
+                            )
                         }
                     }
                     db.bikeQueries.markHubRead(now, bike.id.value)
@@ -150,13 +170,20 @@ class CaptureRecorder(private val db: CassetteDatabase, private val dispatchers:
     suspend fun applyBatteryLevel(component: Component, percent: Int, at: Instant) =
         withContext(dispatchers.io) {
             lock.withLock {
-                insertSample(component.id.value, at.toEpochMilliseconds(), null, percent, null, ReadMethod.Gatt)
+                insertSample(
+                    component.id.value,
+                    at.toEpochMilliseconds(),
+                    null,
+                    percent,
+                    null,
+                    ReadMethod.Gatt,
+                )
             }
         }
 
     /**
-     * History keeps a reading per component every 10 minutes, plus any status change, so the open app
-     * scanning every second doesn't flood it.
+     * History keeps a reading per component every 10 minutes, plus any status change, so the open
+     * app scanning every second doesn't flood it.
      */
     private fun insertSample(
         componentId: Long,

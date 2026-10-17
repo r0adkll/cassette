@@ -5,12 +5,17 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.flow.Flow
 
-/** AXS advert scanning. Android implements it today; Core Bluetooth comes with iOS (milestone 3). */
+/**
+ * AXS advert scanning. Android implements it today; Core Bluetooth comes with iOS (milestone 3).
+ */
 interface AdvertScanner {
     /** Bluetooth is on and the scan permission is granted. */
     val isReady: Boolean
 
-    /** An unfiltered, low-latency scan while the app is open. Completes with an error if not [isReady]. */
+    /**
+     * An unfiltered, low-latency scan while the app is open. Completes with an error if not
+     * [isReady].
+     */
     fun live(): Flow<AxsReading>
 
     /**
@@ -49,11 +54,18 @@ enum class ScanProfile {
 interface GattClient {
     val isReady: Boolean
 
-    suspend fun read(address: String, characteristics: List<String>, timeout: Duration = 12.seconds): GattResult
+    suspend fun read(
+        address: String,
+        characteristics: List<String>,
+        timeout: Duration = 12.seconds,
+    ): GattResult
 }
 
 sealed interface GattResult {
-    /** Values for the requested characteristics the device has; absent ones are missing from the map. */
+    /**
+     * Values for the requested characteristics the device has; absent ones are missing from the
+     * map.
+     */
     class Values(val values: Map<String, ByteArray>, val services: List<String>) : GattResult
 
     data object Failed : GattResult
