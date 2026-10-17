@@ -1,0 +1,6 @@
+#!/bin/sh
+# Installed by ./gradlew bootstrap. Blocks pushes that ktfmt would reformat.
+./gradlew ktfmtCheck --quiet || {
+  echo "ktfmt found formatting issues. Run ./gradlew ktfmtFormat and commit the result."
+  exit 1
+}

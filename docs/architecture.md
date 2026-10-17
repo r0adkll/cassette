@@ -26,6 +26,13 @@ Split into `api`/`impl` only where there's a real seam.
 :surfaces:wear                         Wear app, tile, complication (milestone 2)
 ```
 
+## Status
+
+Built so far: `gradle/build-logic` (plugins `cassette.root` (ktfmt), `cassette.multiplatform`,
+`cassette.android.library`, `cassette.android.application`, `cassette.compose`, `cassette.di`, `cassette.ui`),
+`:protocol` (AXS decoding, shared, fixture tests on JVM and Android), `:common:compose` (design system) and
+`:app:android` (design gallery). `:poc` is the proof of concept, kept until its features are ported.
+
 ## Open
 
 - Background capture: PendingIntent scan vs CompanionDeviceManager ([0009](decisions/0009-background-capture.md)).
