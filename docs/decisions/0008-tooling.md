@@ -25,12 +25,20 @@ Commits keep their `Co-Authored-By` attribution lines. Unlike Campfire, Cassette
 Sideload only for now, through Drop (our build distribution platform) at
 https://drop.thescavengers.software. Play/Fastlane tooling is adopted but unused until a listing is decided.
 
-- CI signs the debug build with one internal key, so every Drop build can update every other. The key lives
+- CI uploads the `internal` build type: the release build's R8 optimisation and resource shrinking, under
+  the debug build's application id (`com.r0adkll.cassette.debug`) and dev icon, so it updates the debug
+  installs. The watch app (`:app:wear`) has the same `internal` build type, built alongside it and kept
+  as a CI artifact (Drop doesn't take it yet); with the same id and key it pairs with the phone's Drop
+  build. Both R8 mappings are kept as CI artifacts for retracing. Release gets R8 too, with drop-noop.
+- CI signs the internal build with one internal key, so every Drop build can update every other. The key lives
   only in repository secrets (`CASSETTE_KEYSTORE_BASE64`, `CASSETTE_KEYSTORE_PASSWORD`, `CASSETTE_KEY_ALIAS`,
   `CASSETTE_KEY_PASSWORD`), with its owner's copy kept outside the repo. Local builds keep the debug key,
   so an adb install and a Drop build can't update each other.
+- The required check ("Test and build") is unit tests and a debug compile, without secrets. The internal
+  build and its uploads run in a separate "Internal build" job once that passes, and isn't required, so a
+  slow or broken R8 run doesn't block a merge.
 - Pushes to `main` upload to the `main` channel and same-repository pull requests to `pr/<number>`, with
   Drop's GitHub Action (OIDC, no upload secrets). Without the internal key, nothing is uploaded.
-- Drop's Gradle plugin gives the debug build its SDK: Settings → App updates shows what's waiting and opens
+- Drop's Gradle plugin gives the debug and internal builds its SDK: Settings → App updates shows what's waiting and opens
   Drop's update sheet, and a red dot on the bike screen's Settings button says one is waiting. Version codes
   count first-parent commits.

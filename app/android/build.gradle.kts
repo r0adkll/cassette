@@ -33,17 +33,39 @@ android {
       applicationIdSuffix = ".debug"
       if (keystore != null) signingConfig = signingConfigs.getByName("internal")
     }
+
+    release {
+      isMinifyEnabled = true
+      isShrinkResources = true
+      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+    }
+
+    // What CI uploads to Drop: the release build's R8 optimisation, under the debug build's id, key
+    // and icon so Drop Builds keep updating the debug installs. Local builds fall back to the debug
+    // key.
+    create("internal") {
+      initWith(getByName("release"))
+      applicationIdSuffix = ".debug"
+      matchingFallbacks += "release"
+      isProfileable = true
+      signingConfig =
+        if (keystore != null) signingConfigs.getByName("internal")
+        else signingConfigs.getByName("debug")
+    }
   }
+
+  sourceSets.getByName("internal").res.directories += "src/debug/res"
 
   buildFeatures { compose = true }
 }
 
-// Builds from CI go to Drop; the debug build gets its SDK (in-app updates), anything else the
-// no-op.
+// Builds from CI go to Drop; the debug and internal builds get its SDK (in-app updates), release
+// the no-op.
 drop {
   serverUrl = "https://drop.thescavengers.software"
   // Only grows, and a pull request's Build never outranks the main Build its merge produces.
   versionCodeFromCommits = true
+  enableFor { it.buildType == "debug" || it.buildType == "internal" }
 }
 
 dependencies {

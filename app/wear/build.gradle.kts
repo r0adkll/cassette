@@ -37,7 +37,27 @@ android {
       applicationIdSuffix = ".debug"
       if (keystore != null) signingConfig = signingConfigs.getByName("internal")
     }
+
+    release {
+      isMinifyEnabled = true
+      isShrinkResources = true
+      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+    }
+
+    // The watch side of the phone's internal build: R8 like release, with the debug build's id, key
+    // and icon so it pairs with the phone's internal and debug builds.
+    create("internal") {
+      initWith(getByName("release"))
+      applicationIdSuffix = ".debug"
+      matchingFallbacks += "release"
+      isProfileable = true
+      signingConfig =
+        if (keystore != null) signingConfigs.getByName("internal")
+        else signingConfigs.getByName("debug")
+    }
   }
+
+  sourceSets.getByName("internal").res.directories += "src/debug/res"
 
   buildFeatures { compose = true }
 
