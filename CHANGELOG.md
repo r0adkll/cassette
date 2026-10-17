@@ -7,6 +7,9 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Changed
 
+- The watch app's internal build goes to Drop as a Wear Build in the same run as the phone's (Drop
+  0.4.0), with the phone's commit-count version code, so it installs from its Build page instead of a
+  CI artifact.
 - Builds uploaded to Drop are the R8-optimised `internal` build type (same app id, key and icon as the
   debug build), built in a separate, non-required CI job after the compile passes. The Wear app gets
   the same build type, kept as a CI artifact so it pairs with the phone's Drop build. Release builds
