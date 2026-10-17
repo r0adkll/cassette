@@ -4,9 +4,10 @@ Date: 2026-10-16 · Status: accepted
 
 ## Decision
 
-- **Formatting:** ktfmt, KotlinLang style (4-space indent), via the ktfmt Gradle plugin: `ktfmtCheck` in CI,
-  `ktfmtFormat` locally, and a pre-push hook installed by a `bootstrap` task. Not ktlint, unlike Campfire. The
-  POC code (2-space) gets reformatted when the project is scaffolded.
+- **Formatting:** ktfmt, Google style (2-space indents, including continuations; changed from KotlinLang's
+  4 spaces on 2026-10-17). `scripts/ktfmt` runs the ktfmt CLI in CI and the pre-push hook (installed by
+  `./gradlew bootstrap`) and is the only formatter: the ktfmt Gradle plugin was removed because its Google
+  style didn't match the CLI's line for line. Not ktlint, unlike Campfire.
 - **No Kover** or coverage gate. Protocol and battery logic are covered by fixture tests from captured bytes.
 
 Adopt from Campfire:

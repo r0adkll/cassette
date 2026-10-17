@@ -30,86 +30,84 @@ private val PanelShape = RoundedCornerShape(16.dp)
 /** A bordered surface for grouped content. */
 @Composable
 fun Panel(
-    modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
-    content: @Composable ColumnScope.() -> Unit,
+  modifier: Modifier = Modifier,
+  onClick: (() -> Unit)? = null,
+  content: @Composable ColumnScope.() -> Unit,
 ) {
-    val colors = CassetteTheme.colors
-    Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .clip(PanelShape)
-                .background(colors.panel)
-                .border(1.dp, colors.line, PanelShape)
-                .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
-                .padding(horizontal = 14.dp, vertical = 10.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        content = content,
-    )
+  val colors = CassetteTheme.colors
+  Column(
+    modifier =
+      modifier
+        .fillMaxWidth()
+        .clip(PanelShape)
+        .background(colors.panel)
+        .border(1.dp, colors.line, PanelShape)
+        .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+        .padding(horizontal = 14.dp, vertical = 10.dp),
+    verticalArrangement = Arrangement.spacedBy(8.dp),
+    content = content,
+  )
 }
 
 /** A component's short code (RD, FD, L, R, PM) in a soft tile. Stands in for component icons. */
 @Composable
 fun CodeBadge(code: String, modifier: Modifier = Modifier) {
-    Box(
-        modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(CassetteTheme.colors.track),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            code,
-            style =
-                CassetteTheme.type.numeral.copy(
-                    fontSize = CassetteTheme.type.numeral.fontSize * 0.58f
-                ),
-            color = CassetteTheme.colors.text,
-        )
-    }
+  Box(
+    modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(CassetteTheme.colors.track),
+    contentAlignment = Alignment.Center,
+  ) {
+    Text(
+      code,
+      style =
+        CassetteTheme.type.numeral.copy(fontSize = CassetteTheme.type.numeral.fontSize * 0.58f),
+      color = CassetteTheme.colors.text,
+    )
+  }
 }
 
 /** One component on the bike screen: badge, name and source, value with status, and a level bar. */
 @Composable
 fun ComponentRow(
-    code: String,
-    name: String,
-    source: String,
-    value: String,
-    level: Float,
-    tone: StatusTone,
-    modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
+  code: String,
+  name: String,
+  source: String,
+  value: String,
+  level: Float,
+  tone: StatusTone,
+  modifier: Modifier = Modifier,
+  onClick: (() -> Unit)? = null,
 ) {
-    val colors = CassetteTheme.colors
-    val type = CassetteTheme.type
-    Panel(modifier, onClick) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            CodeBadge(code)
-            Column(Modifier.weight(1f)) {
-                Text(
-                    name,
-                    style = type.itemTitle,
-                    color = colors.text,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    source,
-                    style = type.bodySmall,
-                    color = colors.muted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-            Column(horizontalAlignment = Alignment.End) {
-                Text(value, style = type.numeral, color = colors.text)
-                StatusLabel(tone)
-            }
-        }
-        LevelBar(level, tone)
+  val colors = CassetteTheme.colors
+  val type = CassetteTheme.type
+  Panel(modifier, onClick) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+      CodeBadge(code)
+      Column(Modifier.weight(1f)) {
+        Text(
+          name,
+          style = type.itemTitle,
+          color = colors.text,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+          source,
+          style = type.bodySmall,
+          color = colors.muted,
+          maxLines = 1,
+          overflow = TextOverflow.Ellipsis,
+        )
+      }
+      Column(horizontalAlignment = Alignment.End) {
+        Text(value, style = type.numeral, color = colors.text)
+        StatusLabel(tone)
+      }
     }
+    LevelBar(level, tone)
+  }
 }
 
 /**
@@ -118,91 +116,89 @@ fun ComponentRow(
  */
 @Composable
 fun ThickBar(
-    code: String,
-    name: String,
-    value: String,
-    level: Float,
-    tone: StatusTone,
-    modifier: Modifier = Modifier,
+  code: String,
+  name: String,
+  value: String,
+  level: Float,
+  tone: StatusTone,
+  modifier: Modifier = Modifier,
 ) {
-    val colors = CassetteTheme.colors
-    val type = CassetteTheme.type
-    val shape = RoundedCornerShape(20.dp)
-    Box(modifier.fillMaxWidth().height(54.dp).clip(shape).background(colors.track)) {
-        Box(
-            Modifier.fillMaxWidth(level.coerceIn(0.06f, 1f))
-                .fillMaxHeight()
-                .clip(shape)
-                .background(thickFill(tone))
-        )
-        Row(
-            Modifier.fillMaxWidth().fillMaxHeight().padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                code,
-                style = type.numeral.copy(fontSize = type.numeral.fontSize * 0.58f),
-                color = colors.text,
-                modifier = Modifier.width(34.dp),
-            )
-            Column(Modifier.weight(1f)) {
-                Text(name, style = type.itemTitle, color = colors.text)
-                StatusLabel(tone, color = colors.text.copy(alpha = 0.85f))
-            }
-            Text(value, style = type.numeral, color = colors.text)
-        }
+  val colors = CassetteTheme.colors
+  val type = CassetteTheme.type
+  val shape = RoundedCornerShape(20.dp)
+  Box(modifier.fillMaxWidth().height(54.dp).clip(shape).background(colors.track)) {
+    Box(
+      Modifier.fillMaxWidth(level.coerceIn(0.06f, 1f))
+        .fillMaxHeight()
+        .clip(shape)
+        .background(thickFill(tone))
+    )
+    Row(
+      Modifier.fillMaxWidth().fillMaxHeight().padding(horizontal = 16.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Text(
+        code,
+        style = type.numeral.copy(fontSize = type.numeral.fontSize * 0.58f),
+        color = colors.text,
+        modifier = Modifier.width(34.dp),
+      )
+      Column(Modifier.weight(1f)) {
+        Text(name, style = type.itemTitle, color = colors.text)
+        StatusLabel(tone, color = colors.text.copy(alpha = 0.85f))
+      }
+      Text(value, style = type.numeral, color = colors.text)
     }
+  }
 }
 
 @Composable
 private fun thickFill(tone: StatusTone) =
-    if (CassetteTheme.colors.isDark) {
-        when (tone) {
-            StatusTone.Good -> androidx.compose.ui.graphics.Color(0xFF1D5C38)
-            StatusTone.Low -> androidx.compose.ui.graphics.Color(0xFF6B4800)
-            StatusTone.Critical -> androidx.compose.ui.graphics.Color(0xFF8A0019)
-            StatusTone.Stale,
-            StatusTone.Unknown -> androidx.compose.ui.graphics.Color(0xFF2A2A2F)
-        }
-    } else {
-        when (tone) {
-            StatusTone.Good -> androidx.compose.ui.graphics.Color(0xFFBFE8CC)
-            StatusTone.Low -> androidx.compose.ui.graphics.Color(0xFFFFE0A3)
-            StatusTone.Critical -> androidx.compose.ui.graphics.Color(0xFFFFC7CE)
-            StatusTone.Stale,
-            StatusTone.Unknown -> androidx.compose.ui.graphics.Color(0xFFE2E2DE)
-        }
+  if (CassetteTheme.colors.isDark) {
+    when (tone) {
+      StatusTone.Good -> androidx.compose.ui.graphics.Color(0xFF1D5C38)
+      StatusTone.Low -> androidx.compose.ui.graphics.Color(0xFF6B4800)
+      StatusTone.Critical -> androidx.compose.ui.graphics.Color(0xFF8A0019)
+      StatusTone.Stale,
+      StatusTone.Unknown -> androidx.compose.ui.graphics.Color(0xFF2A2A2F)
     }
+  } else {
+    when (tone) {
+      StatusTone.Good -> androidx.compose.ui.graphics.Color(0xFFBFE8CC)
+      StatusTone.Low -> androidx.compose.ui.graphics.Color(0xFFFFE0A3)
+      StatusTone.Critical -> androidx.compose.ui.graphics.Color(0xFFFFC7CE)
+      StatusTone.Stale,
+      StatusTone.Unknown -> androidx.compose.ui.graphics.Color(0xFFE2E2DE)
+    }
+  }
 
 /** A labelled value in the component screen's stat grid. */
 @Composable
 fun StatCell(label: String, value: String, modifier: Modifier = Modifier) {
-    Panel(modifier) {
-        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(
-                label.uppercase(),
-                style = CassetteTheme.type.status,
-                color = CassetteTheme.colors.muted,
-            )
-            Text(
-                value,
-                style =
-                    CassetteTheme.type.numeral.copy(
-                        fontSize = CassetteTheme.type.numeral.fontSize * 0.75f
-                    ),
-                color = CassetteTheme.colors.text,
-            )
-        }
+  Panel(modifier) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+      Text(
+        label.uppercase(),
+        style = CassetteTheme.type.status,
+        color = CassetteTheme.colors.muted,
+      )
+      Text(
+        value,
+        style =
+          CassetteTheme.type.numeral.copy(fontSize = CassetteTheme.type.numeral.fontSize * 0.75f),
+        color = CassetteTheme.colors.text,
+      )
     }
+  }
 }
 
 /** Small uppercase label: "ROAD BIKE", "CASSETTE". */
 @Composable
 fun Kicker(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text.uppercase(),
-        style = CassetteTheme.type.label,
-        color = CassetteTheme.colors.muted,
-        modifier = modifier,
-    )
+  Text(
+    text.uppercase(),
+    style = CassetteTheme.type.label,
+    color = CassetteTheme.colors.muted,
+    modifier = modifier,
+  )
 }

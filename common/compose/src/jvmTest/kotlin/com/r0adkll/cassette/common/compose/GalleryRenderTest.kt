@@ -14,22 +14,22 @@ import org.jetbrains.skia.EncodedImageFormat
  * checked without a device. Not an assertion test; it fails only if rendering throws.
  */
 class GalleryRenderTest {
-    @Test
-    fun renderGallery() {
-        val out = File("build/gallery").apply { mkdirs() }
-        for (dark in listOf(true, false)) for (state in StatusTone.entries) {
-            val scene =
-                ImageComposeScene(width = 412 * 2, height = 3300 * 2, density = Density(2f)) {
-                    CassetteTheme(darkTheme = dark) {
-                        DesignGallery(onToggleTheme = {}, initialState = state)
-                    }
-                }
-            // A few frames so fonts and layout settle.
-            repeat(4) { scene.render(it * 16_000_000L) }
-            val image = scene.render(100_000_000L)
-            val name = "gallery-${if (dark) "dark" else "light"}-${state.name.lowercase()}.png"
-            File(out, name).writeBytes(image.encodeToData(EncodedImageFormat.PNG)!!.bytes)
-            scene.close()
+  @Test
+  fun renderGallery() {
+    val out = File("build/gallery").apply { mkdirs() }
+    for (dark in listOf(true, false)) for (state in StatusTone.entries) {
+      val scene =
+        ImageComposeScene(width = 412 * 2, height = 3300 * 2, density = Density(2f)) {
+          CassetteTheme(darkTheme = dark) {
+            DesignGallery(onToggleTheme = {}, initialState = state)
+          }
         }
+      // A few frames so fonts and layout settle.
+      repeat(4) { scene.render(it * 16_000_000L) }
+      val image = scene.render(100_000_000L)
+      val name = "gallery-${if (dark) "dark" else "light"}-${state.name.lowercase()}.png"
+      File(out, name).writeBytes(image.encodeToData(EncodedImageFormat.PNG)!!.bytes)
+      scene.close()
     }
+  }
 }

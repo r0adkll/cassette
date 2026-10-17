@@ -27,43 +27,35 @@ import kotlinx.coroutines.flow.map
 @ContributesBinding(AppScope::class)
 @Inject
 class DatabaseBikeRepository(
-    private val db: CassetteDatabase,
-    private val dispatchers: CassetteDispatchers,
+  private val db: CassetteDatabase,
+  private val dispatchers: CassetteDispatchers,
 ) : BikeRepository {
 
-    override fun observeBikes(): Flow<List<Bike>> =
-        db.bikeQueries.selectAll().asFlow().mapToList(dispatchers.io).map { rows ->
-            rows.map { it.toDomain() }
-        }
+  override fun observeBikes(): Flow<List<Bike>> =
+    db.bikeQueries.selectAll().asFlow().mapToList(dispatchers.io).map { rows ->
+      rows.map { it.toDomain() }
+    }
 
-    override fun observeOverview(id: BikeId?): Flow<BikeOverview?> =
-        observeBikes()
-            .map { bikes ->
-                val bike =
-                    if (id == null) bikes.firstOrNull() else bikes.firstOrNull { it.id == id }
-                bike?.let { it to bikes.size }
-            }
-            .distinctUntilChanged()
-            .flatMapLatest { selected ->
-                if (selected == null) return@flatMapLatest flowOf(null)
-                val (bike, count) = selected
-                combine(
-                    db.componentQueries
-                        .selectForBike(bike.id.value)
-                        .asFlow()
-                        .mapToList(dispatchers.io),
-                    db.batterySampleQueries
-                        .latestForBike(bike.id.value)
-                        .asFlow()
-                        .mapToList(dispatchers.io),
-                ) { components, samples ->
-                    val latest = samples.associate { it.component_id to it.toDomain() }
-                    BikeOverview(
-                        bike = bike,
-                        bikeCount = count,
-                        components =
-                            components.map { ComponentWithReading(it.toDomain(), latest[it.id]) },
-                    )
-                }
-            }
+  override fun observeOverview(id: BikeId?): Flow<BikeOverview?> =
+    observeBikes()
+      .map { bikes ->
+        val bike = if (id == null) bikes.firstOrNull() else bikes.firstOrNull { it.id == id }
+        bike?.let { it to bikes.size }
+      }
+      .distinctUntilChanged()
+      .flatMapLatest { selected ->
+        if (selected == null) return@flatMapLatest flowOf(null)
+        val (bike, count) = selected
+        combine(
+          db.componentQueries.selectForBike(bike.id.value).asFlow().mapToList(dispatchers.io),
+          db.batterySampleQueries.latestForBike(bike.id.value).asFlow().mapToList(dispatchers.io),
+        ) { components, samples ->
+          val latest = samples.associate { it.component_id to it.toDomain() }
+          BikeOverview(
+            bike = bike,
+            bikeCount = count,
+            components = components.map { ComponentWithReading(it.toDomain(), latest[it.id]) },
+          )
+        }
+      }
 }

@@ -6,5 +6,5 @@ import java.util.Properties
 
 /** An in-memory database with the schema created; for tests. */
 fun createInMemoryDriver(): SqlDriver =
-    JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY, Properties().apply { put("foreign_keys", "true") })
-        .also { CassetteDatabase.Schema.create(it) }
+  JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY, Properties().apply { put("foreign_keys", "true") })
+    .also { CassetteDatabase.Schema.create(it) }

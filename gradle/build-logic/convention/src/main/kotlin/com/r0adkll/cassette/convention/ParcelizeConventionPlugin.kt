@@ -11,25 +11,25 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
  * on Android and is a no-op elsewhere. Circuit screens are Parcelable on Android.
  */
 class ParcelizeConventionPlugin : Plugin<Project> {
-    override fun apply(target: Project) =
-        with(target) {
-            pluginManager.apply("org.jetbrains.kotlin.plugin.parcelize")
+  override fun apply(target: Project) =
+    with(target) {
+      pluginManager.apply("org.jetbrains.kotlin.plugin.parcelize")
 
-            extensions.configure<KotlinMultiplatformExtension> {
-                targets.configureEach {
-                    if (platformType != KotlinPlatformType.androidJvm) return@configureEach
-                    compilations.configureEach {
-                        compileTaskProvider.configure {
-                            compilerOptions {
-                                freeCompilerArgs.addAll(
-                                    "-P",
-                                    "plugin:org.jetbrains.kotlin.parcelize:additionalAnnotation=" +
-                                        "com.r0adkll.cassette.core.parcelize.Parcelize",
-                                )
-                            }
-                        }
-                    }
-                }
+      extensions.configure<KotlinMultiplatformExtension> {
+        targets.configureEach {
+          if (platformType != KotlinPlatformType.androidJvm) return@configureEach
+          compilations.configureEach {
+            compileTaskProvider.configure {
+              compilerOptions {
+                freeCompilerArgs.addAll(
+                  "-P",
+                  "plugin:org.jetbrains.kotlin.parcelize:additionalAnnotation=" +
+                    "com.r0adkll.cassette.core.parcelize.Parcelize",
+                )
+              }
             }
+          }
         }
+      }
+    }
 }

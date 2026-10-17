@@ -5,12 +5,10 @@ import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import co.touchlab.sqliter.DatabaseConfiguration
 
 fun createNativeDriver(name: String = DATABASE_NAME): SqlDriver =
-    NativeSqliteDriver(
-        schema = CassetteDatabase.Schema,
-        name = name,
-        onConfiguration = { config ->
-            config.copy(
-                extendedConfig = DatabaseConfiguration.Extended(foreignKeyConstraints = true)
-            )
-        },
-    )
+  NativeSqliteDriver(
+    schema = CassetteDatabase.Schema,
+    name = name,
+    onConfiguration = { config ->
+      config.copy(extendedConfig = DatabaseConfiguration.Extended(foreignKeyConstraints = true))
+    },
+  )

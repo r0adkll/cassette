@@ -31,145 +31,141 @@ import kotlinx.coroutines.withContext
 @ContributesBinding(AppScope::class)
 @Inject
 class DefaultBikeDiscovery(
-    private val scanner: AdvertScanner,
-    private val gatt: GattClient,
-    private val recorder: CaptureRecorder,
-    private val capture: CaptureController,
-    private val db: CassetteDatabase,
-    private val dispatchers: CassetteDispatchers,
-    private val clock: Clock,
+  private val scanner: AdvertScanner,
+  private val gatt: GattClient,
+  private val recorder: CaptureRecorder,
+  private val capture: CaptureController,
+  private val db: CassetteDatabase,
+  private val dispatchers: CassetteDispatchers,
+  private val clock: Clock,
 ) : BikeDiscovery {
 
-    override fun discover(): Flow<Discovered> =
-        scanner
-            .live()
-            .runningFold(Found()) { found, reading -> found.with(reading) }
-            .map { found ->
-                Discovered(
-                    hubs =
-                        found.hubs.values
-                            .filterNot { isKnown(it.serial.toString()) }
-                            .sortedByDescending { it.rssi },
-                    powerMeters =
-                        found.powerMeters.values
-                            .filterNot { isKnown(it.name) }
-                            .sortedByDescending { it.rssi },
-                )
-            }
-            .distinctUntilChanged()
+  override fun discover(): Flow<Discovered> =
+    scanner
+      .live()
+      .runningFold(Found()) { found, reading -> found.with(reading) }
+      .map { found ->
+        Discovered(
+          hubs =
+            found.hubs.values
+              .filterNot { isKnown(it.serial.toString()) }
+              .sortedByDescending { it.rssi },
+          powerMeters =
+            found.powerMeters.values.filterNot { isKnown(it.name) }.sortedByDescending { it.rssi },
+        )
+      }
+      .distinctUntilChanged()
 
-    private fun isKnown(key: String) =
-        db.componentQueries.selectByKey(key).executeAsOneOrNull() != null
+  private fun isKnown(key: String) =
+    db.componentQueries.selectByKey(key).executeAsOneOrNull() != null
 
-    /** Everything heard so far, by serial or name, keeping each one's latest signal. */
-    private data class Found(
-        val hubs: Map<Long, FoundHub> = emptyMap(),
-        val powerMeters: Map<String, FoundPowerMeter> = emptyMap(),
-    ) {
-        fun with(reading: AxsReading): Found =
-            when {
-                // The hub is the component that reports for the system (the rear derailleur on
-                // road).
-                reading.frame == FrameType.STATUS && reading.bridge && reading.serial != null -> {
-                    val previous = hubs[reading.serial]
-                    val hub =
-                        FoundHub(
-                            serial = reading.serial!!,
-                            address = reading.address,
-                            kind =
-                                reading.kind.takeIf { it != ComponentKind.UNKNOWN }
-                                    ?: previous?.kind
-                                    ?: ComponentKind.UNKNOWN,
-                            modelId = reading.modelId ?: previous?.modelId,
-                            rssi = reading.rssi,
-                            battery = reading.battery ?: previous?.battery,
-                            firmware = reading.firmware ?: previous?.firmware,
-                        )
-                    copy(hubs = hubs + (hub.serial to hub))
-                }
-                reading.frame == FrameType.POWER_METER && reading.name != null -> {
-                    val meter =
-                        FoundPowerMeter(
-                            reading.name!!,
-                            reading.address,
-                            reading.modelId,
-                            reading.rssi,
-                        )
-                    copy(powerMeters = powerMeters + (meter.name to meter))
-                }
-                else -> this
-            }
-    }
-
-    override suspend fun readHub(hub: FoundHub): HubDetails? {
-        val result =
-            gatt.read(
-                hub.address,
-                listOf(
-                    SystemBatteryTable.CHARACTERISTIC,
-                    SystemBatteryTable.VERSIONS_CHARACTERISTIC,
-                ),
+  /** Everything heard so far, by serial or name, keeping each one's latest signal. */
+  private data class Found(
+    val hubs: Map<Long, FoundHub> = emptyMap(),
+    val powerMeters: Map<String, FoundPowerMeter> = emptyMap(),
+  ) {
+    fun with(reading: AxsReading): Found =
+      when {
+        // The hub is the component that reports for the system (the rear derailleur on
+        // road).
+        reading.frame == FrameType.STATUS && reading.bridge && reading.serial != null -> {
+          val previous = hubs[reading.serial]
+          val hub =
+            FoundHub(
+              serial = reading.serial!!,
+              address = reading.address,
+              kind =
+                reading.kind.takeIf { it != ComponentKind.UNKNOWN }
+                  ?: previous?.kind
+                  ?: ComponentKind.UNKNOWN,
+              modelId = reading.modelId ?: previous?.modelId,
+              rssi = reading.rssi,
+              battery = reading.battery ?: previous?.battery,
+              firmware = reading.firmware ?: previous?.firmware,
             )
-        val values = (result as? GattResult.Values)?.values ?: return null
-        val table =
-            values[SystemBatteryTable.CHARACTERISTIC]?.let(SystemBatteryTable::parse) ?: return null
-        val versions =
-            values[SystemBatteryTable.VERSIONS_CHARACTERISTIC]?.let(
-                SystemBatteryTable::parseVersions
-            )
-        return HubDetails(hub, table, versions)
-    }
-
-    override suspend fun addBike(
-        name: String,
-        type: BikeType,
-        hub: HubDetails,
-        powerMeter: FoundPowerMeter?,
-    ): BikeId {
-        val now = clock.now()
-        val nowMillis = now.toEpochMilliseconds()
-        val bike =
-            withContext(dispatchers.io) {
-                db.transactionWithResult {
-                    db.bikeQueries.insert(
-                        name.trim(),
-                        type.name,
-                        null,
-                        hub.hub.serial,
-                        nowMillis,
-                        nowMillis,
-                    )
-                    val bikeId = db.bikeQueries.lastInsertedId().executeAsOne()
-                    if (powerMeter != null) {
-                        db.componentQueries.insert(
-                            bikeId,
-                            powerMeter.name,
-                            null,
-                            ComponentKind.POWER_METER.name,
-                            powerMeter.modelId?.toLong(),
-                            null,
-                            null,
-                            null,
-                            nowMillis,
-                            nowMillis,
-                        )
-                        db.componentQueries.setAddress(
-                            powerMeter.address,
-                            db.componentQueries.lastInsertedId().executeAsOne(),
-                        )
-                    }
-                    db.bikeQueries.selectById(bikeId).executeAsOne().toDomain()
-                }
-            }
-        // Adds the hub and every component it lists, with their batteries.
-        recorder.applyHubTable(bike, hub.table, hub.versions, now)
-        withContext(dispatchers.io) {
-            db.componentQueries.selectByKey(hub.hub.serial.toString()).executeAsOneOrNull()?.let {
-                db.componentQueries.setAddress(hub.hub.address, it.id)
-            }
+          copy(hubs = hubs + (hub.serial to hub))
         }
-        hub.hub.battery?.let { recorder.applyAdvertBattery(hub.hub.serial.toString(), it, now) }
-        capture.ensureBackgroundCapture("bike added")
-        return bike.id
+        reading.frame == FrameType.POWER_METER && reading.name != null -> {
+          val meter =
+            FoundPowerMeter(
+              reading.name!!,
+              reading.address,
+              reading.modelId,
+              reading.rssi,
+            )
+          copy(powerMeters = powerMeters + (meter.name to meter))
+        }
+        else -> this
+      }
+  }
+
+  override suspend fun readHub(hub: FoundHub): HubDetails? {
+    val result =
+      gatt.read(
+        hub.address,
+        listOf(
+          SystemBatteryTable.CHARACTERISTIC,
+          SystemBatteryTable.VERSIONS_CHARACTERISTIC,
+        ),
+      )
+    val values = (result as? GattResult.Values)?.values ?: return null
+    val table =
+      values[SystemBatteryTable.CHARACTERISTIC]?.let(SystemBatteryTable::parse) ?: return null
+    val versions =
+      values[SystemBatteryTable.VERSIONS_CHARACTERISTIC]?.let(SystemBatteryTable::parseVersions)
+    return HubDetails(hub, table, versions)
+  }
+
+  override suspend fun addBike(
+    name: String,
+    type: BikeType,
+    hub: HubDetails,
+    powerMeter: FoundPowerMeter?,
+  ): BikeId {
+    val now = clock.now()
+    val nowMillis = now.toEpochMilliseconds()
+    val bike =
+      withContext(dispatchers.io) {
+        db.transactionWithResult {
+          db.bikeQueries.insert(
+            name.trim(),
+            type.name,
+            null,
+            hub.hub.serial,
+            nowMillis,
+            nowMillis,
+          )
+          val bikeId = db.bikeQueries.lastInsertedId().executeAsOne()
+          if (powerMeter != null) {
+            db.componentQueries.insert(
+              bikeId,
+              powerMeter.name,
+              null,
+              ComponentKind.POWER_METER.name,
+              powerMeter.modelId?.toLong(),
+              null,
+              null,
+              null,
+              nowMillis,
+              nowMillis,
+            )
+            db.componentQueries.setAddress(
+              powerMeter.address,
+              db.componentQueries.lastInsertedId().executeAsOne(),
+            )
+          }
+          db.bikeQueries.selectById(bikeId).executeAsOne().toDomain()
+        }
+      }
+    // Adds the hub and every component it lists, with their batteries.
+    recorder.applyHubTable(bike, hub.table, hub.versions, now)
+    withContext(dispatchers.io) {
+      db.componentQueries.selectByKey(hub.hub.serial.toString()).executeAsOneOrNull()?.let {
+        db.componentQueries.setAddress(hub.hub.address, it.id)
+      }
     }
+    hub.hub.battery?.let { recorder.applyAdvertBattery(hub.hub.serial.toString(), it, now) }
+    capture.ensureBackgroundCapture("bike added")
+    return bike.id
+  }
 }

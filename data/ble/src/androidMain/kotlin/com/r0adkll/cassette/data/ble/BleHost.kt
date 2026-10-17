@@ -7,9 +7,9 @@ import kotlinx.coroutines.CoroutineScope
  * 0007).
  */
 interface BleHost {
-    val bleScope: CoroutineScope
-    val backgroundDeliveryHandler: BackgroundDeliveryHandler
+  val bleScope: CoroutineScope
+  val backgroundDeliveryHandler: BackgroundDeliveryHandler
 
-    /** Re-arms the background scan if it should be on (after a reboot or an app update). */
-    suspend fun rearmBackgroundCapture(reason: String)
+  /** Re-arms the background scan if it should be on (after a reboot or an app update). */
+  suspend fun rearmBackgroundCapture(reason: String)
 }

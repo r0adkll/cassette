@@ -11,300 +11,300 @@ import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.unit.dp
 
 object LucideIcons {
-    /** Lucide `activity`. */
-    val Activity: ImageVector by lazy {
-        lucide("Activity") {
-            stroke(
-                "M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"
-            )
-        }
+  /** Lucide `activity`. */
+  val Activity: ImageVector by lazy {
+    lucide("Activity") {
+      stroke(
+        "M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2"
+      )
     }
+  }
 
-    /** Lucide `arrow-left`. */
-    val ArrowLeft: ImageVector by lazy {
-        lucide("ArrowLeft") {
-            stroke("m12 19-7-7 7-7")
-            stroke("M19 12H5")
-        }
+  /** Lucide `arrow-left`. */
+  val ArrowLeft: ImageVector by lazy {
+    lucide("ArrowLeft") {
+      stroke("m12 19-7-7 7-7")
+      stroke("M19 12H5")
     }
+  }
 
-    /** Lucide `battery-low`. */
-    val BatteryLow: ImageVector by lazy {
-        lucide("BatteryLow") {
-            stroke(
-                "M4.0 7.0h12.0a2.0 2.0 0 0 1 2.0 2.0v6.0a2.0 2.0 0 0 1 -2.0 2.0h-12.0a2.0 2.0 0 0 1 -2.0 -2.0v-6.0a2.0 2.0 0 0 1 2.0 -2.0Z"
-            )
-            stroke("M22.0 11.0L22.0 13.0")
-            stroke("M6.0 11.0L6.0 13.0")
-        }
+  /** Lucide `battery-low`. */
+  val BatteryLow: ImageVector by lazy {
+    lucide("BatteryLow") {
+      stroke(
+        "M4.0 7.0h12.0a2.0 2.0 0 0 1 2.0 2.0v6.0a2.0 2.0 0 0 1 -2.0 2.0h-12.0a2.0 2.0 0 0 1 -2.0 -2.0v-6.0a2.0 2.0 0 0 1 2.0 -2.0Z"
+      )
+      stroke("M22.0 11.0L22.0 13.0")
+      stroke("M6.0 11.0L6.0 13.0")
     }
+  }
 
-    /** Lucide `battery-medium`. */
-    val BatteryMedium: ImageVector by lazy {
-        lucide("BatteryMedium") {
-            stroke(
-                "M4.0 7.0h12.0a2.0 2.0 0 0 1 2.0 2.0v6.0a2.0 2.0 0 0 1 -2.0 2.0h-12.0a2.0 2.0 0 0 1 -2.0 -2.0v-6.0a2.0 2.0 0 0 1 2.0 -2.0Z"
-            )
-            stroke("M22.0 11.0L22.0 13.0")
-            stroke("M6.0 11.0L6.0 13.0")
-            stroke("M10.0 11.0L10.0 13.0")
-        }
+  /** Lucide `battery-medium`. */
+  val BatteryMedium: ImageVector by lazy {
+    lucide("BatteryMedium") {
+      stroke(
+        "M4.0 7.0h12.0a2.0 2.0 0 0 1 2.0 2.0v6.0a2.0 2.0 0 0 1 -2.0 2.0h-12.0a2.0 2.0 0 0 1 -2.0 -2.0v-6.0a2.0 2.0 0 0 1 2.0 -2.0Z"
+      )
+      stroke("M22.0 11.0L22.0 13.0")
+      stroke("M6.0 11.0L6.0 13.0")
+      stroke("M10.0 11.0L10.0 13.0")
     }
+  }
 
-    /** Lucide `battery-warning`. */
-    val BatteryWarning: ImageVector by lazy {
-        lucide("BatteryWarning") {
-            stroke("M10 17h.01")
-            stroke("M10 7v6")
-            stroke("M14 7h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2")
-            stroke("M22 11v2")
-            stroke("M6 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2")
-        }
+  /** Lucide `battery-warning`. */
+  val BatteryWarning: ImageVector by lazy {
+    lucide("BatteryWarning") {
+      stroke("M10 17h.01")
+      stroke("M10 7v6")
+      stroke("M14 7h2a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2")
+      stroke("M22 11v2")
+      stroke("M6 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2")
     }
+  }
 
-    /** Lucide `bell`. */
-    val Bell: ImageVector by lazy {
-        lucide("Bell") {
-            stroke("M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9")
-            stroke("M10.3 21a1.94 1.94 0 0 0 3.4 0")
-        }
+  /** Lucide `bell`. */
+  val Bell: ImageVector by lazy {
+    lucide("Bell") {
+      stroke("M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9")
+      stroke("M10.3 21a1.94 1.94 0 0 0 3.4 0")
     }
+  }
 
-    /** Lucide `bell-ring`. */
-    val BellRing: ImageVector by lazy {
-        lucide("BellRing") {
-            stroke("M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9")
-            stroke("M10.3 21a1.94 1.94 0 0 0 3.4 0")
-            stroke("M4 2C2.8 3.7 2 5.7 2 8")
-            stroke("M22 8c0-2.3-.8-4.3-2-6")
-        }
+  /** Lucide `bell-ring`. */
+  val BellRing: ImageVector by lazy {
+    lucide("BellRing") {
+      stroke("M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9")
+      stroke("M10.3 21a1.94 1.94 0 0 0 3.4 0")
+      stroke("M4 2C2.8 3.7 2 5.7 2 8")
+      stroke("M22 8c0-2.3-.8-4.3-2-6")
     }
+  }
 
-    /** Lucide `bike`. */
-    val Bike: ImageVector by lazy {
-        lucide("Bike") {
-            stroke("M15.0 17.5a3.5 3.5 0 1 0 7.0 0a3.5 3.5 0 1 0 -7.0 0Z")
-            stroke("M2.0 17.5a3.5 3.5 0 1 0 7.0 0a3.5 3.5 0 1 0 -7.0 0Z")
-            stroke("M14.0 5.0a1.0 1.0 0 1 0 2.0 0a1.0 1.0 0 1 0 -2.0 0Z")
-            stroke("M12 17.5V14l-3-3 4-3 2 3h2")
-        }
+  /** Lucide `bike`. */
+  val Bike: ImageVector by lazy {
+    lucide("Bike") {
+      stroke("M15.0 17.5a3.5 3.5 0 1 0 7.0 0a3.5 3.5 0 1 0 -7.0 0Z")
+      stroke("M2.0 17.5a3.5 3.5 0 1 0 7.0 0a3.5 3.5 0 1 0 -7.0 0Z")
+      stroke("M14.0 5.0a1.0 1.0 0 1 0 2.0 0a1.0 1.0 0 1 0 -2.0 0Z")
+      stroke("M12 17.5V14l-3-3 4-3 2 3h2")
     }
+  }
 
-    /** Lucide `bluetooth`. */
-    val Bluetooth: ImageVector by lazy {
-        lucide("Bluetooth") { stroke("m7 7 10 10-5 5V2l5 5L7 17") }
+  /** Lucide `bluetooth`. */
+  val Bluetooth: ImageVector by lazy {
+    lucide("Bluetooth") { stroke("m7 7 10 10-5 5V2l5 5L7 17") }
+  }
+
+  /** Lucide `bluetooth-searching`. */
+  val BluetoothSearching: ImageVector by lazy {
+    lucide("BluetoothSearching") {
+      stroke("m7 7 10 10-5 5V2l5 5L7 17")
+      stroke("M20.83 14.83a4 4 0 0 0 0-5.66")
+      stroke("M18 12h.01")
     }
+  }
 
-    /** Lucide `bluetooth-searching`. */
-    val BluetoothSearching: ImageVector by lazy {
-        lucide("BluetoothSearching") {
-            stroke("m7 7 10 10-5 5V2l5 5L7 17")
-            stroke("M20.83 14.83a4 4 0 0 0 0-5.66")
-            stroke("M18 12h.01")
-        }
+  /** Lucide `check`. */
+  val Check: ImageVector by lazy { lucide("Check") { stroke("M20 6 9 17l-5-5") } }
+
+  /** Lucide `chevron-down`. */
+  val ChevronDown: ImageVector by lazy { lucide("ChevronDown") { stroke("m6 9 6 6 6-6") } }
+
+  /** Lucide `chevron-right`. */
+  val ChevronRight: ImageVector by lazy { lucide("ChevronRight") { stroke("m9 18 6-6-6-6") } }
+
+  /** Lucide `circle-check`. */
+  val CircleCheck: ImageVector by lazy {
+    lucide("CircleCheck") {
+      stroke("M2.0 12.0a10.0 10.0 0 1 0 20.0 0a10.0 10.0 0 1 0 -20.0 0Z")
+      stroke("m9 12 2 2 4-4")
     }
+  }
 
-    /** Lucide `check`. */
-    val Check: ImageVector by lazy { lucide("Check") { stroke("M20 6 9 17l-5-5") } }
-
-    /** Lucide `chevron-down`. */
-    val ChevronDown: ImageVector by lazy { lucide("ChevronDown") { stroke("m6 9 6 6 6-6") } }
-
-    /** Lucide `chevron-right`. */
-    val ChevronRight: ImageVector by lazy { lucide("ChevronRight") { stroke("m9 18 6-6-6-6") } }
-
-    /** Lucide `circle-check`. */
-    val CircleCheck: ImageVector by lazy {
-        lucide("CircleCheck") {
-            stroke("M2.0 12.0a10.0 10.0 0 1 0 20.0 0a10.0 10.0 0 1 0 -20.0 0Z")
-            stroke("m9 12 2 2 4-4")
-        }
+  /** Lucide `circle-help`. */
+  val CircleHelp: ImageVector by lazy {
+    lucide("CircleHelp") {
+      stroke("M2.0 12.0a10.0 10.0 0 1 0 20.0 0a10.0 10.0 0 1 0 -20.0 0Z")
+      stroke("M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3")
+      stroke("M12 17h.01")
     }
+  }
 
-    /** Lucide `circle-help`. */
-    val CircleHelp: ImageVector by lazy {
-        lucide("CircleHelp") {
-            stroke("M2.0 12.0a10.0 10.0 0 1 0 20.0 0a10.0 10.0 0 1 0 -20.0 0Z")
-            stroke("M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3")
-            stroke("M12 17h.01")
-        }
+  /** Lucide `cpu`. */
+  val Cpu: ImageVector by lazy {
+    lucide("Cpu") {
+      stroke(
+        "M6.0 4.0h12.0a2.0 2.0 0 0 1 2.0 2.0v12.0a2.0 2.0 0 0 1 -2.0 2.0h-12.0a2.0 2.0 0 0 1 -2.0 -2.0v-12.0a2.0 2.0 0 0 1 2.0 -2.0Z"
+      )
+      stroke(
+        "M10.0 9.0h4.0a1.0 1.0 0 0 1 1.0 1.0v4.0a1.0 1.0 0 0 1 -1.0 1.0h-4.0a1.0 1.0 0 0 1 -1.0 -1.0v-4.0a1.0 1.0 0 0 1 1.0 -1.0Z"
+      )
+      stroke("M15 2v2")
+      stroke("M15 20v2")
+      stroke("M2 15h2")
+      stroke("M2 9h2")
+      stroke("M20 15h2")
+      stroke("M20 9h2")
+      stroke("M9 2v2")
+      stroke("M9 20v2")
     }
+  }
 
-    /** Lucide `cpu`. */
-    val Cpu: ImageVector by lazy {
-        lucide("Cpu") {
-            stroke(
-                "M6.0 4.0h12.0a2.0 2.0 0 0 1 2.0 2.0v12.0a2.0 2.0 0 0 1 -2.0 2.0h-12.0a2.0 2.0 0 0 1 -2.0 -2.0v-12.0a2.0 2.0 0 0 1 2.0 -2.0Z"
-            )
-            stroke(
-                "M10.0 9.0h4.0a1.0 1.0 0 0 1 1.0 1.0v4.0a1.0 1.0 0 0 1 -1.0 1.0h-4.0a1.0 1.0 0 0 1 -1.0 -1.0v-4.0a1.0 1.0 0 0 1 1.0 -1.0Z"
-            )
-            stroke("M15 2v2")
-            stroke("M15 20v2")
-            stroke("M2 15h2")
-            stroke("M2 9h2")
-            stroke("M20 15h2")
-            stroke("M20 9h2")
-            stroke("M9 2v2")
-            stroke("M9 20v2")
-        }
+  /** Lucide `file-text`. */
+  val FileText: ImageVector by lazy {
+    lucide("FileText") {
+      stroke("M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z")
+      stroke("M14 2v4a2 2 0 0 0 2 2h4")
+      stroke("M10 9H8")
+      stroke("M16 13H8")
+      stroke("M16 17H8")
     }
+  }
 
-    /** Lucide `file-text`. */
-    val FileText: ImageVector by lazy {
-        lucide("FileText") {
-            stroke("M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z")
-            stroke("M14 2v4a2 2 0 0 0 2 2h4")
-            stroke("M10 9H8")
-            stroke("M16 13H8")
-            stroke("M16 17H8")
-        }
+  /** Lucide `history`. */
+  val History: ImageVector by lazy {
+    lucide("History") {
+      stroke("M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8")
+      stroke("M3 3v5h5")
+      stroke("M12 7v5l4 2")
     }
+  }
 
-    /** Lucide `history`. */
-    val History: ImageVector by lazy {
-        lucide("History") {
-            stroke("M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8")
-            stroke("M3 3v5h5")
-            stroke("M12 7v5l4 2")
-        }
+  /** Lucide `image-plus`. */
+  val ImagePlus: ImageVector by lazy {
+    lucide("ImagePlus") {
+      stroke("M16 5h6")
+      stroke("M19 2v6")
+      stroke("M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5")
+      stroke("m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21")
+      stroke("M7.0 9.0a2.0 2.0 0 1 0 4.0 0a2.0 2.0 0 1 0 -4.0 0Z")
     }
+  }
 
-    /** Lucide `image-plus`. */
-    val ImagePlus: ImageVector by lazy {
-        lucide("ImagePlus") {
-            stroke("M16 5h6")
-            stroke("M19 2v6")
-            stroke("M21 11.5V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7.5")
-            stroke("m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21")
-            stroke("M7.0 9.0a2.0 2.0 0 1 0 4.0 0a2.0 2.0 0 1 0 -4.0 0Z")
-        }
+  /** Lucide `info`. */
+  val Info: ImageVector by lazy {
+    lucide("Info") {
+      stroke("M2.0 12.0a10.0 10.0 0 1 0 20.0 0a10.0 10.0 0 1 0 -20.0 0Z")
+      stroke("M12 16v-4")
+      stroke("M12 8h.01")
     }
+  }
 
-    /** Lucide `info`. */
-    val Info: ImageVector by lazy {
-        lucide("Info") {
-            stroke("M2.0 12.0a10.0 10.0 0 1 0 20.0 0a10.0 10.0 0 1 0 -20.0 0Z")
-            stroke("M12 16v-4")
-            stroke("M12 8h.01")
-        }
+  /** Lucide `mountain`. */
+  val Mountain: ImageVector by lazy { lucide("Mountain") { stroke("m8 3 4 8 5-5 5 15H2L8 3z") } }
+
+  /** Lucide `pin`. */
+  val Pin: ImageVector by lazy {
+    lucide("Pin") {
+      stroke("M12 17v5")
+      stroke(
+        "M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"
+      )
     }
+  }
 
-    /** Lucide `mountain`. */
-    val Mountain: ImageVector by lazy { lucide("Mountain") { stroke("m8 3 4 8 5-5 5 15H2L8 3z") } }
-
-    /** Lucide `pin`. */
-    val Pin: ImageVector by lazy {
-        lucide("Pin") {
-            stroke("M12 17v5")
-            stroke(
-                "M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"
-            )
-        }
+  /** Lucide `radio`. */
+  val Radio: ImageVector by lazy {
+    lucide("Radio") {
+      stroke("M4.9 19.1C1 15.2 1 8.8 4.9 4.9")
+      stroke("M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5")
+      stroke("M10.0 12.0a2.0 2.0 0 1 0 4.0 0a2.0 2.0 0 1 0 -4.0 0Z")
+      stroke("M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5")
+      stroke("M19.1 4.9C23 8.8 23 15.1 19.1 19")
     }
+  }
 
-    /** Lucide `radio`. */
-    val Radio: ImageVector by lazy {
-        lucide("Radio") {
-            stroke("M4.9 19.1C1 15.2 1 8.8 4.9 4.9")
-            stroke("M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5")
-            stroke("M10.0 12.0a2.0 2.0 0 1 0 4.0 0a2.0 2.0 0 1 0 -4.0 0Z")
-            stroke("M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5")
-            stroke("M19.1 4.9C23 8.8 23 15.1 19.1 19")
-        }
+  /** Lucide `refresh-cw`. */
+  val RefreshCw: ImageVector by lazy {
+    lucide("RefreshCw") {
+      stroke("M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8")
+      stroke("M21 3v5h-5")
+      stroke("M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16")
+      stroke("M8 16H3v5")
     }
+  }
 
-    /** Lucide `refresh-cw`. */
-    val RefreshCw: ImageVector by lazy {
-        lucide("RefreshCw") {
-            stroke("M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8")
-            stroke("M21 3v5h-5")
-            stroke("M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16")
-            stroke("M8 16H3v5")
-        }
+  /** Lucide `route`. */
+  val Route: ImageVector by lazy {
+    lucide("Route") {
+      stroke("M3.0 19.0a3.0 3.0 0 1 0 6.0 0a3.0 3.0 0 1 0 -6.0 0Z")
+      stroke("M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15")
+      stroke("M15.0 5.0a3.0 3.0 0 1 0 6.0 0a3.0 3.0 0 1 0 -6.0 0Z")
     }
+  }
 
-    /** Lucide `route`. */
-    val Route: ImageVector by lazy {
-        lucide("Route") {
-            stroke("M3.0 19.0a3.0 3.0 0 1 0 6.0 0a3.0 3.0 0 1 0 -6.0 0Z")
-            stroke("M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15")
-            stroke("M15.0 5.0a3.0 3.0 0 1 0 6.0 0a3.0 3.0 0 1 0 -6.0 0Z")
-        }
+  /** Lucide `scan-line`. */
+  val ScanLine: ImageVector by lazy {
+    lucide("ScanLine") {
+      stroke("M3 7V5a2 2 0 0 1 2-2h2")
+      stroke("M17 3h2a2 2 0 0 1 2 2v2")
+      stroke("M21 17v2a2 2 0 0 1-2 2h-2")
+      stroke("M7 21H5a2 2 0 0 1-2-2v-2")
+      stroke("M7 12h10")
     }
+  }
 
-    /** Lucide `scan-line`. */
-    val ScanLine: ImageVector by lazy {
-        lucide("ScanLine") {
-            stroke("M3 7V5a2 2 0 0 1 2-2h2")
-            stroke("M17 3h2a2 2 0 0 1 2 2v2")
-            stroke("M21 17v2a2 2 0 0 1-2 2h-2")
-            stroke("M7 21H5a2 2 0 0 1-2-2v-2")
-            stroke("M7 12h10")
-        }
+  /** Lucide `settings`. */
+  val Settings: ImageVector by lazy {
+    lucide("Settings") {
+      stroke(
+        "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
+      )
+      stroke("M9.0 12.0a3.0 3.0 0 1 0 6.0 0a3.0 3.0 0 1 0 -6.0 0Z")
     }
+  }
 
-    /** Lucide `settings`. */
-    val Settings: ImageVector by lazy {
-        lucide("Settings") {
-            stroke(
-                "M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"
-            )
-            stroke("M9.0 12.0a3.0 3.0 0 1 0 6.0 0a3.0 3.0 0 1 0 -6.0 0Z")
-        }
+  /** Lucide `share-2`. */
+  val Share: ImageVector by lazy {
+    lucide("Share") {
+      stroke("M15.0 5.0a3.0 3.0 0 1 0 6.0 0a3.0 3.0 0 1 0 -6.0 0Z")
+      stroke("M3.0 12.0a3.0 3.0 0 1 0 6.0 0a3.0 3.0 0 1 0 -6.0 0Z")
+      stroke("M15.0 19.0a3.0 3.0 0 1 0 6.0 0a3.0 3.0 0 1 0 -6.0 0Z")
+      stroke("M8.59 13.51L15.42 17.49")
+      stroke("M15.41 6.51L8.59 10.49")
     }
+  }
 
-    /** Lucide `share-2`. */
-    val Share: ImageVector by lazy {
-        lucide("Share") {
-            stroke("M15.0 5.0a3.0 3.0 0 1 0 6.0 0a3.0 3.0 0 1 0 -6.0 0Z")
-            stroke("M3.0 12.0a3.0 3.0 0 1 0 6.0 0a3.0 3.0 0 1 0 -6.0 0Z")
-            stroke("M15.0 19.0a3.0 3.0 0 1 0 6.0 0a3.0 3.0 0 1 0 -6.0 0Z")
-            stroke("M8.59 13.51L15.42 17.49")
-            stroke("M15.41 6.51L8.59 10.49")
-        }
+  /** Lucide `signal`. */
+  val Signal: ImageVector by lazy {
+    lucide("Signal") {
+      stroke("M2 20h.01")
+      stroke("M7 20v-4")
+      stroke("M12 20v-8")
+      stroke("M17 20V8")
+      stroke("M22 4v16")
     }
+  }
 
-    /** Lucide `signal`. */
-    val Signal: ImageVector by lazy {
-        lucide("Signal") {
-            stroke("M2 20h.01")
-            stroke("M7 20v-4")
-            stroke("M12 20v-8")
-            stroke("M17 20V8")
-            stroke("M22 4v16")
-        }
+  /** Lucide `x`. */
+  val X: ImageVector by lazy {
+    lucide("X") {
+      stroke("M18 6 6 18")
+      stroke("m6 6 12 12")
     }
-
-    /** Lucide `x`. */
-    val X: ImageVector by lazy {
-        lucide("X") {
-            stroke("M18 6 6 18")
-            stroke("m6 6 12 12")
-        }
-    }
+  }
 }
 
 private class LucideBuilder(val builder: ImageVector.Builder) {
-    fun stroke(pathData: String) {
-        builder.addPath(
-            pathData = addPathNodes(pathData),
-            fill = null,
-            stroke = SolidColor(Color.Black),
-            strokeLineWidth = 2f,
-            strokeLineCap = StrokeCap.Round,
-            strokeLineJoin = StrokeJoin.Round,
-        )
-    }
+  fun stroke(pathData: String) {
+    builder.addPath(
+      pathData = addPathNodes(pathData),
+      fill = null,
+      stroke = SolidColor(Color.Black),
+      strokeLineWidth = 2f,
+      strokeLineCap = StrokeCap.Round,
+      strokeLineJoin = StrokeJoin.Round,
+    )
+  }
 }
 
 private fun lucide(name: String, block: LucideBuilder.() -> Unit): ImageVector =
-    ImageVector.Builder(
-            name = name,
-            defaultWidth = 24.dp,
-            defaultHeight = 24.dp,
-            viewportWidth = 24f,
-            viewportHeight = 24f,
-        )
-        .also { LucideBuilder(it).block() }
-        .build()
+  ImageVector.Builder(
+      name = name,
+      defaultWidth = 24.dp,
+      defaultHeight = 24.dp,
+      viewportWidth = 24f,
+      viewportHeight = 24f,
+    )
+    .also { LucideBuilder(it).block() }
+    .build()

@@ -7,9 +7,9 @@ import org.gradle.kotlin.dsl.configure
 
 /** Metro, with its Circuit code generation for `@CircuitInject` presenters and UIs. */
 class DiConventionPlugin : Plugin<Project> {
-    override fun apply(target: Project) =
-        with(target) {
-            pluginManager.apply("dev.zacsweers.metro")
-            extensions.configure<MetroPluginExtension> { enableCircuitCodegen.set(true) }
-        }
+  override fun apply(target: Project) =
+    with(target) {
+      pluginManager.apply("dev.zacsweers.metro")
+      extensions.configure<MetroPluginExtension> { enableCircuitCodegen.set(true) }
+    }
 }

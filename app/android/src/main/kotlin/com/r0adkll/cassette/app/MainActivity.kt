@@ -22,48 +22,46 @@ import com.slack.circuit.foundation.rememberCircuitNavigator
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    private val app
-        get() = application as CassetteApplication
+  private val app
+    get() = application as CassetteApplication
 
-    // Until onboarding exists (decision 0011), ask for Nearby devices on launch.
-    private val requestBluetooth =
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            lifecycleScope.launch {
-                app.graph.captureController.ensureBackgroundCapture("permission granted")
-            }
-        }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
-        super.onCreate(savedInstanceState)
-        val missing = BLUETOOTH_PERMISSIONS.filter {
-            checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
-        }
-        if (missing.isNotEmpty()) {
-            requestBluetooth.launch(missing.toTypedArray())
-        } else {
-            lifecycleScope.launch {
-                app.graph.captureController.ensureBackgroundCapture("app opened")
-            }
-        }
-
-        val circuit = app.graph.circuit
-        setContent {
-            CassetteTheme {
-                // The background runs under the system bars; content stays inside them.
-                Box(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) {
-                    CircuitCompositionLocals(circuit) {
-                        val backStack = rememberSaveableBackStack(root = BikeScreen())
-                        val navigator = rememberCircuitNavigator(backStack)
-                        NavigableCircuitContent(navigator, backStack, Modifier.safeDrawingPadding())
-                    }
-                }
-            }
-        }
+  // Until onboarding exists (decision 0011), ask for Nearby devices on launch.
+  private val requestBluetooth =
+    registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+      lifecycleScope.launch {
+        app.graph.captureController.ensureBackgroundCapture("permission granted")
+      }
     }
 
-    private companion object {
-        val BLUETOOTH_PERMISSIONS =
-            arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+  override fun onCreate(savedInstanceState: Bundle?) {
+    enableEdgeToEdge()
+    super.onCreate(savedInstanceState)
+    val missing = BLUETOOTH_PERMISSIONS.filter {
+      checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED
     }
+    if (missing.isNotEmpty()) {
+      requestBluetooth.launch(missing.toTypedArray())
+    } else {
+      lifecycleScope.launch { app.graph.captureController.ensureBackgroundCapture("app opened") }
+    }
+
+    val circuit = app.graph.circuit
+    setContent {
+      CassetteTheme {
+        // The background runs under the system bars; content stays inside them.
+        Box(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) {
+          CircuitCompositionLocals(circuit) {
+            val backStack = rememberSaveableBackStack(root = BikeScreen())
+            val navigator = rememberCircuitNavigator(backStack)
+            NavigableCircuitContent(navigator, backStack, Modifier.safeDrawingPadding())
+          }
+        }
+      }
+    }
+  }
+
+  private companion object {
+    val BLUETOOTH_PERMISSIONS =
+      arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+  }
 }

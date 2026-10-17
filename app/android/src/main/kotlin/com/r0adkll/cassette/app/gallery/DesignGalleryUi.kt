@@ -19,12 +19,12 @@ import dev.zacsweers.metro.AppScope
 @CircuitInject(DesignGalleryScreen::class, AppScope::class)
 @Composable
 fun DesignGalleryUi(modifier: Modifier = Modifier) {
-    val systemDark = isSystemInDarkTheme()
-    var dark by rememberSaveable { mutableStateOf(systemDark) }
-    CassetteTheme(darkTheme = dark) {
-        DesignGallery(
-            onToggleTheme = { dark = !dark },
-            modifier = modifier.fillMaxSize().background(CassetteTheme.colors.background),
-        )
-    }
+  val systemDark = isSystemInDarkTheme()
+  var dark by rememberSaveable { mutableStateOf(systemDark) }
+  CassetteTheme(darkTheme = dark) {
+    DesignGallery(
+      onToggleTheme = { dark = !dark },
+      modifier = modifier.fillMaxSize().background(CassetteTheme.colors.background),
+    )
+  }
 }

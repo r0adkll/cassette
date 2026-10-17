@@ -18,38 +18,35 @@ import kotlinx.coroutines.Dispatchers
 
 @DependencyGraph(AppScope::class)
 interface AndroidAppGraph {
-    val circuit: Circuit
-    val captureController: CaptureController
-    val backgroundDeliveryHandler: BackgroundDeliveryHandler
+  val circuit: Circuit
+  val captureController: CaptureController
+  val backgroundDeliveryHandler: BackgroundDeliveryHandler
 
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideCircuit(
-        uiFactories: Set<Ui.Factory>,
-        presenterFactories: Set<Presenter.Factory>,
-    ): Circuit =
-        Circuit.Builder()
-            .addUiFactories(uiFactories)
-            .addPresenterFactories(presenterFactories)
-            .build()
+  @Provides
+  @SingleIn(AppScope::class)
+  fun provideCircuit(
+    uiFactories: Set<Ui.Factory>,
+    presenterFactories: Set<Presenter.Factory>,
+  ): Circuit =
+    Circuit.Builder().addUiFactories(uiFactories).addPresenterFactories(presenterFactories).build()
 
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideSqlDriver(application: Application): SqlDriver = createAndroidDriver(application)
+  @Provides
+  @SingleIn(AppScope::class)
+  fun provideSqlDriver(application: Application): SqlDriver = createAndroidDriver(application)
 
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideDispatchers(): CassetteDispatchers =
-        CassetteDispatchers(
-            io = Dispatchers.IO,
-            default = Dispatchers.Default,
-            main = Dispatchers.Main,
-        )
+  @Provides
+  @SingleIn(AppScope::class)
+  fun provideDispatchers(): CassetteDispatchers =
+    CassetteDispatchers(
+      io = Dispatchers.IO,
+      default = Dispatchers.Default,
+      main = Dispatchers.Main,
+    )
 
-    @Provides fun provideClock(): Clock = Clock.System
+  @Provides fun provideClock(): Clock = Clock.System
 
-    @DependencyGraph.Factory
-    fun interface Factory {
-        fun create(@Provides application: Application): AndroidAppGraph
-    }
+  @DependencyGraph.Factory
+  fun interface Factory {
+    fun create(@Provides application: Application): AndroidAppGraph
+  }
 }

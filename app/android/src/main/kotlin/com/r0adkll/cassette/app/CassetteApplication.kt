@@ -10,16 +10,16 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
 class CassetteApplication : Application(), BleHost {
-    /** Android entry points reach the graph through this (decision 0007). */
-    val graph: AndroidAppGraph by lazy {
-        createGraphFactory<AndroidAppGraph.Factory>().create(this)
-    }
+  /** Android entry points reach the graph through this (decision 0007). */
+  val graph: AndroidAppGraph by lazy {
+    createGraphFactory<AndroidAppGraph.Factory>().create(this)
+  }
 
-    override val bleScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+  override val bleScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
-    override val backgroundDeliveryHandler: BackgroundDeliveryHandler
-        get() = graph.backgroundDeliveryHandler
+  override val backgroundDeliveryHandler: BackgroundDeliveryHandler
+    get() = graph.backgroundDeliveryHandler
 
-    override suspend fun rearmBackgroundCapture(reason: String) =
-        graph.captureController.ensureBackgroundCapture(reason)
+  override suspend fun rearmBackgroundCapture(reason: String) =
+    graph.captureController.ensureBackgroundCapture(reason)
 }

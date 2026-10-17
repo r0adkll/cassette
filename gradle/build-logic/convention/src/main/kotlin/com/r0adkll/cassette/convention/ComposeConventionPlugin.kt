@@ -6,14 +6,14 @@ import org.gradle.kotlin.dsl.configure
 import org.jetbrains.kotlin.compose.compiler.gradle.ComposeCompilerGradlePluginExtension
 
 class ComposeConventionPlugin : Plugin<Project> {
-    override fun apply(target: Project) =
-        with(target) {
-            pluginManager.apply("org.jetbrains.compose")
-            pluginManager.apply("org.jetbrains.kotlin.plugin.compose")
+  override fun apply(target: Project) =
+    with(target) {
+      pluginManager.apply("org.jetbrains.compose")
+      pluginManager.apply("org.jetbrains.kotlin.plugin.compose")
 
-            extensions.configure<ComposeCompilerGradlePluginExtension> {
-                // Lets Layout Inspector see every node.
-                includeSourceInformation.set(true)
-            }
-        }
+      extensions.configure<ComposeCompilerGradlePluginExtension> {
+        // Lets Layout Inspector see every node.
+        includeSourceInformation.set(true)
+      }
+    }
 }

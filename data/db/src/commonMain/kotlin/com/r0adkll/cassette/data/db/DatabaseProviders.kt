@@ -9,7 +9,7 @@ import dev.zacsweers.metro.SingleIn
 /** The platform graph provides the [SqlDriver]; everything else gets the database from here. */
 @ContributesTo(AppScope::class)
 interface DatabaseProviders {
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideDatabase(driver: SqlDriver): CassetteDatabase = CassetteDatabase(driver)
+  @Provides
+  @SingleIn(AppScope::class)
+  fun provideDatabase(driver: SqlDriver): CassetteDatabase = CassetteDatabase(driver)
 }

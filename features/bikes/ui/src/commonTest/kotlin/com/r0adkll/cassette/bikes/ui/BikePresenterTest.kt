@@ -25,63 +25,63 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 
 class BikePresenterTest {
-    private val now = Instant.fromEpochMilliseconds(1_792_200_000_000)
-    private val clock =
-        object : Clock {
-            override fun now() = this@BikePresenterTest.now
-        }
-    private val overviews = MutableSharedFlow<BikeOverview?>(replay = 1)
-    private val repository =
-        object : BikeRepository {
-            override fun observeBikes(): Flow<List<Bike>> = emptyFlow()
-
-            override fun observeOverview(id: BikeId?): Flow<BikeOverview?> = overviews
-        }
-    private var sampleLoads = 0
-    private val tools =
-        object : DeveloperTools {
-            override suspend fun loadSampleBike() {
-                sampleLoads++
-            }
-        }
-
-    private val capture =
-        object : CaptureController {
-            override val isReady = true
-
-            override fun refresh(): Flow<RefreshProgress> =
-                flowOf(RefreshProgress.Scanning(59, 0), RefreshProgress.Done(5, true))
-
-            override suspend fun ensureBackgroundCapture(reason: String) = Unit
-        }
-
-    @Test
-    fun loadingThenEmptyThenLoaded() = runTest {
-        val navigator = FakeNavigator(BikeScreen())
-        val presenter = BikePresenter(BikeScreen(), navigator, repository, tools, capture, clock)
-
-        presenter.test {
-            assertIs<BikeUiState.Loading>(awaitItem())
-
-            overviews.emit(null)
-            val empty = assertIs<BikeUiState.Empty>(awaitItem())
-            empty.eventSink(BikeEvent.LoadSampleBike)
-
-            overviews.emit(
-                BikeOverview(
-                    Bike(BikeId(1), "Road bike", BikeType.Road, null, 1, now, now),
-                    2,
-                    emptyList(),
-                )
-            )
-            val loaded = assertIs<BikeUiState.Loaded>(awaitItem())
-            assertEquals("Road bike", loaded.name)
-            assertEquals("1 OF 2", loaded.position)
-
-            loaded.eventSink(BikeEvent.OpenComponent(7))
-            assertEquals(ComponentScreen(7), navigator.awaitNextScreen())
-            cancelAndIgnoreRemainingEvents()
-        }
-        assertTrue(sampleLoads == 1)
+  private val now = Instant.fromEpochMilliseconds(1_792_200_000_000)
+  private val clock =
+    object : Clock {
+      override fun now() = this@BikePresenterTest.now
     }
+  private val overviews = MutableSharedFlow<BikeOverview?>(replay = 1)
+  private val repository =
+    object : BikeRepository {
+      override fun observeBikes(): Flow<List<Bike>> = emptyFlow()
+
+      override fun observeOverview(id: BikeId?): Flow<BikeOverview?> = overviews
+    }
+  private var sampleLoads = 0
+  private val tools =
+    object : DeveloperTools {
+      override suspend fun loadSampleBike() {
+        sampleLoads++
+      }
+    }
+
+  private val capture =
+    object : CaptureController {
+      override val isReady = true
+
+      override fun refresh(): Flow<RefreshProgress> =
+        flowOf(RefreshProgress.Scanning(59, 0), RefreshProgress.Done(5, true))
+
+      override suspend fun ensureBackgroundCapture(reason: String) = Unit
+    }
+
+  @Test
+  fun loadingThenEmptyThenLoaded() = runTest {
+    val navigator = FakeNavigator(BikeScreen())
+    val presenter = BikePresenter(BikeScreen(), navigator, repository, tools, capture, clock)
+
+    presenter.test {
+      assertIs<BikeUiState.Loading>(awaitItem())
+
+      overviews.emit(null)
+      val empty = assertIs<BikeUiState.Empty>(awaitItem())
+      empty.eventSink(BikeEvent.LoadSampleBike)
+
+      overviews.emit(
+        BikeOverview(
+          Bike(BikeId(1), "Road bike", BikeType.Road, null, 1, now, now),
+          2,
+          emptyList(),
+        )
+      )
+      val loaded = assertIs<BikeUiState.Loaded>(awaitItem())
+      assertEquals("Road bike", loaded.name)
+      assertEquals("1 OF 2", loaded.position)
+
+      loaded.eventSink(BikeEvent.OpenComponent(7))
+      assertEquals(ComponentScreen(7), navigator.awaitNextScreen())
+      cancelAndIgnoreRemainingEvents()
+    }
+    assertTrue(sampleLoads == 1)
+  }
 }

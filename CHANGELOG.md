@@ -13,7 +13,8 @@ All notable changes to Cassette are documented here. The format follows
   block, component rows, bars, buttons and the history chart, shown in a gallery app.
 - Domain models (`:core`) and the SQLDelight database (`:data:db`): bikes, components, battery history
   with year-long retention and daily down-sampling, and alert state.
-- `scripts/ktfmt`: the ktfmt CLI for fast format checks (CI and the pre-push hook), covering build-logic.
+- `scripts/ktfmt`: the ktfmt CLI, the only formatter (CI and the pre-push hook), covering build-logic.
+  Google style: 2-space indents.
 - Add a bike: wake it, Cassette finds the hub and reads its component list, then name and type it,
   pick a power meter heard nearby, and background capture starts (design iteration 5).
 - Capture: the background scan (PendingIntent, re-armed after reboot or update) and the 60-second

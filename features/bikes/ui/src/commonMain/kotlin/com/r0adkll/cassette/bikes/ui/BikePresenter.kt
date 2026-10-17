@@ -32,67 +32,66 @@ import kotlinx.coroutines.launch
 @CircuitInject(BikeScreen::class, AppScope::class)
 @Inject
 class BikePresenter(
-    private val screen: BikeScreen,
-    private val navigator: Navigator,
-    private val repository: BikeRepository,
-    private val developerTools: DeveloperTools,
-    private val capture: CaptureController,
-    private val clock: Clock,
+  private val screen: BikeScreen,
+  private val navigator: Navigator,
+  private val repository: BikeRepository,
+  private val developerTools: DeveloperTools,
+  private val capture: CaptureController,
+  private val clock: Clock,
 ) : Presenter<BikeUiState> {
 
-    @Composable
-    override fun present(): BikeUiState {
-        val scope = rememberCoroutineScope()
-        val overview by
-            remember(screen.bikeId) {
-                    repository.observeOverview(screen.bikeId?.let(::BikeId)).map { Result(it) }
-                }
-                .collectAsRetainedState(initial = null)
-
-        // "Seen 2 min ago" keeps itself current.
-        var now by remember { mutableStateOf(clock.now()) }
-        LaunchedEffect(Unit) {
-            while (true) {
-                delay(30.seconds)
-                now = clock.now()
-            }
+  @Composable
+  override fun present(): BikeUiState {
+    val scope = rememberCoroutineScope()
+    val overview by
+      remember(screen.bikeId) {
+          repository.observeOverview(screen.bikeId?.let(::BikeId)).map { Result(it) }
         }
+        .collectAsRetainedState(initial = null)
 
-        var refresh by remember { mutableStateOf<RefreshButton>(RefreshButton.Idle) }
-
-        val eventSink: (BikeEvent) -> Unit = { event ->
-            when (event) {
-                is BikeEvent.OpenComponent -> navigator.goTo(ComponentScreen(event.id))
-                // Settings arrives with the settings feature; the gallery stands in for now.
-                BikeEvent.OpenSettings -> navigator.goTo(DesignGalleryScreen)
-                BikeEvent.AddBike -> navigator.goTo(AddBikeScreen)
-                BikeEvent.Refresh ->
-                    if (refresh !is RefreshButton.Scanning) {
-                        scope.launch {
-                            capture.refresh().collect { progress ->
-                                refresh =
-                                    when (progress) {
-                                        is RefreshProgress.Scanning ->
-                                            RefreshButton.Scanning(progress.secondsLeft)
-                                        is RefreshProgress.Done -> RefreshButton.Idle
-                                        RefreshProgress.NotReady -> RefreshButton.Unavailable
-                                    }
-                            }
-                        }
-                    }
-                BikeEvent.LoadSampleBike ->
-                    scope.launch {
-                        developerTools.loadSampleBike()
-                        capture.ensureBackgroundCapture("sample bike loaded")
-                    }
-            }
-        }
-
-        val loaded = overview ?: return BikeUiState.Loading(eventSink)
-        val bike = loaded.overview ?: return BikeUiState.Empty(eventSink)
-        return bike.toLoaded(now, eventSink).copy(refresh = refresh)
+    // "Seen 2 min ago" keeps itself current.
+    var now by remember { mutableStateOf(clock.now()) }
+    LaunchedEffect(Unit) {
+      while (true) {
+        delay(30.seconds)
+        now = clock.now()
+      }
     }
 
-    /** Wraps the nullable overview so "loading" and "no bike" are different states. */
-    private data class Result(val overview: BikeOverview?)
+    var refresh by remember { mutableStateOf<RefreshButton>(RefreshButton.Idle) }
+
+    val eventSink: (BikeEvent) -> Unit = { event ->
+      when (event) {
+        is BikeEvent.OpenComponent -> navigator.goTo(ComponentScreen(event.id))
+        // Settings arrives with the settings feature; the gallery stands in for now.
+        BikeEvent.OpenSettings -> navigator.goTo(DesignGalleryScreen)
+        BikeEvent.AddBike -> navigator.goTo(AddBikeScreen)
+        BikeEvent.Refresh ->
+          if (refresh !is RefreshButton.Scanning) {
+            scope.launch {
+              capture.refresh().collect { progress ->
+                refresh =
+                  when (progress) {
+                    is RefreshProgress.Scanning -> RefreshButton.Scanning(progress.secondsLeft)
+                    is RefreshProgress.Done -> RefreshButton.Idle
+                    RefreshProgress.NotReady -> RefreshButton.Unavailable
+                  }
+              }
+            }
+          }
+        BikeEvent.LoadSampleBike ->
+          scope.launch {
+            developerTools.loadSampleBike()
+            capture.ensureBackgroundCapture("sample bike loaded")
+          }
+      }
+    }
+
+    val loaded = overview ?: return BikeUiState.Loading(eventSink)
+    val bike = loaded.overview ?: return BikeUiState.Empty(eventSink)
+    return bike.toLoaded(now, eventSink).copy(refresh = refresh)
+  }
+
+  /** Wraps the nullable overview so "loading" and "no bike" are different states. */
+  private data class Result(val overview: BikeOverview?)
 }

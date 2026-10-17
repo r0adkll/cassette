@@ -11,7 +11,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 
 private val LocalCassetteColors = staticCompositionLocalOf { DarkCassetteColors }
 private val LocalCassetteTypography =
-    staticCompositionLocalOf<CassetteTypography> { error("CassetteTheme not applied") }
+  staticCompositionLocalOf<CassetteTypography> { error("CassetteTheme not applied") }
 
 /**
  * Cassette's look. Material 3 is only the fallback component layer, so its colour scheme is mapped
@@ -19,49 +19,49 @@ private val LocalCassetteTypography =
  */
 @Composable
 fun CassetteTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
-    val colors = if (darkTheme) DarkCassetteColors else LightCassetteColors
-    val scheme =
-        if (darkTheme) {
-            darkColorScheme(
-                primary = colors.ink,
-                onPrimary = colors.onInk,
-                secondary = colors.brand,
-                background = colors.background,
-                onBackground = colors.text,
-                surface = colors.background,
-                onSurface = colors.text,
-                surfaceContainer = colors.panel,
-                onSurfaceVariant = colors.muted,
-                outline = colors.line,
-                error = colors.critical,
-            )
-        } else {
-            lightColorScheme(
-                primary = colors.ink,
-                onPrimary = colors.onInk,
-                secondary = colors.brand,
-                background = colors.background,
-                onBackground = colors.text,
-                surface = colors.background,
-                onSurface = colors.text,
-                surfaceContainer = colors.panel,
-                onSurfaceVariant = colors.muted,
-                outline = colors.line,
-                error = colors.critical,
-            )
-        }
-    CompositionLocalProvider(
-        LocalCassetteColors provides colors,
-        LocalCassetteTypography provides cassetteTypography(),
-    ) {
-        MaterialTheme(colorScheme = scheme, content = content)
+  val colors = if (darkTheme) DarkCassetteColors else LightCassetteColors
+  val scheme =
+    if (darkTheme) {
+      darkColorScheme(
+        primary = colors.ink,
+        onPrimary = colors.onInk,
+        secondary = colors.brand,
+        background = colors.background,
+        onBackground = colors.text,
+        surface = colors.background,
+        onSurface = colors.text,
+        surfaceContainer = colors.panel,
+        onSurfaceVariant = colors.muted,
+        outline = colors.line,
+        error = colors.critical,
+      )
+    } else {
+      lightColorScheme(
+        primary = colors.ink,
+        onPrimary = colors.onInk,
+        secondary = colors.brand,
+        background = colors.background,
+        onBackground = colors.text,
+        surface = colors.background,
+        onSurface = colors.text,
+        surfaceContainer = colors.panel,
+        onSurfaceVariant = colors.muted,
+        outline = colors.line,
+        error = colors.critical,
+      )
     }
+  CompositionLocalProvider(
+    LocalCassetteColors provides colors,
+    LocalCassetteTypography provides cassetteTypography(),
+  ) {
+    MaterialTheme(colorScheme = scheme, content = content)
+  }
 }
 
 object CassetteTheme {
-    val colors: CassetteColors
-        @Composable @ReadOnlyComposable get() = LocalCassetteColors.current
+  val colors: CassetteColors
+    @Composable @ReadOnlyComposable get() = LocalCassetteColors.current
 
-    val type: CassetteTypography
-        @Composable @ReadOnlyComposable get() = LocalCassetteTypography.current
+  val type: CassetteTypography
+    @Composable @ReadOnlyComposable get() = LocalCassetteTypography.current
 }

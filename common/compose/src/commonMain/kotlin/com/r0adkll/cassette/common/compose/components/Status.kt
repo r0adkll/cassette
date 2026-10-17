@@ -31,25 +31,25 @@ import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.compose.theme.StatusTone
 
 val StatusTone.icon: ImageVector
-    get() =
-        when (this) {
-            StatusTone.Good -> LucideIcons.CircleCheck
-            StatusTone.Low -> LucideIcons.BatteryLow
-            StatusTone.Critical -> LucideIcons.BatteryWarning
-            StatusTone.Stale -> LucideIcons.History
-            StatusTone.Unknown -> LucideIcons.CircleHelp
-        }
+  get() =
+    when (this) {
+      StatusTone.Good -> LucideIcons.CircleCheck
+      StatusTone.Low -> LucideIcons.BatteryLow
+      StatusTone.Critical -> LucideIcons.BatteryWarning
+      StatusTone.Stale -> LucideIcons.History
+      StatusTone.Unknown -> LucideIcons.CircleHelp
+    }
 
 /** The word that always accompanies a status colour, so colour is never the only signal. */
 val StatusTone.word: String
-    get() =
-        when (this) {
-            StatusTone.Good -> "GOOD"
-            StatusTone.Low -> "LOW"
-            StatusTone.Critical -> "CHARGE NOW"
-            StatusTone.Stale -> "OLD"
-            StatusTone.Unknown -> "UNKNOWN"
-        }
+  get() =
+    when (this) {
+      StatusTone.Good -> "GOOD"
+      StatusTone.Low -> "LOW"
+      StatusTone.Critical -> "CHARGE NOW"
+      StatusTone.Stale -> "OLD"
+      StatusTone.Unknown -> "UNKNOWN"
+    }
 
 /** Content colour inside a [StatusBlock]. */
 private val LocalBlockContent = staticCompositionLocalOf { Color.Unspecified }
@@ -60,52 +60,52 @@ private val LocalBlockContent = staticCompositionLocalOf { Color.Unspecified }
  */
 @Composable
 fun StatusBlock(
-    title: String,
-    tone: StatusTone,
-    modifier: Modifier = Modifier,
-    horizontalPadding: Dp = 20.dp,
-    titleStyle: TextStyle =
-        CassetteTheme.type.display.copy(fontSize = CassetteTheme.type.display.fontSize * 0.93f),
-    content: @Composable ColumnScope.() -> Unit = {},
+  title: String,
+  tone: StatusTone,
+  modifier: Modifier = Modifier,
+  horizontalPadding: Dp = 20.dp,
+  titleStyle: TextStyle =
+    CassetteTheme.type.display.copy(fontSize = CassetteTheme.type.display.fontSize * 0.93f),
+  content: @Composable ColumnScope.() -> Unit = {},
 ) {
-    val colors = CassetteTheme.colors.block(tone)
-    val outline = colors.outline
-    Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .background(colors.container)
-                .then(if (outline != null) Modifier.border(1.dp, outline) else Modifier)
-                .padding(horizontal = horizontalPadding, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        CompositionLocalProvider(LocalBlockContent provides colors.content) {
-            Row(
-                verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Text(
-                    title,
-                    style = titleStyle,
-                    color = colors.content,
-                    modifier = Modifier.weight(1f),
-                )
-                Icon(
-                    tone.icon,
-                    contentDescription = tone.word,
-                    tint = colors.content,
-                    modifier = Modifier.size(34.dp),
-                )
-            }
-            content()
-        }
+  val colors = CassetteTheme.colors.block(tone)
+  val outline = colors.outline
+  Column(
+    modifier =
+      modifier
+        .fillMaxWidth()
+        .background(colors.container)
+        .then(if (outline != null) Modifier.border(1.dp, outline) else Modifier)
+        .padding(horizontal = horizontalPadding, vertical = 18.dp),
+    verticalArrangement = Arrangement.spacedBy(10.dp),
+  ) {
+    CompositionLocalProvider(LocalBlockContent provides colors.content) {
+      Row(
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+      ) {
+        Text(
+          title,
+          style = titleStyle,
+          color = colors.content,
+          modifier = Modifier.weight(1f),
+        )
+        Icon(
+          tone.icon,
+          contentDescription = tone.word,
+          tint = colors.content,
+          modifier = Modifier.size(34.dp),
+        )
+      }
+      content()
     }
+  }
 }
 
 /** A sentence inside a [StatusBlock]: what to charge next, or what's wrong. */
 @Composable
 fun StatusBlockText(text: String) {
-    Text(text, style = CassetteTheme.type.body, color = LocalBlockContent.current)
+  Text(text, style = CassetteTheme.type.body, color = LocalBlockContent.current)
 }
 
 /**
@@ -114,52 +114,50 @@ fun StatusBlockText(text: String) {
  */
 @Composable
 fun StatusBlockMeta(text: String) {
-    val color = LocalBlockContent.current
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Box(Modifier.size(7.dp).clip(CircleShape).background(color))
-        Text(
-            text.uppercase(),
-            style =
-                CassetteTheme.type.status.copy(
-                    fontSize = CassetteTheme.type.bodySmall.fontSize * 0.92f
-                ),
-            color = color.copy(alpha = 0.85f),
-        )
-    }
+  val color = LocalBlockContent.current
+  Row(
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(6.dp),
+  ) {
+    Box(Modifier.size(7.dp).clip(CircleShape).background(color))
+    Text(
+      text.uppercase(),
+      style =
+        CassetteTheme.type.status.copy(fontSize = CassetteTheme.type.bodySmall.fontSize * 0.92f),
+      color = color.copy(alpha = 0.85f),
+    )
+  }
 }
 
 /** Status icon and word, in the status colour: "✓ GOOD". */
 @Composable
 fun StatusLabel(
-    tone: StatusTone,
-    modifier: Modifier = Modifier,
-    color: Color = CassetteTheme.colors.status(tone),
+  tone: StatusTone,
+  modifier: Modifier = Modifier,
+  color: Color = CassetteTheme.colors.status(tone),
 ) {
-    Row(
-        modifier,
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Icon(tone.icon, contentDescription = null, tint = color, modifier = Modifier.size(13.dp))
-        Text(tone.word, style = CassetteTheme.type.status, color = color)
-    }
+  Row(
+    modifier,
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(4.dp),
+  ) {
+    Icon(tone.icon, contentDescription = null, tint = color, modifier = Modifier.size(13.dp))
+    Text(tone.word, style = CassetteTheme.type.status, color = color)
+  }
 }
 
 /** A thin bar showing a level from 0 to 1 in the status colour. */
 @Composable
 fun LevelBar(level: Float, tone: StatusTone, modifier: Modifier = Modifier, height: Dp = 4.dp) {
-    val shape = RoundedCornerShape(height / 2)
-    Box(modifier.fillMaxWidth().height(height).clip(shape).background(CassetteTheme.colors.track)) {
-        Box(
-            Modifier.fillMaxWidth(level.coerceIn(0.04f, 1f))
-                .height(height)
-                .clip(shape)
-                .background(CassetteTheme.colors.status(tone))
-        )
-    }
+  val shape = RoundedCornerShape(height / 2)
+  Box(modifier.fillMaxWidth().height(height).clip(shape).background(CassetteTheme.colors.track)) {
+    Box(
+      Modifier.fillMaxWidth(level.coerceIn(0.04f, 1f))
+        .height(height)
+        .clip(shape)
+        .background(CassetteTheme.colors.status(tone))
+    )
+  }
 }
 
 /**
@@ -168,71 +166,71 @@ fun LevelBar(level: Float, tone: StatusTone, modifier: Modifier = Modifier, heig
  */
 @Composable
 fun ValueStatusBlock(
-    value: String,
-    headline: String,
-    source: String,
-    level: Float,
-    tone: StatusTone,
-    modifier: Modifier = Modifier,
-    horizontalPadding: Dp = 20.dp,
+  value: String,
+  headline: String,
+  source: String,
+  level: Float,
+  tone: StatusTone,
+  modifier: Modifier = Modifier,
+  horizontalPadding: Dp = 20.dp,
 ) {
-    val colors = CassetteTheme.colors.block(tone)
-    val outline = colors.outline
-    val type = CassetteTheme.type
-    Column(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .background(colors.container)
-                .then(if (outline != null) Modifier.border(1.dp, outline) else Modifier)
-                .padding(horizontal = horizontalPadding, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+  val colors = CassetteTheme.colors.block(tone)
+  val outline = colors.outline
+  val type = CassetteTheme.type
+  Column(
+    modifier =
+      modifier
+        .fillMaxWidth()
+        .background(colors.container)
+        .then(if (outline != null) Modifier.border(1.dp, outline) else Modifier)
+        .padding(horizontal = horizontalPadding, vertical = 18.dp),
+    verticalArrangement = Arrangement.spacedBy(14.dp),
+  ) {
+    Row(
+      verticalAlignment = Alignment.Bottom,
+      horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
+      Text(value, style = type.numeralLarge, color = colors.content)
+      Column(
+        Modifier.padding(bottom = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+      ) {
         Row(
-            verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Text(value, style = type.numeralLarge, color = colors.content)
-            Column(
-                Modifier.padding(bottom = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    Icon(
-                        tone.icon,
-                        contentDescription = null,
-                        tint = colors.content,
-                        modifier = Modifier.size(26.dp),
-                    )
-                    Text(
-                        headline,
-                        style = type.title.copy(fontSize = type.title.fontSize * 0.65f),
-                        color = colors.content,
-                    )
-                }
-                Text(
-                    source,
-                    style = type.bodySmall.copy(fontSize = type.body.fontSize * 0.87f),
-                    color = colors.content,
-                )
-            }
+          Icon(
+            tone.icon,
+            contentDescription = null,
+            tint = colors.content,
+            modifier = Modifier.size(26.dp),
+          )
+          Text(
+            headline,
+            style = type.title.copy(fontSize = type.title.fontSize * 0.65f),
+            color = colors.content,
+          )
         }
-        val shape = RoundedCornerShape(4.dp)
-        Box(
-            Modifier.fillMaxWidth()
-                .height(8.dp)
-                .clip(shape)
-                .background(colors.content.copy(alpha = 0.22f))
-        ) {
-            Box(
-                Modifier.fillMaxWidth(level.coerceIn(0.04f, 1f))
-                    .height(8.dp)
-                    .clip(shape)
-                    .background(colors.content)
-            )
-        }
+        Text(
+          source,
+          style = type.bodySmall.copy(fontSize = type.body.fontSize * 0.87f),
+          color = colors.content,
+        )
+      }
     }
+    val shape = RoundedCornerShape(4.dp)
+    Box(
+      Modifier.fillMaxWidth()
+        .height(8.dp)
+        .clip(shape)
+        .background(colors.content.copy(alpha = 0.22f))
+    ) {
+      Box(
+        Modifier.fillMaxWidth(level.coerceIn(0.04f, 1f))
+          .height(8.dp)
+          .clip(shape)
+          .background(colors.content)
+      )
+    }
+  }
 }

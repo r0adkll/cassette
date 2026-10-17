@@ -1,7 +1,7 @@
 #!/bin/sh
-# Checks or applies ktfmt (KotlinLang style) on every .kt and .kts file git doesn't ignore, build-logic
+# Checks or applies ktfmt (Google style, 2-space indents) on every .kt and .kts file git doesn't ignore, build-logic
 # included.
-# Much faster than ./gradlew ktfmtCheck: no Gradle configuration. Downloads the pinned ktfmt
+# The only formatter (no Gradle task): fast, no Gradle configuration. Downloads the pinned ktfmt
 # (gradle/libs.versions.toml, `ktfmt-cli`) once and caches it under ${XDG_CACHE_HOME:-~/.cache}/cassette.
 #
 # Usage:
@@ -46,7 +46,7 @@ esac
 cd "$REPO_ROOT"
 # With --dry-run, ktfmt prints the files it would change.
 # Tracked and new (untracked, not ignored) files, so work in progress is checked before it's committed.
-if ! git ls-files -z --cached --others --exclude-standard '*.kt' '*.kts' | xargs -0 java -jar "$JAR" --kotlinlang-style --quiet $ARGS; then
+if ! git ls-files -z --cached --others --exclude-standard '*.kt' '*.kts' | xargs -0 java -jar "$JAR" --google-style --quiet $ARGS; then
   echo "ktfmt: the files above need formatting. Run scripts/ktfmt --format." >&2
   exit 1
 fi

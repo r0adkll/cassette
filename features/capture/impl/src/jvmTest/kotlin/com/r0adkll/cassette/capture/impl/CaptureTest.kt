@@ -29,217 +29,216 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 
 class CaptureTest {
-    private val driver = createInMemoryDriver()
-    private val db = CassetteDatabase(driver)
-    private val dispatchers =
-        CassetteDispatchers(Dispatchers.Unconfined, Dispatchers.Unconfined, Dispatchers.Unconfined)
-    private var now = Instant.fromEpochMilliseconds(1_792_200_000_000)
-    private val clock =
-        object : Clock {
-            override fun now() = this@CaptureTest.now
-        }
-    private val gatt = FakeGatt()
-    private val recorder = CaptureRecorder(db, dispatchers)
-    private val refresher = BatteryRefresher(recorder, gatt, db, clock)
-
-    @AfterTest fun close() = driver.close()
-
-    @Test
-    fun recordsKnownComponentsAndIgnoresOthers() = runTest {
-        val bike = bikeWithHub()
-
-        val heard = recorder.record(listOf(rdStatus(), stranger()))
-
-        assertEquals(listOf(Fixtures.HUB.toString()), heard.map { it.component.key })
-        val rd = db.componentQueries.selectByKey(Fixtures.HUB.toString()).executeAsOne()
-        assertEquals(Fixtures.RD_ADDRESS, rd.address)
-        val sample = db.batterySampleQueries.latestForComponent(rd.id).executeAsOne().toDomain()
-        assertEquals(78, sample.percent)
-        assertEquals(ReadMethod.Advert, sample.method)
-        assertEquals(
-            now.toEpochMilliseconds(),
-            db.bikeQueries.selectById(bike).executeAsOne().last_seen_at,
-        )
+  private val driver = createInMemoryDriver()
+  private val db = CassetteDatabase(driver)
+  private val dispatchers =
+    CassetteDispatchers(Dispatchers.Unconfined, Dispatchers.Unconfined, Dispatchers.Unconfined)
+  private var now = Instant.fromEpochMilliseconds(1_792_200_000_000)
+  private val clock =
+    object : Clock {
+      override fun now() = this@CaptureTest.now
     }
+  private val gatt = FakeGatt()
+  private val recorder = CaptureRecorder(db, dispatchers)
+  private val refresher = BatteryRefresher(recorder, gatt, db, clock)
 
-    @Test
-    fun serialLessFramesResolveByAddress() = runTest {
-        bikeWithHub()
-        recorder.record(listOf(rdStatus()))
+  @AfterTest fun close() = driver.close()
 
-        val heard = recorder.record(listOf(rdStatus(serial = null, at = now + 1.minutes)))
+  @Test
+  fun recordsKnownComponentsAndIgnoresOthers() = runTest {
+    val bike = bikeWithHub()
 
-        assertEquals(Fixtures.HUB.toString(), heard.single().component.key)
+    val heard = recorder.record(listOf(rdStatus(), stranger()))
+
+    assertEquals(listOf(Fixtures.HUB.toString()), heard.map { it.component.key })
+    val rd = db.componentQueries.selectByKey(Fixtures.HUB.toString()).executeAsOne()
+    assertEquals(Fixtures.RD_ADDRESS, rd.address)
+    val sample = db.batterySampleQueries.latestForComponent(rd.id).executeAsOne().toDomain()
+    assertEquals(78, sample.percent)
+    assertEquals(ReadMethod.Advert, sample.method)
+    assertEquals(
+      now.toEpochMilliseconds(),
+      db.bikeQueries.selectById(bike).executeAsOne().last_seen_at,
+    )
+  }
+
+  @Test
+  fun serialLessFramesResolveByAddress() = runTest {
+    bikeWithHub()
+    recorder.record(listOf(rdStatus()))
+
+    val heard = recorder.record(listOf(rdStatus(serial = null, at = now + 1.minutes)))
+
+    assertEquals(Fixtures.HUB.toString(), heard.single().component.key)
+  }
+
+  @Test
+  fun hubTableBringsInEveryComponentWithBatteryAndFirmware() = runTest {
+    bikeWithHub()
+    gatt.values =
+      mapOf(
+        SystemBatteryTable.CHARACTERISTIC to Fixtures.RED_TABLE,
+        SystemBatteryTable.VERSIONS_CHARACTERISTIC to Fixtures.RED_VERSIONS,
+      )
+
+    val outcome = refresher.refresh(recorder.record(listOf(rdStatus())), CaptureMode.Live)
+
+    assertTrue(outcome.hubRead)
+    val components = db.componentQueries.selectForBike(1).executeAsList().map { it.toDomain() }
+    assertEquals(
+      setOf(
+        ComponentKind.REAR_DERAILLEUR,
+        ComponentKind.FRONT_DERAILLEUR,
+        ComponentKind.LEFT_SHIFTER,
+        ComponentKind.RIGHT_SHIFTER,
+      ),
+      components.map { it.kind }.toSet(),
+    )
+    val left = components.single { it.kind == ComponentKind.LEFT_SHIFTER }
+    assertEquals("2.7.3", left.firmware)
+    val leftSample =
+      db.batterySampleQueries.latestForComponent(left.id.value).executeAsOne().toDomain()
+    assertEquals(2_946, leftSample.millivolts)
+    assertEquals(BatteryStatus.OK, leftSample.reportedStatus)
+    assertEquals(ReadMethod.Hub, leftSample.method)
+    assertEquals(
+      12_324L,
+      components.single { it.kind == ComponentKind.REAR_DERAILLEUR }.actuations,
+    )
+    assertEquals(1, gatt.reads)
+  }
+
+  @Test
+  fun hubIsNotReadAgainUntilItIsDue() = runTest {
+    bikeWithHub()
+    gatt.values = mapOf(SystemBatteryTable.CHARACTERISTIC to Fixtures.RED_TABLE)
+    refresher.refresh(recorder.record(listOf(rdStatus())), CaptureMode.Background)
+
+    now += 5.minutes
+    refresher.refresh(recorder.record(listOf(rdStatus(at = now))), CaptureMode.Background)
+    assertEquals(1, gatt.reads)
+
+    now += 6.minutes
+    refresher.refresh(recorder.record(listOf(rdStatus(at = now))), CaptureMode.Background)
+    assertEquals(2, gatt.reads)
+  }
+
+  @Test
+  fun powerMeterBatteryLevel() = runTest {
+    val bike = bikeWithHub()
+    db.componentQueries.insert(
+      bike,
+      "Quarq AGN12387",
+      null,
+      ComponentKind.POWER_METER.name,
+      7,
+      null,
+      null,
+      null,
+      0,
+      null,
+    )
+    gatt.values = mapOf(BATTERY_LEVEL_CHARACTERISTIC to byteArrayOf(85))
+
+    val outcome = refresher.refresh(recorder.record(listOf(quarq())), CaptureMode.Live)
+
+    assertTrue(outcome.powerMeterRead)
+    val pm = db.componentQueries.selectByKey("Quarq AGN12387").executeAsOne()
+    assertEquals(85L, db.batterySampleQueries.latestForComponent(pm.id).executeAsOne().percent)
+  }
+
+  @Test
+  fun aFailedReadBacksOff() = runTest {
+    bikeWithHub()
+    gatt.fail = true
+    refresher.refresh(recorder.record(listOf(rdStatus())), CaptureMode.Live)
+    refresher.refresh(recorder.record(listOf(rdStatus(at = now))), CaptureMode.Live)
+    assertEquals(1, gatt.reads)
+    assertNull(db.bikeQueries.selectById(1).executeAsOne().hub_read_at)
+  }
+
+  @Test
+  fun refreshEndsOnceEverythingIsRead() = runTest {
+    bikeWithHub()
+    gatt.values = mapOf(SystemBatteryTable.CHARACTERISTIC to Fixtures.RED_TABLE)
+    val scanner = FakeScanner()
+    val controller = DefaultCaptureController(scanner, recorder, refresher, db, clock)
+
+    controller.refresh().test {
+      scanner.adverts.emit(rdStatus())
+      var item = awaitItem()
+      while (item is RefreshProgress.Scanning) item = awaitItem()
+      val done = assertIs<RefreshProgress.Done>(item)
+      assertTrue(done.hubRead)
+      awaitComplete()
     }
+  }
 
-    @Test
-    fun hubTableBringsInEveryComponentWithBatteryAndFirmware() = runTest {
-        bikeWithHub()
-        gatt.values =
-            mapOf(
-                SystemBatteryTable.CHARACTERISTIC to Fixtures.RED_TABLE,
-                SystemBatteryTable.VERSIONS_CHARACTERISTIC to Fixtures.RED_VERSIONS,
-            )
+  @Test
+  fun backgroundCaptureNeedsABike() = runTest {
+    val scanner = FakeScanner()
+    val controller = DefaultCaptureController(scanner, recorder, refresher, db, clock)
+    controller.ensureBackgroundCapture("test")
+    assertNull(scanner.armed)
 
-        val outcome = refresher.refresh(recorder.record(listOf(rdStatus())), CaptureMode.Live)
+    bikeWithHub()
+    controller.ensureBackgroundCapture("test")
+    assertNotNull(scanner.armed)
+  }
 
-        assertTrue(outcome.hubRead)
-        val components = db.componentQueries.selectForBike(1).executeAsList().map { it.toDomain() }
-        assertEquals(
-            setOf(
-                ComponentKind.REAR_DERAILLEUR,
-                ComponentKind.FRONT_DERAILLEUR,
-                ComponentKind.LEFT_SHIFTER,
-                ComponentKind.RIGHT_SHIFTER,
-            ),
-            components.map { it.kind }.toSet(),
-        )
-        val left = components.single { it.kind == ComponentKind.LEFT_SHIFTER }
-        assertEquals("2.7.3", left.firmware)
-        val leftSample =
-            db.batterySampleQueries.latestForComponent(left.id.value).executeAsOne().toDomain()
-        assertEquals(2_946, leftSample.millivolts)
-        assertEquals(BatteryStatus.OK, leftSample.reportedStatus)
-        assertEquals(ReadMethod.Hub, leftSample.method)
-        assertEquals(
-            12_324L,
-            components.single { it.kind == ComponentKind.REAR_DERAILLEUR }.actuations,
-        )
-        assertEquals(1, gatt.reads)
-    }
+  private fun bikeWithHub(): Long {
+    db.bikeQueries.insert("Road bike", BikeType.Road.name, null, Fixtures.HUB, 0, null)
+    val bike = db.bikeQueries.lastInsertedId().executeAsOne()
+    db.componentQueries.insert(
+      bike,
+      Fixtures.HUB.toString(),
+      Fixtures.HUB,
+      ComponentKind.REAR_DERAILLEUR.name,
+      1066,
+      0x81,
+      null,
+      null,
+      0,
+      null,
+    )
+    return bike
+  }
 
-    @Test
-    fun hubIsNotReadAgainUntilItIsDue() = runTest {
-        bikeWithHub()
-        gatt.values = mapOf(SystemBatteryTable.CHARACTERISTIC to Fixtures.RED_TABLE)
-        refresher.refresh(recorder.record(listOf(rdStatus())), CaptureMode.Background)
+  private fun rdStatus(serial: Long? = Fixtures.HUB, at: Instant = now) =
+    AxsReading(
+      key = serial?.toString() ?: Fixtures.RD_ADDRESS,
+      serial = serial,
+      address = Fixtures.RD_ADDRESS,
+      name = null,
+      rssi = -60,
+      timestampMillis = at.toEpochMilliseconds(),
+      frame = FrameType.STATUS,
+      kind = if (serial == null) ComponentKind.UNKNOWN else ComponentKind.REAR_DERAILLEUR,
+      battery = AdvertBattery(7_870, 78, BatteryStatus.OK),
+      firmware = null,
+      manufacturerHex = null,
+      serviceDataHex = null,
+      classByte = 0x81,
+      modelId = 1066,
+      bridge = true,
+    )
 
-        now += 5.minutes
-        refresher.refresh(recorder.record(listOf(rdStatus(at = now))), CaptureMode.Background)
-        assertEquals(1, gatt.reads)
+  private fun stranger() = rdStatus().copy(key = "999", serial = 999, address = "11:22:33:44:55:66")
 
-        now += 6.minutes
-        refresher.refresh(recorder.record(listOf(rdStatus(at = now))), CaptureMode.Background)
-        assertEquals(2, gatt.reads)
-    }
-
-    @Test
-    fun powerMeterBatteryLevel() = runTest {
-        val bike = bikeWithHub()
-        db.componentQueries.insert(
-            bike,
-            "Quarq AGN12387",
-            null,
-            ComponentKind.POWER_METER.name,
-            7,
-            null,
-            null,
-            null,
-            0,
-            null,
-        )
-        gatt.values = mapOf(BATTERY_LEVEL_CHARACTERISTIC to byteArrayOf(85))
-
-        val outcome = refresher.refresh(recorder.record(listOf(quarq())), CaptureMode.Live)
-
-        assertTrue(outcome.powerMeterRead)
-        val pm = db.componentQueries.selectByKey("Quarq AGN12387").executeAsOne()
-        assertEquals(85L, db.batterySampleQueries.latestForComponent(pm.id).executeAsOne().percent)
-    }
-
-    @Test
-    fun aFailedReadBacksOff() = runTest {
-        bikeWithHub()
-        gatt.fail = true
-        refresher.refresh(recorder.record(listOf(rdStatus())), CaptureMode.Live)
-        refresher.refresh(recorder.record(listOf(rdStatus(at = now))), CaptureMode.Live)
-        assertEquals(1, gatt.reads)
-        assertNull(db.bikeQueries.selectById(1).executeAsOne().hub_read_at)
-    }
-
-    @Test
-    fun refreshEndsOnceEverythingIsRead() = runTest {
-        bikeWithHub()
-        gatt.values = mapOf(SystemBatteryTable.CHARACTERISTIC to Fixtures.RED_TABLE)
-        val scanner = FakeScanner()
-        val controller = DefaultCaptureController(scanner, recorder, refresher, db, clock)
-
-        controller.refresh().test {
-            scanner.adverts.emit(rdStatus())
-            var item = awaitItem()
-            while (item is RefreshProgress.Scanning) item = awaitItem()
-            val done = assertIs<RefreshProgress.Done>(item)
-            assertTrue(done.hubRead)
-            awaitComplete()
-        }
-    }
-
-    @Test
-    fun backgroundCaptureNeedsABike() = runTest {
-        val scanner = FakeScanner()
-        val controller = DefaultCaptureController(scanner, recorder, refresher, db, clock)
-        controller.ensureBackgroundCapture("test")
-        assertNull(scanner.armed)
-
-        bikeWithHub()
-        controller.ensureBackgroundCapture("test")
-        assertNotNull(scanner.armed)
-    }
-
-    private fun bikeWithHub(): Long {
-        db.bikeQueries.insert("Road bike", BikeType.Road.name, null, Fixtures.HUB, 0, null)
-        val bike = db.bikeQueries.lastInsertedId().executeAsOne()
-        db.componentQueries.insert(
-            bike,
-            Fixtures.HUB.toString(),
-            Fixtures.HUB,
-            ComponentKind.REAR_DERAILLEUR.name,
-            1066,
-            0x81,
-            null,
-            null,
-            0,
-            null,
-        )
-        return bike
-    }
-
-    private fun rdStatus(serial: Long? = Fixtures.HUB, at: Instant = now) =
-        AxsReading(
-            key = serial?.toString() ?: Fixtures.RD_ADDRESS,
-            serial = serial,
-            address = Fixtures.RD_ADDRESS,
-            name = null,
-            rssi = -60,
-            timestampMillis = at.toEpochMilliseconds(),
-            frame = FrameType.STATUS,
-            kind = if (serial == null) ComponentKind.UNKNOWN else ComponentKind.REAR_DERAILLEUR,
-            battery = AdvertBattery(7_870, 78, BatteryStatus.OK),
-            firmware = null,
-            manufacturerHex = null,
-            serviceDataHex = null,
-            classByte = 0x81,
-            modelId = 1066,
-            bridge = true,
-        )
-
-    private fun stranger() =
-        rdStatus().copy(key = "999", serial = 999, address = "11:22:33:44:55:66")
-
-    private fun quarq() =
-        AxsReading(
-            key = "Quarq AGN12387",
-            serial = null,
-            address = "C0:FF:EE:00:00:01",
-            name = "Quarq AGN12387",
-            rssi = -60,
-            timestampMillis = now.toEpochMilliseconds(),
-            frame = FrameType.POWER_METER,
-            kind = ComponentKind.POWER_METER,
-            battery = null,
-            firmware = null,
-            manufacturerHex = null,
-            serviceDataHex = null,
-            modelId = 7,
-        )
+  private fun quarq() =
+    AxsReading(
+      key = "Quarq AGN12387",
+      serial = null,
+      address = "C0:FF:EE:00:00:01",
+      name = "Quarq AGN12387",
+      rssi = -60,
+      timestampMillis = now.toEpochMilliseconds(),
+      frame = FrameType.POWER_METER,
+      kind = ComponentKind.POWER_METER,
+      battery = null,
+      firmware = null,
+      manufacturerHex = null,
+      serviceDataHex = null,
+      modelId = 7,
+    )
 }

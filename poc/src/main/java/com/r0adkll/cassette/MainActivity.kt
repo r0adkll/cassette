@@ -10,21 +10,21 @@ import com.r0adkll.cassette.ui.MainScreen
 import com.r0adkll.cassette.ui.MainViewModel
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        val app = application as CassetteApp
+  override fun onCreate(savedInstanceState: Bundle?) {
+    super.onCreate(savedInstanceState)
+    val app = application as CassetteApp
 
-        enableEdgeToEdge()
-        setContent {
-            CassetteTheme {
-                MainScreen(
-                    viewModel = viewModel { MainViewModel(app) },
-                    hasPermissions = {
-                        app.scanner.hasScanPermission() && app.gattReader.hasConnectPermission()
-                    },
-                    isBluetoothEnabled = { app.scanner.isBluetoothEnabled },
-                )
-            }
-        }
+    enableEdgeToEdge()
+    setContent {
+      CassetteTheme {
+        MainScreen(
+          viewModel = viewModel { MainViewModel(app) },
+          hasPermissions = {
+            app.scanner.hasScanPermission() && app.gattReader.hasConnectPermission()
+          },
+          isBluetoothEnabled = { app.scanner.isBluetoothEnabled },
+        )
+      }
     }
+  }
 }

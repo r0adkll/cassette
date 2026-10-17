@@ -38,130 +38,127 @@ private val MaxContentWidth = 480.dp
 @CircuitInject(BikeScreen::class, AppScope::class)
 @Composable
 fun BikeUi(state: BikeUiState, modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-        Column(
-            Modifier.widthIn(max = MaxContentWidth)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(vertical = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            TopBar(onSettings = { state.eventSink(BikeEvent.OpenSettings) })
-            when (state) {
-                is BikeUiState.Loading -> Unit
-                is BikeUiState.Empty -> EmptyBike(state.eventSink)
-                is BikeUiState.Loaded -> LoadedBike(state)
-            }
-        }
+  Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+    Column(
+      Modifier.widthIn(max = MaxContentWidth)
+        .fillMaxWidth()
+        .verticalScroll(rememberScrollState())
+        .padding(vertical = 24.dp),
+      verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+      TopBar(onSettings = { state.eventSink(BikeEvent.OpenSettings) })
+      when (state) {
+        is BikeUiState.Loading -> Unit
+        is BikeUiState.Empty -> EmptyBike(state.eventSink)
+        is BikeUiState.Loaded -> LoadedBike(state)
+      }
     }
+  }
 }
 
 @Composable
 private fun TopBar(onSettings: () -> Unit) {
-    Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
-        Kicker("Cassette", Modifier.weight(1f))
-        IconCircleButton(LucideIcons.Settings, "Settings", onClick = onSettings)
-    }
+  Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+    Kicker("Cassette", Modifier.weight(1f))
+    IconCircleButton(LucideIcons.Settings, "Settings", onClick = onSettings)
+  }
 }
 
 @Composable
 private fun LoadedBike(state: BikeUiState.Loaded) {
-    val colors = CassetteTheme.colors
-    Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.Bottom) {
-        Text(
-            state.name,
-            style =
-                CassetteTheme.type.display.copy(
-                    fontSize = CassetteTheme.type.display.fontSize * 1.07f
-                ),
-            color = colors.text,
-            modifier = Modifier.weight(1f),
-        )
-        Row(Modifier.padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Kicker(state.position)
-            Icon(
-                LucideIcons.ChevronDown,
-                null,
-                tint = colors.muted,
-                modifier = Modifier.size(14.dp),
-            )
-        }
+  val colors = CassetteTheme.colors
+  Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.Bottom) {
+    Text(
+      state.name,
+      style =
+        CassetteTheme.type.display.copy(fontSize = CassetteTheme.type.display.fontSize * 1.07f),
+      color = colors.text,
+      modifier = Modifier.weight(1f),
+    )
+    Row(Modifier.padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+      Kicker(state.position)
+      Icon(
+        LucideIcons.ChevronDown,
+        null,
+        tint = colors.muted,
+        modifier = Modifier.size(14.dp),
+      )
     }
-    StatusBlock(state.status.headline, state.status.tone) {
-        StatusBlockText(state.status.summary)
-        StatusBlockMeta(state.status.meta)
+  }
+  StatusBlock(state.status.headline, state.status.tone) {
+    StatusBlockText(state.status.summary)
+    StatusBlockMeta(state.status.meta)
+  }
+  Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    state.components.forEach { row ->
+      ComponentRow(
+        code = row.code,
+        name = row.name,
+        source = row.source,
+        value = row.value,
+        level = row.level,
+        tone = row.tone,
+        onClick = { state.eventSink(BikeEvent.OpenComponent(row.id)) },
+      )
     }
-    Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        state.components.forEach { row ->
-            ComponentRow(
-                code = row.code,
-                name = row.name,
-                source = row.source,
-                value = row.value,
-                level = row.level,
-                tone = row.tone,
-                onClick = { state.eventSink(BikeEvent.OpenComponent(row.id)) },
-            )
-        }
-        Spacer(Modifier.height(10.dp))
-        RefreshButton(state.refresh, onClick = { state.eventSink(BikeEvent.Refresh) })
-    }
+    Spacer(Modifier.height(10.dp))
+    RefreshButton(state.refresh, onClick = { state.eventSink(BikeEvent.Refresh) })
+  }
 }
 
 @Composable
 private fun RefreshButton(refresh: RefreshButton, onClick: () -> Unit) {
-    when (refresh) {
-        RefreshButton.Idle ->
-            CassetteButton("Refresh now", onClick = onClick, trailing = "60 s scan")
-        is RefreshButton.Scanning -> {
-            val seconds = refresh.secondsLeft
-            CassetteButton(
-                "Wake the bike",
-                onClick = {},
-                primary = false,
-                icon = LucideIcons.BluetoothSearching,
-                trailing = "0:${seconds.toString().padStart(2, '0')}",
-            )
-        }
-        RefreshButton.Unavailable ->
-            CassetteButton(
-                "Turn on Bluetooth",
-                onClick = onClick,
-                primary = false,
-                icon = LucideIcons.Bluetooth,
-            )
+  when (refresh) {
+    RefreshButton.Idle -> CassetteButton("Refresh now", onClick = onClick, trailing = "60 s scan")
+    is RefreshButton.Scanning -> {
+      val seconds = refresh.secondsLeft
+      CassetteButton(
+        "Wake the bike",
+        onClick = {},
+        primary = false,
+        icon = LucideIcons.BluetoothSearching,
+        trailing = "0:${seconds.toString().padStart(2, '0')}",
+      )
     }
+    RefreshButton.Unavailable ->
+      CassetteButton(
+        "Turn on Bluetooth",
+        onClick = onClick,
+        primary = false,
+        icon = LucideIcons.Bluetooth,
+      )
+  }
 }
 
 @Composable
 private fun EmptyBike(eventSink: (BikeEvent) -> Unit) {
-    val colors = CassetteTheme.colors
-    Text(
-        "No bike yet.",
-        style = CassetteTheme.type.display,
-        color = colors.text,
-        modifier = Modifier.padding(horizontal = 20.dp),
+  val colors = CassetteTheme.colors
+  Text(
+    "No bike yet.",
+    style = CassetteTheme.type.display,
+    color = colors.text,
+    modifier = Modifier.padding(horizontal = 20.dp),
+  )
+  Text(
+    "Add your AXS bike: wake it, and Cassette finds the hub and every component.",
+    style = CassetteTheme.type.body,
+    color = colors.muted,
+    modifier = Modifier.padding(horizontal = 20.dp),
+  )
+  Column(
+    Modifier.padding(horizontal = 20.dp),
+    verticalArrangement = Arrangement.spacedBy(10.dp),
+  ) {
+    CassetteButton("Add bike", onClick = { eventSink(BikeEvent.AddBike) })
+    CassetteButton(
+      "Load sample bike",
+      onClick = { eventSink(BikeEvent.LoadSampleBike) },
+      primary = false,
     )
     Text(
-        "Add your AXS bike: wake it, and Cassette finds the hub and every component.",
-        style = CassetteTheme.type.body,
-        color = colors.muted,
-        modifier = Modifier.padding(horizontal = 20.dp),
+      "Developer: the validation bike's readings from 16 Oct, until capture is ported.",
+      style = CassetteTheme.type.bodySmall,
+      color = colors.muted,
     )
-    Column(
-        Modifier.padding(horizontal = 20.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        CassetteButton("Add bike", onClick = { eventSink(BikeEvent.AddBike) })
-        CassetteButton(
-            "Load sample bike",
-            onClick = { eventSink(BikeEvent.LoadSampleBike) },
-            primary = false,
-        )
-        Text(
-            "Developer: the validation bike's readings from 16 Oct, until capture is ported.",
-            style = CassetteTheme.type.bodySmall,
-            color = colors.muted,
-        )
-    }
+  }
 }
