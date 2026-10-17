@@ -1,0 +1,146 @@
+package com.r0adkll.cassette.bikes.ui
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.r0adkll.cassette.common.compose.components.CassetteButton
+import com.r0adkll.cassette.common.compose.components.ComponentRow
+import com.r0adkll.cassette.common.compose.components.IconCircleButton
+import com.r0adkll.cassette.common.compose.components.Kicker
+import com.r0adkll.cassette.common.compose.components.StatusBlock
+import com.r0adkll.cassette.common.compose.components.StatusBlockMeta
+import com.r0adkll.cassette.common.compose.components.StatusBlockText
+import com.r0adkll.cassette.common.compose.icons.LucideIcons
+import com.r0adkll.cassette.common.compose.theme.CassetteTheme
+import com.r0adkll.cassette.common.screens.BikeScreen
+import com.slack.circuit.codegen.annotations.CircuitInject
+import dev.zacsweers.metro.AppScope
+
+/** Content is capped at phone width and centred, so large screens don't stretch it (layout TBD). */
+private val MaxContentWidth = 480.dp
+
+@CircuitInject(BikeScreen::class, AppScope::class)
+@Composable
+fun BikeUi(state: BikeUiState, modifier: Modifier = Modifier) {
+    Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+        Column(
+            Modifier.widthIn(max = MaxContentWidth)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(vertical = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            TopBar(onSettings = { state.eventSink(BikeEvent.OpenSettings) })
+            when (state) {
+                is BikeUiState.Loading -> Unit
+                is BikeUiState.Empty -> EmptyBike(state.eventSink)
+                is BikeUiState.Loaded -> LoadedBike(state)
+            }
+        }
+    }
+}
+
+@Composable
+private fun TopBar(onSettings: () -> Unit) {
+    Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+        Kicker("Cassette", Modifier.weight(1f))
+        IconCircleButton(LucideIcons.Settings, "Settings", onClick = onSettings)
+    }
+}
+
+@Composable
+private fun LoadedBike(state: BikeUiState.Loaded) {
+    val colors = CassetteTheme.colors
+    Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.Bottom) {
+        Text(
+            state.name,
+            style =
+                CassetteTheme.type.display.copy(
+                    fontSize = CassetteTheme.type.display.fontSize * 1.07f
+                ),
+            color = colors.text,
+            modifier = Modifier.weight(1f),
+        )
+        Row(Modifier.padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Kicker(state.position)
+            Icon(
+                LucideIcons.ChevronDown,
+                null,
+                tint = colors.muted,
+                modifier = Modifier.size(14.dp),
+            )
+        }
+    }
+    StatusBlock(state.status.headline, state.status.tone) {
+        StatusBlockText(state.status.summary)
+        StatusBlockMeta(state.status.meta)
+    }
+    Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        state.components.forEach { row ->
+            ComponentRow(
+                code = row.code,
+                name = row.name,
+                source = row.source,
+                value = row.value,
+                level = row.level,
+                tone = row.tone,
+                onClick = { state.eventSink(BikeEvent.OpenComponent(row.id)) },
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+        CassetteButton(
+            "Refresh now",
+            onClick = { state.eventSink(BikeEvent.Refresh) },
+            trailing = "60 s scan",
+        )
+    }
+}
+
+@Composable
+private fun EmptyBike(eventSink: (BikeEvent) -> Unit) {
+    val colors = CassetteTheme.colors
+    Text(
+        "No bike yet.",
+        style = CassetteTheme.type.display,
+        color = colors.text,
+        modifier = Modifier.padding(horizontal = 20.dp),
+    )
+    Text(
+        "Add your AXS bike: wake it, and Cassette finds the hub and every component.",
+        style = CassetteTheme.type.body,
+        color = colors.muted,
+        modifier = Modifier.padding(horizontal = 20.dp),
+    )
+    Column(
+        Modifier.padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        CassetteButton("Add bike", onClick = { eventSink(BikeEvent.AddBike) })
+        CassetteButton(
+            "Load sample bike",
+            onClick = { eventSink(BikeEvent.LoadSampleBike) },
+            primary = false,
+        )
+        Text(
+            "Developer: the validation bike's readings from 16 Oct, until capture is ported.",
+            style = CassetteTheme.type.bodySmall,
+            color = colors.muted,
+        )
+    }
+}

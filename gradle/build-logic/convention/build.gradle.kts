@@ -39,6 +39,10 @@ gradlePlugin {
             id = "cassette.di"
             implementationClass = "com.r0adkll.cassette.convention.DiConventionPlugin"
         }
+        register("parcelize") {
+            id = "cassette.parcelize"
+            implementationClass = "com.r0adkll.cassette.convention.ParcelizeConventionPlugin"
+        }
         register("ui") {
             id = "cassette.ui"
             implementationClass = "com.r0adkll.cassette.convention.UiConventionPlugin"

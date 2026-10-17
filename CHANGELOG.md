@@ -14,5 +14,8 @@ All notable changes to Cassette are documented here. The format follows
 - Domain models (`:core`) and the SQLDelight database (`:data:db`): bikes, components, battery history
   with year-long retention and daily down-sampling, and alert state.
 - `scripts/ktfmt`: the ktfmt CLI for fast format checks (CI and the pre-push hook), covering build-logic.
+- The bike screen: status block, component rows with reported or estimated values, and stale and unknown
+  states, backed by the database (Circuit + Metro). A developer action loads the validation bike's
+  readings until capture is ported.
 - CI on GitHub Actions (formatting, tests, Android build, iOS compile, design-gallery renders), Danger
   checks and Renovate.
