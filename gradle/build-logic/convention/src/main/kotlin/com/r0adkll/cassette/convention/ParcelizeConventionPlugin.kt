@@ -7,8 +7,8 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 /**
- * Parcelize for shared code: `com.r0adkll.cassette.core.parcelize.Parcelize` counts as `@Parcelize` on
- * Android and is a no-op elsewhere. Circuit screens are Parcelable on Android.
+ * Parcelize for shared code: `com.r0adkll.cassette.core.parcelize.Parcelize` counts as `@Parcelize`
+ * on Android and is a no-op elsewhere. Circuit screens are Parcelable on Android.
  */
 class ParcelizeConventionPlugin : Plugin<Project> {
     override fun apply(target: Project) =
