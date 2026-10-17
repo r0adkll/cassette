@@ -31,7 +31,7 @@ class CassetteApplication : Application(), BleHost, WidgetHost, TileHost, Alerts
     DropAppUpdates(
       Drop(this),
       CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
-      enabled = DropAppUpdates.isDebuggable(applicationInfo),
+      enabled = DropAppUpdates.hasDrop(this),
     )
   }
 

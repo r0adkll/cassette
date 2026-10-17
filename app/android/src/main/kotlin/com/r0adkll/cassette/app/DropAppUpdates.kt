@@ -1,6 +1,7 @@
 package com.r0adkll.cassette.app
 
-import android.content.pm.ApplicationInfo
+import android.content.Context
+import android.content.pm.PackageManager
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -14,9 +15,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 /**
- * In-app updates from Drop. Only the debug build has Drop's SDK (the Gradle plugin gives other
- * builds a no-op), so anything else reports [UpdateStatus.Off]. MainActivity shows Drop's update
- * sheet while [sheetOpen].
+ * In-app updates from Drop. Only the debug and internal builds have Drop's SDK (the Gradle plugin
+ * gives release a no-op), so anything else reports [UpdateStatus.Off]. MainActivity shows Drop's
+ * update sheet while [sheetOpen].
  */
 class DropAppUpdates(
   val drop: Drop,
@@ -59,6 +60,14 @@ class DropAppUpdates(
   }
 
   companion object {
-    fun isDebuggable(info: ApplicationInfo) = info.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+    /**
+     * Whether this build has Drop's SDK: the plugin writes the server's URL into the manifest only
+     * for those variants. Not "debuggable": the internal build Drop ships is R8'd and isn't.
+     */
+    fun hasDrop(context: Context): Boolean =
+      context.packageManager
+        .getApplicationInfo(context.packageName, PackageManager.GET_META_DATA)
+        .metaData
+        ?.containsKey("com.r0adkll.drop.SERVER_URL") == true
   }
 }
