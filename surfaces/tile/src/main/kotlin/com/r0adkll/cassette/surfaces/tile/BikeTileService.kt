@@ -8,8 +8,8 @@ import android.service.quicksettings.TileService
 import com.r0adkll.cassette.bikes.api.BikeRepository
 import com.r0adkll.cassette.bikes.ui.BikeUiState
 import com.r0adkll.cassette.bikes.ui.toLoaded
-import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.capture.api.RefreshProgress
+import com.r0adkll.cassette.capture.api.SharedRefresh
 import com.r0adkll.cassette.common.compose.components.word
 import com.r0adkll.cassette.common.compose.theme.StatusTone
 import com.r0adkll.cassette.settings.api.CassetteSettings
@@ -24,7 +24,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
@@ -34,7 +33,6 @@ import kotlinx.coroutines.launch
 @ContributesTo(AppScope::class)
 interface TileComponent {
   val bikeRepository: BikeRepository
-  val captureController: CaptureController
   val clock: Clock
   val tileRefresh: TileRefresh
   val settings: CassetteSettings
@@ -49,35 +47,30 @@ interface TileHost {
 }
 
 /**
- * The tile's 60-second refresh. It runs in the app's scope, not the service's, so it finishes even
- * after the shade closes; the tile shows its progress while it's visible.
+ * Starts the shared 60-second refresh from the tile. It runs in the app's scope, not the service's,
+ * so it finishes even after the shade closes; the tile shows its progress while it's visible, and
+ * also when the watch asked for it.
  */
 @SingleIn(AppScope::class)
 @Inject
-class TileRefresh(private val capture: CaptureController) {
-  private val _progress = MutableStateFlow<RefreshProgress?>(null)
-  val progress: StateFlow<RefreshProgress?> = _progress
+class TileRefresh(private val refresh: SharedRefresh) {
+  val progress: StateFlow<RefreshProgress?>
+    get() = refresh.progress
+
   private var job: Job? = null
 
   fun start(scope: CoroutineScope, context: Context) {
     if (job?.isActive == true) return
     job = scope.launch {
-      capture.refresh().collect {
-        _progress.value = it.takeIf { p ->
-          p is RefreshProgress.Scanning || p is RefreshProgress.NotReady
-        }
-        TileService.requestListeningState(
-          context,
-          ComponentName(context, BikeTileService::class.java),
-        )
-      }
-      _progress.value = null
-      TileService.requestListeningState(
-        context,
-        ComponentName(context, BikeTileService::class.java),
-      )
+      val updates = launch { refresh.progress.collect { requestListening(context) } }
+      refresh.run()
+      updates.cancel()
+      requestListening(context)
     }
   }
+
+  private fun requestListening(context: Context) =
+    TileService.requestListeningState(context, ComponentName(context, BikeTileService::class.java))
 }
 
 /**

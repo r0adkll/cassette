@@ -1,6 +1,6 @@
 # Roadmap
 
-## M0: Design and spikes (now)
+## M0: Design and spikes
 
 - ~~Design iterations~~: done, direction and every v1 surface approved
   ([0012](decisions/0012-visual-direction.md)).
@@ -8,15 +8,21 @@
 - Ride tests: Batched 30 s profile, and one ride longer than 30 minutes.
 - `docs/protocol.md`: the AXS protocol as we understand it, in our own words, with sources.
 
-## M1: Android core
+## M1: Android core (done)
 
 KMP scaffold and convention plugins, design system, onboarding, add bike, bike and component screens,
 history and charge detection, alerts and notifications, Glance widgets, Quick Settings tile, diagnostics
 (including export), background capture, CI with ktfmt, Danger and Drop uploads.
 
-## M2: Wear
+## M2: Wear (now)
 
-Wear app, tile and complications fed from the phone over the Data Layer.
+Wear app, tile and complications fed from the phone over the Data Layer
+([0013](decisions/0013-wear.md)):
+
+1. Sync: the phone publishes its bikes and runs refreshes the watch asks for; Diagnostics shows Wear.
+2. The Wear app: bikes and bike screens.
+3. The Wear tile.
+4. Complications.
 
 ## M3: iOS
 

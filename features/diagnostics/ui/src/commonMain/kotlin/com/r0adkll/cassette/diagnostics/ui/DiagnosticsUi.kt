@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.r0adkll.cassette.capture.api.CaptureEvent
 import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.ChoiceChips
 import com.r0adkll.cassette.common.compose.components.Kicker
@@ -23,6 +24,7 @@ import com.r0adkll.cassette.common.screens.DiagnosticsScreen
 import com.r0adkll.cassette.data.ble.ScanProfile
 import com.slack.circuit.codegen.annotations.CircuitInject
 import dev.zacsweers.metro.AppScope
+import kotlin.time.Instant
 
 @CircuitInject(DiagnosticsScreen::class, AppScope::class)
 @Composable
@@ -54,6 +56,7 @@ fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
       MonoLine("hub read", state.bike?.bike?.hubReadAt?.let { agoShort(state.now - it) } ?: "—")
       MonoLine("bluetooth", if (state.bluetoothReady) "ready" else "off or not allowed")
     }
+    WearPanel(state.wear, state.now)
     SettingsSection("Tools") {
       SettingsRow(
         "Live adverts",
@@ -124,6 +127,37 @@ fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
     )
   }
 }
+
+/** Wear sync (decision 0013): the watches, the last snapshot sent and the last refresh asked. */
+@Composable
+private fun WearPanel(wear: WearDiagnostics, now: Instant) {
+  Panel {
+    Kicker("Wear")
+    MonoLine(
+      "watches",
+      when (val check = wear.watches) {
+        null -> "checking…"
+        WatchCheck.Unavailable -> "no Wear OS app on this phone"
+        is WatchCheck.Found ->
+          check.watches
+            .joinToString { "${it.name}${if (it.hasCassette) "" else " (no Cassette)"}" }
+            .ifEmpty { "none connected" }
+      },
+    )
+    MonoLine(
+      "published",
+      wear.lastPublish?.let { "${it.detail} · ${agoShort(now - it.instant)}" } ?: "not yet",
+    )
+    MonoLine(
+      "refresh",
+      wear.lastRequest?.let { "asked by ${it.detail} · ${agoShort(now - it.instant)}" }
+        ?: "never asked",
+    )
+  }
+}
+
+private val CaptureEvent.Wear.instant: Instant
+  get() = Instant.fromEpochMilliseconds(at)
 
 private val ScanProfile.label: String
   get() =

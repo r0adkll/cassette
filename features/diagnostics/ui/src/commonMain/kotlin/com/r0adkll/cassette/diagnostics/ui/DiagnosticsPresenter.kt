@@ -11,8 +11,10 @@ import com.r0adkll.cassette.bikes.api.BikeOverview
 import com.r0adkll.cassette.bikes.api.BikeRepository
 import com.r0adkll.cassette.bikes.api.DeveloperTools
 import com.r0adkll.cassette.capture.api.CaptureController
+import com.r0adkll.cassette.capture.api.CaptureEvent
 import com.r0adkll.cassette.capture.api.CaptureLog
 import com.r0adkll.cassette.capture.api.DiagnosticsSharer
+import com.r0adkll.cassette.capture.api.WearAction
 import com.r0adkll.cassette.common.screens.DiagnosticsScreen
 import com.r0adkll.cassette.common.screens.HubTablesScreen
 import com.r0adkll.cassette.common.screens.LiveAdvertsScreen
@@ -20,8 +22,11 @@ import com.r0adkll.cassette.common.screens.RideTestsScreen
 import com.r0adkll.cassette.data.ble.ScanProfile
 import com.r0adkll.cassette.settings.api.CaptureHealth
 import com.r0adkll.cassette.settings.api.CassetteSettings
+import com.r0adkll.cassette.surfaces.wear.sync.ConnectedWatch
+import com.r0adkll.cassette.surfaces.wear.sync.ConnectedWatches
 import com.slack.circuit.codegen.annotations.CircuitInject
 import com.slack.circuit.retained.collectAsRetainedState
+import com.slack.circuit.retained.produceRetainedState
 import com.slack.circuit.runtime.CircuitUiEvent
 import com.slack.circuit.runtime.CircuitUiState
 import com.slack.circuit.runtime.Navigator
@@ -41,8 +46,24 @@ data class DiagnosticsUiState(
   val confirmRemove: Boolean,
   val logEvents: Int,
   val sharing: Boolean,
+  val wear: WearDiagnostics,
   val eventSink: (DiagnosticsEvent) -> Unit,
 ) : CircuitUiState
+
+/** The Wear panel (decision 0013). */
+data class WearDiagnostics(
+  /** Null while checking. */
+  val watches: WatchCheck?,
+  val lastPublish: CaptureEvent.Wear?,
+  val lastRequest: CaptureEvent.Wear?,
+)
+
+sealed interface WatchCheck {
+  data class Found(val watches: List<ConnectedWatch>) : WatchCheck
+
+  /** No Wear OS app (Data Layer) on this phone. */
+  data object Unavailable : WatchCheck
+}
 
 sealed interface DiagnosticsEvent : CircuitUiEvent {
   data object Back : DiagnosticsEvent
@@ -77,6 +98,7 @@ class DiagnosticsPresenter(
   private val log: CaptureLog,
   private val sharer: DiagnosticsSharer,
   private val alerts: Alerts,
+  private val connectedWatches: ConnectedWatches,
   private val clock: Clock,
 ) : Presenter<DiagnosticsUiState> {
 
@@ -92,6 +114,11 @@ class DiagnosticsPresenter(
     var confirmRemove by remember { mutableStateOf(false) }
     val events by remember { log.events }.collectAsRetainedState(emptyList())
     var sharing by remember { mutableStateOf(false) }
+    val watches by
+      produceRetainedState<WatchCheck?>(null) {
+        value = connectedWatches.list()?.let(WatchCheck::Found) ?: WatchCheck.Unavailable
+      }
+    val wearEvents = events.filterIsInstance<CaptureEvent.Wear>()
 
     return DiagnosticsUiState(
       health,
@@ -102,6 +129,11 @@ class DiagnosticsPresenter(
       confirmRemove,
       events.size,
       sharing,
+      WearDiagnostics(
+        watches,
+        lastPublish = wearEvents.lastOrNull { it.action == WearAction.Published },
+        lastRequest = wearEvents.lastOrNull { it.action == WearAction.RefreshRequested },
+      ),
     ) { event ->
       when (event) {
         DiagnosticsEvent.Back -> navigator.pop()
