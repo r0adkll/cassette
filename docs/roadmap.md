@@ -25,9 +25,10 @@ Wear app, tile and complications fed from the phone over the Data Layer
 4. Complications.
 
 5. The Wear APK on Drop, as a Wear Build beside the phone's.
+6. Updates on the watch, from Drop (iteration 9, A).
 
-Checked on a real watch paired to a phone (2026-10-17). Next: updates on the watch, from Drop (it updates
-itself silently; see 0013).
+Checked on a real watch paired to a phone (2026-10-17). Later: automatic updates on the charger (iteration
+9, B).
 
 ## M3: iOS
 

@@ -6,6 +6,8 @@ import com.r0adkll.cassette.surfaces.wear.sync.WearReading
 import com.r0adkll.cassette.surfaces.wear.sync.WearRefresh
 import com.r0adkll.cassette.surfaces.wear.sync.WearSnapshot
 import com.r0adkll.cassette.wear.data.PhoneData
+import com.r0adkll.cassette.wear.updates.WatchUpdate
+import com.r0adkll.cassette.wear.updates.WatchUpdates
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -50,3 +52,29 @@ val road =
   )
 
 val gravel = bike(2, "Gravel bike", component(20, "REAR_DERAILLEUR", reading(7_950, 88, "OK")))
+
+class FakeWatchUpdates(
+  update: WatchUpdate = WatchUpdate.None,
+  override val installedBuild: Long = 36,
+  override val justUpdated: Boolean = false,
+) : WatchUpdates {
+  override val state = MutableStateFlow(update)
+  var allowed = true
+  var checks = 0
+  var installs = 0
+  var settingsOpened = 0
+
+  override fun check() {
+    checks++
+  }
+
+  override fun canInstall() = allowed
+
+  override fun openAllowSettings() {
+    settingsOpened++
+  }
+
+  override fun install() {
+    installs++
+  }
+}

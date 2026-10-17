@@ -83,6 +83,7 @@ dependencies {
   implementation(libs.circuit.codegen.annotations)
   implementation(libs.metro.runtime)
   implementation(libs.androidx.activity.compose)
+  implementation(libs.androidx.lifecycle.runtime.compose)
   implementation(libs.androidx.wear.compose.material3)
   implementation(libs.androidx.wear.compose.foundation)
   implementation(libs.androidx.wear.tiles)

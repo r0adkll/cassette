@@ -9,3 +9,9 @@ import kotlinx.parcelize.Parcelize
 
 /** One bike: the status block, then a bar per component. */
 @Parcelize data class BikeScreen(val bikeId: Long) : Screen, Parcelable
+
+/** The watch app's update from Drop (iteration 9, direction A). */
+@Parcelize data object UpdateScreen : Screen, Parcelable
+
+/** Once: allow the app to install its own updates. */
+@Parcelize data object AllowUpdatesScreen : Screen, Parcelable

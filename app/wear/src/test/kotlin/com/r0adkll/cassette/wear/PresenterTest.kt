@@ -7,9 +7,9 @@ import com.r0adkll.cassette.wear.ui.bike.BikeEvent
 import com.r0adkll.cassette.wear.ui.bike.BikePresenter
 import com.r0adkll.cassette.wear.ui.bike.BikeUiState
 import com.r0adkll.cassette.wear.ui.bikes.BikeItem
+import com.r0adkll.cassette.wear.ui.bikes.BikeList
 import com.r0adkll.cassette.wear.ui.bikes.BikesEvent
 import com.r0adkll.cassette.wear.ui.bikes.BikesPresenter
-import com.r0adkll.cassette.wear.ui.bikes.BikesUiState
 import com.slack.circuit.test.FakeNavigator
 import com.slack.circuit.test.test
 import kotlin.test.Test
@@ -21,14 +21,14 @@ class PresenterTest {
   fun bikesListsEachWithItsStatus() = runTest {
     val phone = FakePhoneData(WearSnapshot(defaultBikeId = 1, bikes = listOf(road, gravel)))
     val navigator = FakeNavigator(com.r0adkll.cassette.wear.ui.BikesScreen)
-    BikesPresenter(navigator, phone, FixedClock()).test {
-      val loaded = expectMostRecentItem() as BikesUiState.Loaded
+    BikesPresenter(navigator, phone, FakeWatchUpdates(), FixedClock()).test {
+      val loaded = expectMostRecentItem()
       assertEquals(
         listOf(
           BikeItem(1, "Road bike", StatusTone.Low, "FD LOW"),
           BikeItem(2, "Gravel bike", StatusTone.Good, "ALL GOOD"),
         ),
-        loaded.bikes,
+        (loaded.list as BikeList.Bikes).bikes,
       )
       loaded.eventSink(BikesEvent.Open(2))
       assertEquals(BikeScreen(2), navigator.awaitNextScreen())
@@ -40,9 +40,10 @@ class PresenterTest {
     BikesPresenter(
         FakeNavigator(com.r0adkll.cassette.wear.ui.BikesScreen),
         FakePhoneData(),
+        FakeWatchUpdates(),
         FixedClock(),
       )
-      .test { assertEquals(BikesUiState.Empty(synced = false), expectMostRecentItem()) }
+      .test { assertEquals(BikeList.Empty(synced = false), expectMostRecentItem().list) }
   }
 
   @Test

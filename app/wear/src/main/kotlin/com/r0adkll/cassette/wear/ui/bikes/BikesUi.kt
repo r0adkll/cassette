@@ -20,6 +20,7 @@ import androidx.wear.compose.material3.Text
 import androidx.wear.compose.material3.lazy.rememberTransformationSpec
 import androidx.wear.compose.material3.lazy.transformedHeight
 import com.r0adkll.cassette.common.compose.components.icon
+import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.wear.ui.BikesScreen
 import com.r0adkll.cassette.wear.ui.WearTheme
@@ -44,12 +45,12 @@ fun BikesUi(state: BikesUiState, modifier: Modifier = Modifier) {
           Text("CASSETTE", style = type.kicker, color = colors.muted)
         }
       }
-      when (state) {
-        BikesUiState.Loading -> Unit
-        is BikesUiState.Empty ->
+      when (val list = state.list) {
+        BikeList.Loading -> Unit
+        is BikeList.Empty ->
           item {
             Text(
-              if (state.synced) "No bikes yet. Add one in Cassette on your phone."
+              if (list.synced) "No bikes yet. Add one in Cassette on your phone."
               else "Open Cassette on your phone to see your bikes here.",
               style = type.body,
               color = colors.muted,
@@ -57,8 +58,8 @@ fun BikesUi(state: BikesUiState, modifier: Modifier = Modifier) {
               modifier = Modifier.padding(horizontal = 12.dp),
             )
           }
-        is BikesUiState.Loaded ->
-          items(state.bikes, key = { it.id }) { bike ->
+        is BikeList.Bikes ->
+          items(list.bikes, key = { it.id }) { bike ->
             val tone = colors.status(bike.tone)
             Button(
               onClick = { state.eventSink(BikesEvent.Open(bike.id)) },
@@ -77,6 +78,38 @@ fun BikesUi(state: BikesUiState, modifier: Modifier = Modifier) {
               Text(bike.name, style = type.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
           }
+      }
+      // Under the bikes, while there is one; nothing interrupts (iteration 9, A).
+      state.update?.let { update ->
+        item {
+          val detail = if (update.failed) colors.low else colors.muted
+          Button(
+            onClick = { state.eventSink(BikesEvent.OpenUpdate) },
+            modifier = Modifier.fillMaxWidth().transformedHeight(this, spec),
+            transformation = SurfaceTransformation(spec),
+            colors =
+              ButtonDefaults.buttonColors(
+                containerColor = colors.line,
+                contentColor = colors.text,
+                secondaryContentColor = detail,
+                iconColor = if (update.failed) colors.low else colors.text,
+              ),
+            icon = { Icon(LucideIcons.Download, contentDescription = null) },
+            secondaryLabel = { Text(update.detail, style = type.label) },
+          ) {
+            Text("Update ready", style = type.name, maxLines = 1)
+          }
+        }
+      }
+      state.updatedTo?.let { build ->
+        item {
+          Text(
+            "Updated to build $build.",
+            style = type.body,
+            color = colors.good,
+            textAlign = TextAlign.Center,
+          )
+        }
       }
     }
   }
