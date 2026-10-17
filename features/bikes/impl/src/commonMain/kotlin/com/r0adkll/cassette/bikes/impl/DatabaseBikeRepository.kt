@@ -13,6 +13,7 @@ import com.r0adkll.cassette.core.CassetteDispatchers
 import com.r0adkll.cassette.core.ComponentId
 import com.r0adkll.cassette.data.db.CassetteDatabase
 import com.r0adkll.cassette.data.db.toDomain
+import com.r0adkll.cassette.protocol.ComponentKind
 import com.r0adkll.cassette.settings.api.CassetteSettings
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
@@ -65,7 +66,10 @@ class DatabaseBikeRepository(
           BikeOverview(
             bike = bike,
             bikeCount = count,
-            components = components.map { ComponentWithReading(it.toDomain(), latest[it.id]) },
+            components =
+              components
+                .map { ComponentWithReading(it.toDomain(), latest[it.id]) }
+                .sortedWith(compareBy({ bikeOrder(it.component.kind) }, { it.component.id.value })),
           )
         }
       }
@@ -104,3 +108,29 @@ class DatabaseBikeRepository(
     if (settings.pinnedBike.first() == id) settings.setPinnedBike(null)
   }
 }
+
+/**
+ * How a bike lists its components, front of the drivetrain to back of the extras: derailleurs, then
+ * the controls, suspension and seatpost, then the power meter. Anything new goes last.
+ */
+internal fun bikeOrder(kind: ComponentKind): Int =
+  when (kind) {
+    ComponentKind.REAR_DERAILLEUR -> 0
+    ComponentKind.FRONT_DERAILLEUR -> 1
+    ComponentKind.LEFT_SHIFTER,
+    ComponentKind.LEFT_REVERB_CONTROLLER,
+    ComponentKind.LEFT_FLATBAR_CONTROLLER,
+    ComponentKind.LEFT_POD -> 2
+    ComponentKind.RIGHT_SHIFTER,
+    ComponentKind.RIGHT_REVERB_CONTROLLER,
+    ComponentKind.RIGHT_FLATBAR_CONTROLLER,
+    ComponentKind.RIGHT_POD -> 3
+    ComponentKind.CONTROLLER,
+    ComponentKind.BLIPBOX,
+    ComponentKind.WIRELESS_BLIPS -> 4
+    ComponentKind.FORK -> 5
+    ComponentKind.REAR_SHOCK -> 6
+    ComponentKind.DROPPER_POST -> 7
+    ComponentKind.POWER_METER -> 8
+    else -> 9
+  }
