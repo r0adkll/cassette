@@ -85,13 +85,18 @@ SRAM-app quality, which must be our own (never SRAM's artwork).
   system settings shows straight away.
 - Two screens, then add bike. Rejected: A · Product hero, B · Everywhere, P2 · One button.
 
-## App icon (iteration 7, approved 2026-10-17)
+## App icon (iterations 7 and 8, approved 2026-10-17)
 
-- **D · Battery cassette**: a white battery outline whose fill is a cassette seen side-on (cogs centred on the
-  axle, smallest to largest), on our red. Adaptive icon with a monochrome layer for themed icons.
-- The notification small icon is the same mark as a white silhouette.
-- The debug build uses the same mark on near-black, to tell it apart from a release install.
-- Rejected: A · Cog stack and B · its dark version (they read as a speaker at small sizes), C · Monogram.
+- **Launcher icon (iteration 8, A2 · Red shell)**: a cassette tape filling the icon. The red background is
+  the shell; a white label (its top shade follows the rounded corners) holds a dark window with two white
+  cog reels (U-shaped valleys, plain round hubs); a rounded tape head in darker red sits just below, with
+  four screw dots. Adaptive icon with a monochrome layer (the tape in outline, solid reels) for themed icons.
+- **Small surfaces (iteration 7, D · Battery cassette)**: a battery outline whose fill is a cassette seen
+  side-on. Used as the notification small icon, as a white silhouette.
+- The debug build uses the same launcher icon on near-black, to tell it apart from a release install.
+- Rejected: iteration 7's cog stacks (they read as a speaker when small) and monogram, battery cassette as the
+  launcher icon; iteration 8's black shell, line art and reels-only concepts; splined reel hubs (noise at
+  launcher size).
 
 Defaults taken where nothing was decided: power-meter choice by signal strength; scan profile lives only in
 Diagnostics; no activity log on the bike screen yet.
