@@ -61,6 +61,10 @@ include(":protocol")
 
 include(":surfaces:tile")
 
+include(":surfaces:wear:phone")
+
+include(":surfaces:wear:sync")
+
 include(":surfaces:widget")
 
 // The proof of concept, kept installable (and its diagnostics usable) until features are ported.

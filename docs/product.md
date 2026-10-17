@@ -69,6 +69,6 @@ screens link into it, but the main screens stay clean.
 
 ## More
 
-- Product details: [0010](decisions/0010-product-details.md), onboarding, notifications and data:
+- Product details: [0010](decisions/0010-product-details.md), Wear: [0013](decisions/0013-wear.md), onboarding, notifications and data:
   [0011](decisions/0011-onboarding-alerts-and-data.md)
 - [Architecture](architecture.md) · [Design process](design-process.md) · [Roadmap](roadmap.md)

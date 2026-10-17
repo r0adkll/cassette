@@ -1,6 +1,7 @@
 package com.r0adkll.cassette.capture.api
 
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 /** Getting readings from bikes: the open-app refresh and the background scan (decision 0009). */
 interface CaptureController {
@@ -15,6 +16,18 @@ interface CaptureController {
 
   /** Arms the background scan when there's a bike to watch; stops it when there isn't. */
   suspend fun ensureBackgroundCapture(reason: String)
+}
+
+/**
+ * The 60-second refresh for surfaces outside the app's screens (the Quick Settings tile, the
+ * watch): one at a time, whichever surface asked, in a scope that outlives the caller.
+ */
+interface SharedRefresh {
+  /** Scanning or not ready while a refresh runs; null otherwise. */
+  val progress: StateFlow<RefreshProgress?>
+
+  /** Starts a refresh, or joins the running one, and returns how it ended (done or not ready). */
+  suspend fun run(): RefreshProgress
 }
 
 sealed interface RefreshProgress {

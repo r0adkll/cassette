@@ -7,6 +7,10 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Added
 
+- Wear sync (decision 0013): the phone sends its bikes, components and latest readings to a paired watch
+  over the Wear Data Layer whenever they change, and runs a 60-second refresh when the watch asks
+  (one at a time, shared with the Quick Settings tile). Diagnostics has a Wear panel (watches, last
+  sync, last refresh asked), and the capture log records both.
 - Kotlin Multiplatform scaffold (Android, iOS, JVM) with Cassette's convention plugins and ktfmt.
 - `:protocol`: AXS advert and hub-table decoding as shared code.
 - Design system: Cassette colours and status tones, Barlow and JetBrains Mono, Lucide icons, the status

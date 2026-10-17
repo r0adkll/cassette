@@ -60,6 +60,7 @@ dependencies {
   implementation(project(":features:settings:impl"))
   implementation(project(":features:settings:ui"))
   implementation(project(":surfaces:tile"))
+  implementation(project(":surfaces:wear:phone"))
   implementation(project(":surfaces:widget"))
   implementation(project(":features:bikes:api"))
   implementation(project(":features:bikes:impl"))

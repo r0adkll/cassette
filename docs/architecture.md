@@ -23,7 +23,10 @@ Split into `api`/`impl` only where there's a real seam.
 :common:screens                        Circuit screen keys
 :surfaces:widget                       Glance widgets
 :surfaces:tile                         Quick Settings tile
-:surfaces:wear                         Wear app, tile, complication (milestone 2)
+:features:bikes:summary                bike status and rows as words and tones, shared with the watch
+:surfaces:wear:sync                    Wear Data Layer contract (snapshot, refresh state)
+:surfaces:wear:phone                   phone side of Wear sync
+:app:wear                              Wear app, tile, complications (milestone 2)
 ```
 
 ## Status
@@ -43,6 +46,10 @@ lives in `:features:capture`; `:features:onboarding:ui` (first run: welcome, the
 and daily reminder worker; schema v3 adds `bike_alert`); `:surfaces:widget` holds the Glance widgets and `:surfaces:tile` the Quick Settings tile (Android-only
 modules); the Android `DiagnosticsSharer` and `PhoneBattery` live in `:app:android`. Background capture is the PendingIntent scan for
 now; CompanionDeviceManager waits on the spike's device tests (#2). `:poc` is the proof of concept, kept until its features are ported.
+
+Wear ([0013](decisions/0013-wear.md)): `:surfaces:wear:sync` is the Data Layer contract, and `:surfaces:wear:phone` publishes the
+snapshot and runs refreshes a watch asks for (`SharedRefresh` in `:features:capture`, one refresh at a time
+for the tile and the watch).
 
 ## Open
 

@@ -71,6 +71,11 @@ sealed interface CaptureEvent {
   @Serializable
   @SerialName("budget_exceeded")
   data class BudgetExceeded(override val at: Long) : CaptureEvent
+
+  /** Wear sync (decision 0013): a snapshot published, or a watch asking for a refresh. */
+  @Serializable
+  @SerialName("wear")
+  data class Wear(override val at: Long, val action: WearAction, val detail: String) : CaptureEvent
 }
 
 @Serializable
@@ -82,6 +87,13 @@ data class Sighting(
   val mfg: String? = null,
   val svc: String? = null,
 )
+
+enum class WearAction {
+  /** A snapshot went to the Data Layer; the detail says how many bikes, or why it failed. */
+  Published,
+  /** A watch asked the phone to refresh; the detail names the watch. */
+  RefreshRequested,
+}
 
 enum class GattKind {
   HubTable,
