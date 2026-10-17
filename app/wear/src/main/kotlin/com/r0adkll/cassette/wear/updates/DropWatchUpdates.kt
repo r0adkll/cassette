@@ -2,10 +2,7 @@ package com.r0adkll.cassette.wear.updates
 
 import android.app.Application
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
-import android.provider.Settings
 import com.r0adkll.drop.Drop
 import com.r0adkll.drop.DropState
 import com.r0adkll.drop.UpdateCheckResult
@@ -88,16 +85,9 @@ class DropWatchUpdates(private val application: Application, private val clock: 
 
   override fun canInstall(): Boolean = application.packageManager.canRequestPackageInstalls()
 
+  // App info on a watch, where the switch is under Advanced (spike, 2026-10-17).
   override fun openAllowSettings() {
-    // Not Drop's "Install unknown apps" link: on a Pixel Watch it opens the top of Settings. App
-    // info has the switch under Advanced (spike, 2026-10-17).
-    application.startActivity(
-      Intent(
-          Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-          Uri.parse("package:${application.packageName}"),
-        )
-        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-    )
+    if (enabled) application.startActivity(drop.installPermissionIntent())
   }
 
   override fun install() {

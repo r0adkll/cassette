@@ -19,7 +19,8 @@ All notable changes to Cassette are documented here. The format follows
 
 - Watch app updates from Drop: an "Update ready" row under the bikes, an update screen with Install and a
   progress ring, "Updated to build N." after, and a one-time step to allow updates that shows where the
-  switch is (App info, Advanced, Install unknown apps).
+  switch is (App info, Advanced, Install unknown apps). With Drop 0.5.0 the update installs without
+  asking to confirm.
 - Wear complications (decision 0013): the default bike's weakest component as a ranged value ("78",
   "RD") and its status as short text ("GOOD", "FD LOW", "CHARGE"), each with the status icon so they
   still read when the watch face recolours them. Tapping opens the bike; they update when the phone
