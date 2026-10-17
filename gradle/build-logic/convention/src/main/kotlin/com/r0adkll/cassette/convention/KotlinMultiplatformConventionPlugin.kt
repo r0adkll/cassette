@@ -36,7 +36,8 @@ class KotlinMultiplatformConventionPlugin : Plugin<Project> {
                         minSdk = Versions.MIN_SDK
                         // Compose Multiplatform resources need Android resources enabled.
                         androidResources { enable = true }
-                        withHostTest {}
+                        // Compose and coroutines touch android.util.Log/Trace in host tests.
+                        withHostTest { isReturnDefaultValues = true }
                     }
                 }
 

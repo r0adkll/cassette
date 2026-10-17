@@ -1,6 +1,7 @@
 plugins {
     id("cassette.android.library")
     id("cassette.multiplatform")
+    id("cassette.di")
     alias(libs.plugins.sqldelight)
 }
 
@@ -10,6 +11,7 @@ kotlin {
             api(project(":core"))
             api(libs.sqldelight.runtime)
             implementation(libs.sqldelight.coroutines)
+            implementation(libs.metro.runtime)
         }
         androidMain.dependencies { implementation(libs.sqldelight.android) }
         iosMain.dependencies { implementation(libs.sqldelight.native) }

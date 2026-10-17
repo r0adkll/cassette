@@ -31,7 +31,9 @@ Split into `api`/`impl` only where there's a real seam.
 Built so far: `gradle/build-logic` (plugins `cassette.root` (ktfmt), `cassette.multiplatform`,
 `cassette.android.library`, `cassette.android.application`, `cassette.compose`, `cassette.di`, `cassette.ui`),
 `:protocol` (AXS decoding, shared, fixture tests on JVM and Android), `:common:compose` (design system) and
-`:app:android` (design gallery), `:core` (domain models) and `:data:db` (SQLDelight schema v1). `:poc` is the proof of concept, kept until its features are ported.
+`:app:android` (design gallery), `:core` (domain models, battery rules), `:data:db` (SQLDelight schema v1), `:common:screens` (Circuit
+screens, Parcelize via `cassette.parcelize`) and `:features:bikes` (`api`/`impl`/`ui`: repository and bike
+screen). `:app:android` holds the Metro graph (`AndroidAppGraph`) and Circuit navigation. `:poc` is the proof of concept, kept until its features are ported.
 
 ## Open
 

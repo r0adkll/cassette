@@ -1,0 +1,69 @@
+package com.r0adkll.cassette.bikes.impl
+
+import app.cash.sqldelight.coroutines.asFlow
+import app.cash.sqldelight.coroutines.mapToList
+import com.r0adkll.cassette.bikes.api.BikeOverview
+import com.r0adkll.cassette.bikes.api.BikeRepository
+import com.r0adkll.cassette.bikes.api.ComponentWithReading
+import com.r0adkll.cassette.core.Bike
+import com.r0adkll.cassette.core.BikeId
+import com.r0adkll.cassette.core.CassetteDispatchers
+import com.r0adkll.cassette.data.db.CassetteDatabase
+import com.r0adkll.cassette.data.db.toDomain
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesBinding
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+
+@OptIn(ExperimentalCoroutinesApi::class)
+@SingleIn(AppScope::class)
+@ContributesBinding(AppScope::class)
+@Inject
+class DatabaseBikeRepository(
+    private val db: CassetteDatabase,
+    private val dispatchers: CassetteDispatchers,
+) : BikeRepository {
+
+    override fun observeBikes(): Flow<List<Bike>> =
+        db.bikeQueries.selectAll().asFlow().mapToList(dispatchers.io).map { rows ->
+            rows.map { it.toDomain() }
+        }
+
+    override fun observeOverview(id: BikeId?): Flow<BikeOverview?> =
+        observeBikes()
+            .map { bikes ->
+                val bike =
+                    if (id == null) bikes.firstOrNull() else bikes.firstOrNull { it.id == id }
+                bike?.let { it to bikes.size }
+            }
+            .distinctUntilChanged()
+            .flatMapLatest { selected ->
+                if (selected == null) return@flatMapLatest flowOf(null)
+                val (bike, count) = selected
+                combine(
+                    db.componentQueries
+                        .selectForBike(bike.id.value)
+                        .asFlow()
+                        .mapToList(dispatchers.io),
+                    db.batterySampleQueries
+                        .latestForBike(bike.id.value)
+                        .asFlow()
+                        .mapToList(dispatchers.io),
+                ) { components, samples ->
+                    val latest = samples.associate { it.component_id to it.toDomain() }
+                    BikeOverview(
+                        bike = bike,
+                        bikeCount = count,
+                        components =
+                            components.map { ComponentWithReading(it.toDomain(), latest[it.id]) },
+                    )
+                }
+            }
+}

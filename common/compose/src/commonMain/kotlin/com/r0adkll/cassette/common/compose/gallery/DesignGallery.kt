@@ -237,6 +237,7 @@ private data class SampleComponent(
                 StatusTone.Low -> "Low."
                 StatusTone.Critical -> "Charge now."
                 StatusTone.Stale -> "Old reading."
+                StatusTone.Unknown -> "Unknown."
             }
 }
 
@@ -314,6 +315,14 @@ private fun sampleFor(tone: StatusTone): SampleBike =
                         )
                     else it
                 },
+            )
+        StatusTone.Unknown ->
+            SampleBike(
+                "No readings yet.",
+                "Wake the bike so Cassette can read its batteries.",
+                "Never seen",
+                tone,
+                RealComponents.map { it.copy(tone = tone, value = "—", level = 0f) },
             )
         StatusTone.Stale ->
             SampleBike(

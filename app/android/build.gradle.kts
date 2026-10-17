@@ -1,5 +1,6 @@
 plugins {
     id("cassette.android.application")
+    id("cassette.di")
     alias(libs.plugins.compose.compiler)
 }
 
@@ -22,6 +23,13 @@ android {
 
 dependencies {
     implementation(project(":common:compose"))
+    implementation(project(":common:screens"))
+    implementation(project(":data:db"))
+    implementation(project(":features:bikes:impl"))
+    implementation(project(":features:bikes:ui"))
+    implementation(libs.circuit.foundation)
+    implementation(libs.circuit.codegen.annotations)
+    implementation(libs.metro.runtime)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
 }
