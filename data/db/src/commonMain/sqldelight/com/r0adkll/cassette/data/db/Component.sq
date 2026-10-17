@@ -22,6 +22,9 @@ CREATE INDEX component_bike ON component(bike_id);
 selectForBike:
 SELECT * FROM component WHERE bike_id = ? AND removed_at IS NULL ORDER BY id;
 
+selectById:
+SELECT * FROM component WHERE id = ?;
+
 selectByKey:
 SELECT * FROM component WHERE key = ?;
 

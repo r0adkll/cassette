@@ -2,6 +2,7 @@ package com.r0adkll.cassette.bikes.ui
 
 import com.r0adkll.cassette.bikes.api.BikeOverview
 import com.r0adkll.cassette.bikes.api.BikeRepository
+import com.r0adkll.cassette.bikes.api.ComponentDetail
 import com.r0adkll.cassette.bikes.api.DeveloperTools
 import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.capture.api.RefreshProgress
@@ -10,6 +11,7 @@ import com.r0adkll.cassette.common.screens.ComponentScreen
 import com.r0adkll.cassette.core.Bike
 import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.core.BikeType
+import com.r0adkll.cassette.core.ComponentId
 import com.slack.circuit.test.FakeNavigator
 import com.slack.circuit.test.test
 import kotlin.test.Test
@@ -36,6 +38,8 @@ class BikePresenterTest {
       override fun observeBikes(): Flow<List<Bike>> = emptyFlow()
 
       override fun observeOverview(id: BikeId?): Flow<BikeOverview?> = overviews
+
+      override fun observeComponent(id: ComponentId, since: Instant) = emptyFlow<ComponentDetail?>()
     }
   private var sampleLoads = 0
   private val tools =

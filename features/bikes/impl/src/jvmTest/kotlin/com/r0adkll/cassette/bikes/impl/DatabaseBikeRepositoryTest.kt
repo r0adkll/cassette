@@ -3,6 +3,7 @@ package com.r0adkll.cassette.bikes.impl
 import app.cash.turbine.test
 import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.core.CassetteDispatchers
+import com.r0adkll.cassette.core.ComponentId
 import com.r0adkll.cassette.data.db.CassetteDatabase
 import com.r0adkll.cassette.data.db.createInMemoryDriver
 import com.r0adkll.cassette.protocol.ComponentKind
@@ -70,5 +71,24 @@ class DatabaseBikeRepositoryTest {
       assertNull(awaitItem())
       cancelAndIgnoreRemainingEvents()
     }
+  }
+
+  @Test
+  fun componentDetailWithHistory() = runTest {
+    val dispatcher = StandardTestDispatcher(testScheduler)
+    val dispatchers = CassetteDispatchers(dispatcher, dispatcher, dispatcher)
+    DatabaseDeveloperTools(db, dispatchers, clock).loadSampleBike()
+    val rd = db.componentQueries.selectByKey("1405188718").executeAsOne()
+    db.batterySampleQueries.insert(rd.id, 1_000, 7_950, 92, "OK", "Advert")
+
+    DatabaseBikeRepository(db, dispatchers)
+      .observeComponent(ComponentId(rd.id), Instant.fromEpochMilliseconds(0))
+      .test {
+        val detail = awaitItem()!!
+        assertEquals("Road bike", detail.bike.name)
+        assertEquals(78, detail.latest?.percent)
+        assertEquals(listOf(92, 78), detail.history.map { it.percent })
+        cancelAndIgnoreRemainingEvents()
+      }
   }
 }

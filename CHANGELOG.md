@@ -15,6 +15,8 @@ All notable changes to Cassette are documented here. The format follows
   with year-long retention and daily down-sampling, and alert state.
 - `scripts/ktfmt`: the ktfmt CLI, the only formatter (CI and the pre-push hook), covering build-logic.
   Google style: 2-space indents.
+- Component screen: the big value and status, voltage, shift count, firmware, model, serial and last
+  read, and a 30-day / 90-day / 1-year history chart that marks charges and coin-cell replacements.
 - Add a bike: wake it, Cassette finds the hub and reads its component list, then name and type it,
   pick a power meter heard nearby, and background capture starts (design iteration 5).
 - Capture: the background scan (PendingIntent, re-armed after reboot or update) and the 60-second

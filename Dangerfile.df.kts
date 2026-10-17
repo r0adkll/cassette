@@ -20,11 +20,14 @@ danger(args) {
       )
     }
 
-    // Every .sq change ships a .sqm migration (decision 0007).
-    val schemaChanged = changed.any { it.endsWith(".sq") && it in git.modifiedFiles }
+    // Schema changes need a .sqm migration and a snapshot (decision 0007). CI's
+    // verifySqlDelightMigration enforces it; new queries alone need neither, so this only reminds.
+    val sqChanged = changed.any { it.endsWith(".sq") && it in git.modifiedFiles }
     val migrationAdded = git.createdFiles.any { it.endsWith(".sqm") }
-    if (schemaChanged && !migrationAdded) {
-      fail("A .sq file changed without a new .sqm migration.")
+    if (sqChanged && !migrationAdded) {
+      message(
+        "A .sq file changed without a migration: fine for new queries, not for table changes."
+      )
     }
 
     // Diagnostics stay in every build (decision 0005).

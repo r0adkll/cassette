@@ -12,6 +12,10 @@ import com.r0adkll.cassette.bikes.ui.add.AddBikeUi
 import com.r0adkll.cassette.bikes.ui.add.AddBikeUiState
 import com.r0adkll.cassette.bikes.ui.add.FoundRow
 import com.r0adkll.cassette.bikes.ui.add.MeterRow
+import com.r0adkll.cassette.bikes.ui.component.ComponentDetailModel
+import com.r0adkll.cassette.bikes.ui.component.ComponentUi
+import com.r0adkll.cassette.bikes.ui.component.ComponentUiState
+import com.r0adkll.cassette.bikes.ui.component.HistoryRange
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.compose.theme.StatusTone
 import com.r0adkll.cassette.core.BikeType
@@ -58,6 +62,39 @@ class ScreenRenderTest {
         render("add-bike-$name-${if (dark) "dark" else "light"}", dark) {
           AddBikeUi(AddBikeUiState(step) {})
         }
+      }
+    }
+  }
+
+  @Test
+  fun componentScreen() {
+    val levels =
+      listOf(62, 58, 55, 51, 48, 44, 41, 37, 98, 97, 95, 93, 91, 89, 88, 86, 84, 83, 81, 80, 78)
+    val model =
+      ComponentDetailModel(
+        bikeName = "Road bike",
+        name = "Rear derailleur",
+        value = "78%",
+        headline = "Good.",
+        source = "Reported by the hub, 2 min ago",
+        level = 0.78f,
+        tone = StatusTone.Good,
+        stats =
+          listOf(
+            "Voltage" to "7.87 V",
+            "Shifts" to "12,324",
+            "Firmware" to "2.55.8",
+            "Model" to "1066",
+            "Serial" to "1405188718",
+            "Last read" to "2 min",
+          ),
+        range = HistoryRange.Month,
+        chart = levels.map { it / 100f },
+        chartCaption = "Charged 12 days ago (sample)",
+      )
+    for (dark in listOf(true, false)) {
+      render("component-${if (dark) "dark" else "light"}", dark) {
+        ComponentUi(ComponentUiState(model) {})
       }
     }
   }
