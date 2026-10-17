@@ -23,6 +23,10 @@ include(":app:android")
 
 include(":common:compose")
 
+include(":core")
+
+include(":data:db")
+
 include(":protocol")
 
 // The proof of concept, kept installable (and its diagnostics usable) until features are ported.

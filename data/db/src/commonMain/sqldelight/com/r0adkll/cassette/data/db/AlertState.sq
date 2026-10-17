@@ -1,0 +1,13 @@
+-- The last status we notified about per component, so each change notifies once (decision 0004).
+CREATE TABLE alert_state (
+    component_id INTEGER PRIMARY KEY REFERENCES component(id) ON DELETE CASCADE,
+    -- BatteryStatus name
+    last_status TEXT NOT NULL,
+    notified_at INTEGER NOT NULL
+);
+
+select:
+SELECT * FROM alert_state WHERE component_id = ?;
+
+upsert:
+INSERT OR REPLACE INTO alert_state (component_id, last_status, notified_at) VALUES (?, ?, ?);

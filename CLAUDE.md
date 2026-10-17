@@ -25,7 +25,8 @@ ported. Don't build new features on the POC.
 - **Circuit + Metro** (as in Campfire): presenters take the screen and `Navigator` as plain constructor
   parameters; use `fun interface` instead of function typealiases; Android entry points (receivers, tile
   service, widgets, `CompanionDeviceService`, Wear listener) reach the graph through component accessors.
-- **Database:** every `.sq` change ships a `.sqm` migration.
+- **Database:** every `.sq` change ships a `.sqm` migration and a new schema snapshot
+  (`./gradlew :data:db:generateCommonMainCassetteDatabaseSchema`); CI runs `verifySqlDelightMigration`.
 - **Changelog:** behaviour changes get a CHANGELOG.md entry under `[Unreleased]` (Keep a Changelog).
 - **Notifications:** keep a ledger of notification ids and channels in this file; give each PendingIntent
   its own request code.

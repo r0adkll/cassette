@@ -1,0 +1,48 @@
+CREATE TABLE component (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    bike_id INTEGER NOT NULL REFERENCES bike(id) ON DELETE CASCADE,
+    -- serial when known, otherwise the advertised name (Quarq)
+    key TEXT NOT NULL UNIQUE,
+    serial INTEGER,
+    -- ComponentKind name
+    kind TEXT NOT NULL,
+    model_id INTEGER,
+    device_type INTEGER,
+    firmware TEXT,
+    actuations INTEGER,
+    added_at INTEGER NOT NULL,
+    last_seen_at INTEGER,
+    removed_at INTEGER
+);
+
+CREATE INDEX component_bike ON component(bike_id);
+
+selectForBike:
+SELECT * FROM component WHERE bike_id = ? AND removed_at IS NULL ORDER BY id;
+
+selectByKey:
+SELECT * FROM component WHERE key = ?;
+
+insert:
+INSERT INTO component (bike_id, key, serial, kind, model_id, device_type, firmware, actuations, added_at, last_seen_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+
+lastInsertedId:
+SELECT last_insert_rowid();
+
+-- A fresh sighting: newer details win, and a removed component comes back.
+markSeen:
+UPDATE component
+SET last_seen_at = max(coalesce(last_seen_at, 0), :at),
+    kind = coalesce(:kind, kind),
+    model_id = coalesce(:modelId, model_id),
+    device_type = coalesce(:deviceType, device_type),
+    firmware = coalesce(:firmware, firmware),
+    actuations = coalesce(:actuations, actuations),
+    removed_at = NULL
+WHERE id = :id;
+
+-- Components the hub hasn't listed since :cutoff (30 days) are removed; history stays (decision 0010).
+markMissingRemoved:
+UPDATE component SET removed_at = :at
+WHERE bike_id = :bikeId AND removed_at IS NULL AND coalesce(last_seen_at, added_at) < :cutoff;

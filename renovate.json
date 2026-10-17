@@ -1,0 +1,50 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "baseBranches": [
+    "master"
+  ],
+  "assignees": [
+    "r0adkll"
+  ],
+  "addLabels": [
+    "renovate"
+  ],
+  "packageRules": [
+    {
+      "groupName": "Kotlin and Compose Compiler",
+      "groupSlug": "kotlin",
+      "matchPackageNames": [
+        "org.jetbrains.kotlin"
+      ]
+    },
+    {
+      "description": "Merge minor and patch updates automatically once CI passes",
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "description": "No snapshots",
+      "matchDatasources": [
+        "maven"
+      ],
+      "allowedVersions": "!/SNAPSHOT$/"
+    },
+    {
+      "description": "Compose: stable, alpha, beta and rc only (no dev builds)",
+      "matchPackageNames": [
+        "/^org\\.jetbrains\\.compose(\\.|:|$)/",
+        "/^androidx\\.compose(\\.|:|$)/"
+      ],
+      "allowedVersions": "/^\\d+(\\.\\d+)+(-(alpha|beta|rc)\\d+)?$/"
+    }
+  ]
+}
