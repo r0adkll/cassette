@@ -29,6 +29,7 @@ import androidx.glance.layout.padding
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import com.r0adkll.cassette.bikes.summary.weakest
 import com.r0adkll.cassette.bikes.ui.BikeUiState
 import com.r0adkll.cassette.bikes.ui.toLoaded
 import com.r0adkll.cassette.common.compose.components.word

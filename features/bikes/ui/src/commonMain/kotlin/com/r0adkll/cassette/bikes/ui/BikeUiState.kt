@@ -1,6 +1,7 @@
 package com.r0adkll.cassette.bikes.ui
 
-import com.r0adkll.cassette.common.compose.theme.StatusTone
+import com.r0adkll.cassette.bikes.summary.BikeStatus
+import com.r0adkll.cassette.bikes.summary.ComponentRowModel
 import com.r0adkll.cassette.settings.api.Tip
 import com.slack.circuit.runtime.CircuitUiEvent
 import com.slack.circuit.runtime.CircuitUiState
@@ -35,24 +36,6 @@ sealed interface RefreshButton {
   /** Bluetooth is off or the Nearby devices permission is missing. */
   data object Unavailable : RefreshButton
 }
-
-/** What the status block says (decision 0012). */
-data class BikeStatus(
-  val tone: StatusTone,
-  val headline: String,
-  val summary: String,
-  val meta: String,
-)
-
-data class ComponentRowModel(
-  val id: Long,
-  val code: String,
-  val name: String,
-  val source: String,
-  val value: String,
-  val level: Float,
-  val tone: StatusTone,
-)
 
 sealed interface BikeEvent : CircuitUiEvent {
   data class OpenComponent(val id: Long) : BikeEvent

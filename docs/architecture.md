@@ -49,7 +49,8 @@ now; CompanionDeviceManager waits on the spike's device tests (#2). `:poc` is th
 
 Wear ([0013](decisions/0013-wear.md)): `:surfaces:wear:sync` is the Data Layer contract, and `:surfaces:wear:phone` publishes the
 snapshot and runs refreshes a watch asks for (`SharedRefresh` in `:features:capture`, one refresh at a time
-for the tile and the watch).
+for the tile and the watch). `:app:wear` is the Wear app (Circuit + Metro, Compose for Wear OS Material 3), reading the
+snapshot from the Data Layer; `:features:bikes:summary` holds the bike's wording and tones, shared with the phone.
 
 ## Open
 

@@ -1,4 +1,4 @@
-package com.r0adkll.cassette.bikes.ui
+package com.r0adkll.cassette.bikes.summary
 
 import com.r0adkll.cassette.bikes.api.BikeOverview
 import com.r0adkll.cassette.bikes.api.ComponentWithReading
@@ -18,7 +18,7 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
-class BikeUiMappingTest {
+class BikeSummaryTest {
   private val now = Instant.fromEpochMilliseconds(1_792_200_000_000)
 
   @Test
@@ -42,7 +42,7 @@ class BikeUiMappingTest {
           component(3, ComponentKind.LEFT_SHIFTER, mV = 2_910, status = BatteryStatus.OK),
           component(4, ComponentKind.POWER_METER, percent = 85, method = ReadMethod.Gatt),
         )
-        .toLoaded(now) {}
+        .toSummary(now)
 
     assertEquals(StatusTone.Good, state.status.tone)
     assertEquals("All good.", state.status.headline)
@@ -79,7 +79,7 @@ class BikeUiMappingTest {
             status = BatteryStatus.LOW,
           ),
         )
-        .toLoaded(now) {}
+        .toSummary(now)
 
     assertEquals(StatusTone.Critical, state.status.tone)
     assertEquals("Charge now.", state.status.headline)
@@ -100,7 +100,7 @@ class BikeUiMappingTest {
           ),
           seen = now - 16.days,
         )
-        .toLoaded(now) {}
+        .toSummary(now)
 
     assertEquals(StatusTone.Stale, state.status.tone)
     assertEquals("Not seen in 16 days.", state.status.headline)
@@ -110,7 +110,7 @@ class BikeUiMappingTest {
 
   @Test
   fun componentsWithoutReadingsAreUnknown() {
-    val state = overview(component(1, ComponentKind.RIGHT_SHIFTER)).toLoaded(now) {}
+    val state = overview(component(1, ComponentKind.RIGHT_SHIFTER)).toSummary(now)
 
     assertEquals(StatusTone.Unknown, state.status.tone)
     assertEquals("—", state.components.single().value)

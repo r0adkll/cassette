@@ -77,7 +77,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Unit tests
-        run: ./gradlew jvmTest testAndroidHostTest :poc:testDebugUnitTest :surfaces:tile:testDebugUnitTest verifySqlDelightMigration
+        run: ./gradlew jvmTest testAndroidHostTest :poc:testDebugUnitTest :surfaces:tile:testDebugUnitTest :app:wear:testDebugUnitTest verifySqlDelightMigration
 
       - name: Internal signing key
         id: keystore
@@ -94,7 +94,7 @@ jobs:
           echo "signed=true" >> "$GITHUB_OUTPUT"
 
       - name: Build
-        run: ./gradlew :app:android:assembleDebug :poc:assembleDebug
+        run: ./gradlew :app:android:assembleDebug :app:wear:assembleDebug :poc:assembleDebug
         env:
           CASSETTE_KEYSTORE_PASSWORD: ${{ secrets.CASSETTE_KEYSTORE_PASSWORD }}
           CASSETTE_KEY_ALIAS: ${{ secrets.CASSETTE_KEY_ALIAS }}
@@ -116,6 +116,7 @@ jobs:
           name: apks
           path: |
             app/android/build/outputs/apk/debug/*.apk
+            app/wear/build/outputs/apk/debug/*.apk
             poc/build/outputs/apk/debug/*.apk
 
       - name: Upload the Cassette APK

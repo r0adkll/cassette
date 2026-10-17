@@ -23,6 +23,11 @@ ported. Don't build new features on the POC.
 - Tile: `adb shell cmd statusbar add-tile com.r0adkll.cassette.debug/com.r0adkll.cassette.surfaces.tile.BikeTileService`
   (then `click-tile`, and `remove-tile` when done); read its state from
   `adb shell dumpsys activity service com.android.systemui/.SystemUIService`.
+- Wear (decision 0013): `./gradlew :app:wear:assembleDebug`, installed with adb on a watch or a Wear OS
+  emulator. It shares the phone app's id and key, which the Data Layer needs. Without a paired phone, the
+  debug build loads sample data: `adb shell am broadcast -n
+  com.r0adkll.cassette.debug/com.r0adkll.cassette.wear.debug.SampleDataReceiver --es state good` (or `low`,
+  `critical`, `stale`, `one`, `empty`, `scanning`, `notready`, `clear`).
 - `scripts/ktfmt` checks formatting in under a second (`--format` fixes it), build-logic included. It is
   the only formatter: CI and the pre-push hook (`./gradlew bootstrap`) use it, and there is no Gradle
   ktfmt task. In the IDE, use the ktfmt plugin set to Google style.

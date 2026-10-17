@@ -21,6 +21,8 @@ rootProject.name = "Cassette"
 
 include(":app:android")
 
+include(":app:wear")
+
 include(":common:compose")
 
 include(":common:screens")
@@ -54,6 +56,8 @@ include(":features:settings:test")
 include(":features:settings:ui")
 
 include(":features:bikes:impl")
+
+include(":features:bikes:summary")
 
 include(":features:bikes:ui")
 
