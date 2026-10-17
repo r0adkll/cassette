@@ -34,8 +34,30 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: 21
+
+      - name: Cache ktfmt
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/cassette
+          key: ktfmt-${{ hashFiles('gradle/libs.versions.toml') }}
+
+      # The ktfmt CLI, without Gradle: fails in seconds, and covers build-logic too.
+      - name: Check formatting
+        run: scripts/ktfmt
+
   android:
-    name: Format, test and build
+    name: Test and build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -48,9 +70,6 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
-
-      - name: Check formatting
-        run: ./gradlew ktfmtCheck
 
       - name: Unit tests
         run: ./gradlew jvmTest testAndroidHostTest :poc:testDebugUnitTest verifySqlDelightMigration

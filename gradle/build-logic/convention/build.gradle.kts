@@ -19,7 +19,8 @@ gradlePlugin {
         }
         register("multiplatform") {
             id = "cassette.multiplatform"
-            implementationClass = "com.r0adkll.cassette.convention.KotlinMultiplatformConventionPlugin"
+            implementationClass =
+                "com.r0adkll.cassette.convention.KotlinMultiplatformConventionPlugin"
         }
         register("androidLibrary") {
             id = "cassette.android.library"
@@ -27,7 +28,8 @@ gradlePlugin {
         }
         register("androidApplication") {
             id = "cassette.android.application"
-            implementationClass = "com.r0adkll.cassette.convention.AndroidApplicationConventionPlugin"
+            implementationClass =
+                "com.r0adkll.cassette.convention.AndroidApplicationConventionPlugin"
         }
         register("compose") {
             id = "cassette.compose"

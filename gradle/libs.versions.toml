@@ -9,6 +9,8 @@ sqldelight = "2.4.1"
 coroutines = "1.11.0"
 serialization = "1.11.0"
 ktfmt = "0.27.0"
+# ktfmt itself, for scripts/ktfmt. Keep equal to the version the ktfmt Gradle plugin bundles.
+ktfmt-cli = "0.64"
 androidxActivity = "1.13.0"
 androidxCore = "1.18.0"
 androidxLifecycle = "2.10.0"
