@@ -15,7 +15,9 @@ danger(args) {
 
         // Keep a Changelog: behaviour changes get an [Unreleased] entry (CLAUDE.md).
         if (!trivial && sourceChanged && !changelogChanged) {
-            warn("Source changed without a CHANGELOG.md entry. Add one under [Unreleased], or put #trivial in the title.")
+            warn(
+                "Source changed without a CHANGELOG.md entry. Add one under [Unreleased], or put #trivial in the title."
+            )
         }
 
         // Every .sq change ships a .sqm migration (decision 0007).
@@ -26,9 +28,14 @@ danger(args) {
         }
 
         // Diagnostics stay in every build (decision 0005).
-        val diagnosticsRemoved = git.deletedFiles.filter { "diagnostic" in it.lowercase() || "ridetest" in it.lowercase() }
+        val diagnosticsRemoved =
+            git.deletedFiles.filter {
+                "diagnostic" in it.lowercase() || "ridetest" in it.lowercase()
+            }
         if (diagnosticsRemoved.isNotEmpty()) {
-            warn("Diagnostic code removed: ${diagnosticsRemoved.joinToString()}. Move diagnostics, don't delete them.")
+            warn(
+                "Diagnostic code removed: ${diagnosticsRemoved.joinToString()}. Move diagnostics, don't delete them."
+            )
         }
 
         if ((pullRequest.additions ?: 0) + (pullRequest.deletions ?: 0) > 2000) {
