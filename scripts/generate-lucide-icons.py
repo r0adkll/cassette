@@ -13,7 +13,7 @@ ICONS = [
     "activity", "arrow-left", "battery-low", "battery-medium", "battery-warning", "bell", "bell-ring",
     "bike", "bluetooth", "bluetooth-searching", "check", "chevron-down", "chevron-right", "circle-check",
     "circle-help", "cpu", "file-text", "history", "image-plus", "info", "layout-grid", "mountain",
-    "panel-top", "pin", "radio",
+    "panel-top", "pin", "plus", "radio",
     "refresh-cw", "route", "scan-line", "settings", "share-2", "signal", "x",
 ]
 ROOT = Path(__file__).resolve().parent.parent

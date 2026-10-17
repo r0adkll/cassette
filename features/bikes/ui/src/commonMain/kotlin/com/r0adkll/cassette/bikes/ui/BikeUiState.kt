@@ -16,8 +16,8 @@ sealed interface BikeUiState : CircuitUiState {
   data class Loaded(
     val bikeId: Long,
     val name: String,
-    /** "1 OF 2" */
-    val position: String,
+    /** "1 OF 2"; null when there's only one bike. */
+    val position: String?,
     val status: BikeStatus,
     val components: List<ComponentRowModel>,
     val refresh: RefreshButton = RefreshButton.Idle,

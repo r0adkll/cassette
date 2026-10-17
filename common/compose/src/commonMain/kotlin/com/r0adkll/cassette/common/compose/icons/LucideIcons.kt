@@ -249,6 +249,14 @@ object LucideIcons {
     }
   }
 
+  /** Lucide `plus`. */
+  val Plus: ImageVector by lazy {
+    lucide("Plus") {
+      stroke("M5 12h14")
+      stroke("M12 5v14")
+    }
+  }
+
   /** Lucide `radio`. */
   val Radio: ImageVector by lazy {
     lucide("Radio") {

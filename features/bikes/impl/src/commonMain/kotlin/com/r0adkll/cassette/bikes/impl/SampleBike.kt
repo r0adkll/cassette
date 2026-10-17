@@ -30,13 +30,15 @@ class DatabaseDeveloperTools(
         db.bikeQueries.selectByHubSerial(SAMPLE_HUB).executeAsOneOrNull()?.let {
           db.bikeQueries.delete(it.id)
         }
-        db.bikeQueries.insert("Road bike", BikeType.Road.name, null, SAMPLE_HUB, seen, seen)
+        db.bikeQueries.insert("Sample bike", BikeType.Road.name, null, SAMPLE_HUB, seen, seen)
         val bike = db.bikeQueries.lastInsertedId().executeAsOne()
         SAMPLE_COMPONENTS.forEach { c ->
+          // Sample keys never match a real component, so capture can't attach to them, and loading
+          // the sample never touches a bike the user added.
           db.componentQueries.insert(
             bike,
-            c.key,
-            c.key.toLongOrNull(),
+            SAMPLE_KEY_PREFIX + c.key,
+            null,
             c.kind.name,
             c.modelId,
             c.deviceType,
@@ -89,7 +91,9 @@ class DatabaseDeveloperTools(
   )
 
   private companion object {
-    const val SAMPLE_HUB = 1405188718L
+    /** Not a real hub serial (they're unsigned), so it can't collide with an added bike. */
+    const val SAMPLE_HUB = -1L
+    const val SAMPLE_KEY_PREFIX = "sample:"
 
     /** The validation bike (Red AXS) as read on 2026-10-16. */
     val SAMPLE_COMPONENTS =

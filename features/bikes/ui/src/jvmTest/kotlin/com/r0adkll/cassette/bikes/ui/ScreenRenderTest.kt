@@ -132,7 +132,7 @@ class ScreenRenderTest {
             BikeUiState.Loaded(
               bikeId = 1,
               name = "Road bike",
-              position = "1 OF 1",
+              position = null,
               status =
                 BikeStatus(
                   StatusTone.Low,

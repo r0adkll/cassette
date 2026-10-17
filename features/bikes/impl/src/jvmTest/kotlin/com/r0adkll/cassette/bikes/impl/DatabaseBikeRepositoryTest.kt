@@ -39,7 +39,7 @@ class DatabaseBikeRepositoryTest {
       DatabaseDeveloperTools(db, dispatchers, clock).loadSampleBike()
 
       val overview = awaitItem()!!
-      assertEquals("Road bike", overview.bike.name)
+      assertEquals("Sample bike", overview.bike.name)
       assertEquals(1, overview.bikeCount)
       assertEquals(
         listOf(
@@ -102,18 +102,45 @@ class DatabaseBikeRepositoryTest {
   }
 
   @Test
+  fun theSampleNeverTouchesAnAddedBike() = runTest {
+    val dispatcher = StandardTestDispatcher(testScheduler)
+    val dispatchers = CassetteDispatchers(dispatcher, dispatcher, dispatcher)
+    // The user's own bike: the validation bike's real hub and rear derailleur.
+    db.bikeQueries.insert("Road bike", "Road", null, 1405188718, 0, 0)
+    val road = db.bikeQueries.lastInsertedId().executeAsOne()
+    db.componentQueries.insert(
+      road,
+      "1405188718",
+      1405188718,
+      "REAR_DERAILLEUR",
+      null,
+      null,
+      null,
+      null,
+      0,
+      0,
+    )
+
+    DatabaseDeveloperTools(db, dispatchers, clock).loadSampleBike()
+
+    val bikes = db.bikeQueries.selectAll().executeAsList().map { it.name }.sorted()
+    assertEquals(listOf("Road bike", "Sample bike"), bikes)
+    assertEquals(road, db.componentQueries.selectByKey("1405188718").executeAsOne().bike_id)
+  }
+
+  @Test
   fun componentDetailWithHistory() = runTest {
     val dispatcher = StandardTestDispatcher(testScheduler)
     val dispatchers = CassetteDispatchers(dispatcher, dispatcher, dispatcher)
     DatabaseDeveloperTools(db, dispatchers, clock).loadSampleBike()
-    val rd = db.componentQueries.selectByKey("1405188718").executeAsOne()
+    val rd = db.componentQueries.selectByKey("sample:1405188718").executeAsOne()
     db.batterySampleQueries.insert(rd.id, 1_000, 7_950, 92, "OK", "Advert")
 
     DatabaseBikeRepository(db, dispatchers, InMemorySettings())
       .observeComponent(ComponentId(rd.id), Instant.fromEpochMilliseconds(0))
       .test {
         val detail = awaitItem()!!
-        assertEquals("Road bike", detail.bike.name)
+        assertEquals("Sample bike", detail.bike.name)
         assertEquals(78, detail.latest?.percent)
         assertEquals(listOf(92, 78), detail.history.map { it.percent })
         cancelAndIgnoreRemainingEvents()
@@ -134,7 +161,7 @@ class DatabaseBikeRepositoryTest {
     repository.observeOverview(null).test {
       assertEquals("Gravel bike", awaitItem()?.bike?.name)
       repository.deleteBike(gravel)
-      assertEquals("Road bike", awaitItem()?.bike?.name)
+      assertEquals("Sample bike", awaitItem()?.bike?.name)
       cancelAndIgnoreRemainingEvents()
     }
     assertNull(settings.pinnedBike.value)

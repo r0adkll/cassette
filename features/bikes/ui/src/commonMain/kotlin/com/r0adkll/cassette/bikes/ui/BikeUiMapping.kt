@@ -27,7 +27,7 @@ fun BikeOverview.toLoaded(now: Instant, eventSink: (BikeEvent) -> Unit = {}): Bi
   return BikeUiState.Loaded(
     bikeId = bike.id.value,
     name = bike.name,
-    position = "1 OF $bikeCount",
+    position = if (bikeCount > 1) "1 OF $bikeCount" else null,
     status = status(stale, now),
     components = rows,
     eventSink = eventSink,
