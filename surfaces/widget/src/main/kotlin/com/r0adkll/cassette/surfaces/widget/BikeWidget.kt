@@ -43,8 +43,9 @@ import androidx.glance.state.PreferencesGlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import com.r0adkll.cassette.bikes.summary.ComponentRowModel
+import com.r0adkll.cassette.bikes.summary.weakest
 import com.r0adkll.cassette.bikes.ui.BikeUiState
-import com.r0adkll.cassette.bikes.ui.ComponentRowModel
 import com.r0adkll.cassette.bikes.ui.toLoaded
 import com.r0adkll.cassette.common.compose.components.word
 import com.r0adkll.cassette.common.screens.DeepLinks
@@ -382,12 +383,6 @@ internal fun blockContentColor(tone: com.r0adkll.cassette.common.compose.theme.S
   if (LocalContext.current.isNight())
     com.r0adkll.cassette.common.compose.theme.DarkCassetteColors.block(tone).content
   else com.r0adkll.cassette.common.compose.theme.LightCassetteColors.block(tone).content
-
-/** Worst first; null when nothing has a reading. */
-internal fun List<ComponentRowModel>.weakest(): ComponentRowModel? = filter {
-  it.value != "—"
-}
-  .minByOrNull { it.level }
 
 internal fun Context.isNight() =
   resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK ==

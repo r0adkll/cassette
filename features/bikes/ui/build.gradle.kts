@@ -4,6 +4,7 @@ kotlin {
   sourceSets {
     commonMain.dependencies {
       implementation(project(":features:bikes:api"))
+      api(project(":features:bikes:summary"))
       implementation(project(":features:capture:api"))
       api(project(":features:settings:api"))
     }

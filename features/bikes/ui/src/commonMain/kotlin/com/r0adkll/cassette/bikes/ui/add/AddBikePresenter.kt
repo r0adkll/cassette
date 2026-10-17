@@ -8,8 +8,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import com.r0adkll.cassette.bikes.ui.code
-import com.r0adkll.cassette.bikes.ui.tone
+import com.r0adkll.cassette.bikes.summary.code
+import com.r0adkll.cassette.bikes.summary.tone
 import com.r0adkll.cassette.capture.api.BikeDiscovery
 import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.capture.api.Discovered

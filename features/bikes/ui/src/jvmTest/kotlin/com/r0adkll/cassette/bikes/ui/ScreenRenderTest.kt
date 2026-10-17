@@ -7,6 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Density
+import com.r0adkll.cassette.bikes.summary.BikeStatus
+import com.r0adkll.cassette.bikes.summary.ComponentRowModel
 import com.r0adkll.cassette.bikes.ui.add.AddBikeStep
 import com.r0adkll.cassette.bikes.ui.add.AddBikeUi
 import com.r0adkll.cassette.bikes.ui.add.AddBikeUiState

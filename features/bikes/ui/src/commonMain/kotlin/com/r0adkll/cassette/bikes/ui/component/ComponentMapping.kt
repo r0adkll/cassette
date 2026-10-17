@@ -1,8 +1,8 @@
 package com.r0adkll.cassette.bikes.ui.component
 
 import com.r0adkll.cassette.bikes.api.ComponentDetail
-import com.r0adkll.cassette.bikes.ui.ago
-import com.r0adkll.cassette.bikes.ui.tone
+import com.r0adkll.cassette.bikes.summary.ago
+import com.r0adkll.cassette.bikes.summary.tone
 import com.r0adkll.cassette.common.compose.theme.StatusTone
 import com.r0adkll.cassette.core.ReadMethod
 import com.r0adkll.cassette.core.charges

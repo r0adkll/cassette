@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <!--
+            Debug builds only: sample data without a paired phone.
+            adb shell am broadcast -n com.r0adkll.cassette.debug/com.r0adkll.cassette.wear.debug.SampleDataReceiver -\-es state good
+        -->
+        <receiver
+            android:name="com.r0adkll.cassette.wear.debug.SampleDataReceiver"
+            android:exported="true" />
+    </application>
+</manifest>

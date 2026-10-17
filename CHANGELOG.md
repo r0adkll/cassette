@@ -7,6 +7,10 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Added
 
+- Wear app (decision 0013): your bikes with their weakest status, then a bike's status block and a bar
+  per component, worded and coloured like the phone. Refresh asks the phone to run its 60-second scan
+  and counts down on the watch; it says so when the phone can't be reached or can't scan. Debug builds
+  can load sample data without a phone.
 - Wear sync (decision 0013): the phone sends its bikes, components and latest readings to a paired watch
   over the Wear Data Layer whenever they change, and runs a 60-second refresh when the watch asks
   (one at a time, shared with the Quick Settings tile). Diagnostics has a Wear panel (watches, last

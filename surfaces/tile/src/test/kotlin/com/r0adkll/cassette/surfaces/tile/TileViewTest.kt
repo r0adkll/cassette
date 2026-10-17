@@ -1,8 +1,8 @@
 package com.r0adkll.cassette.surfaces.tile
 
-import com.r0adkll.cassette.bikes.ui.BikeStatus
+import com.r0adkll.cassette.bikes.summary.BikeStatus
+import com.r0adkll.cassette.bikes.summary.ComponentRowModel
 import com.r0adkll.cassette.bikes.ui.BikeUiState
-import com.r0adkll.cassette.bikes.ui.ComponentRowModel
 import com.r0adkll.cassette.capture.api.RefreshProgress
 import com.r0adkll.cassette.common.compose.theme.StatusTone
 import kotlin.test.Test
