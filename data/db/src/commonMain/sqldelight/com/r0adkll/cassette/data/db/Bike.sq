@@ -7,7 +7,9 @@ CREATE TABLE bike (
     hub_serial INTEGER UNIQUE,
     -- epoch milliseconds
     created_at INTEGER NOT NULL,
-    last_seen_at INTEGER
+    last_seen_at INTEGER,
+    -- When the hub's battery table was last read; throttles reads across process restarts.
+    hub_read_at INTEGER
 );
 
 -- Most recently seen first: the default bike (decision 0010).
@@ -32,6 +34,9 @@ UPDATE bike SET name = :name, type = :type, photo_path = :photoPath WHERE id = :
 
 markSeen:
 UPDATE bike SET last_seen_at = max(coalesce(last_seen_at, 0), :at) WHERE id = :id;
+
+markHubRead:
+UPDATE bike SET hub_read_at = :at WHERE id = :id;
 
 delete:
 DELETE FROM bike WHERE id = ?;

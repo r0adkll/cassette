@@ -12,7 +12,9 @@ CREATE TABLE component (
     actuations INTEGER,
     added_at INTEGER NOT NULL,
     last_seen_at INTEGER,
-    removed_at INTEGER
+    removed_at INTEGER,
+    -- Last BLE address heard; resolves frames without a serial and targets GATT reads.
+    address TEXT
 );
 
 CREATE INDEX component_bike ON component(bike_id);
@@ -22,6 +24,12 @@ SELECT * FROM component WHERE bike_id = ? AND removed_at IS NULL ORDER BY id;
 
 selectByKey:
 SELECT * FROM component WHERE key = ?;
+
+selectByAddress:
+SELECT * FROM component WHERE address = ? AND removed_at IS NULL;
+
+setAddress:
+UPDATE component SET address = :address WHERE id = :id;
 
 insert:
 INSERT INTO component (bike_id, key, serial, kind, model_id, device_type, firmware, actuations, added_at, last_seen_at)

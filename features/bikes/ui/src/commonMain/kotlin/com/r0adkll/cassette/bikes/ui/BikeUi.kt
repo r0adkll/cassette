@@ -104,11 +104,32 @@ private fun LoadedBike(state: BikeUiState.Loaded) {
             )
         }
         Spacer(Modifier.height(10.dp))
-        CassetteButton(
-            "Refresh now",
-            onClick = { state.eventSink(BikeEvent.Refresh) },
-            trailing = "60 s scan",
-        )
+        RefreshButton(state.refresh, onClick = { state.eventSink(BikeEvent.Refresh) })
+    }
+}
+
+@Composable
+private fun RefreshButton(refresh: RefreshButton, onClick: () -> Unit) {
+    when (refresh) {
+        RefreshButton.Idle ->
+            CassetteButton("Refresh now", onClick = onClick, trailing = "60 s scan")
+        is RefreshButton.Scanning -> {
+            val seconds = refresh.secondsLeft
+            CassetteButton(
+                "Wake the bike",
+                onClick = {},
+                primary = false,
+                icon = LucideIcons.BluetoothSearching,
+                trailing = "0:${seconds.toString().padStart(2, '0')}",
+            )
+        }
+        RefreshButton.Unavailable ->
+            CassetteButton(
+                "Turn on Bluetooth",
+                onClick = onClick,
+                primary = false,
+                icon = LucideIcons.Bluetooth,
+            )
     }
 }
 

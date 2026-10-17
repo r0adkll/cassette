@@ -10,6 +10,8 @@ import androidx.compose.runtime.setValue
 import com.r0adkll.cassette.bikes.api.BikeOverview
 import com.r0adkll.cassette.bikes.api.BikeRepository
 import com.r0adkll.cassette.bikes.api.DeveloperTools
+import com.r0adkll.cassette.capture.api.CaptureController
+import com.r0adkll.cassette.capture.api.RefreshProgress
 import com.r0adkll.cassette.common.screens.AddBikeScreen
 import com.r0adkll.cassette.common.screens.BikeScreen
 import com.r0adkll.cassette.common.screens.ComponentScreen
@@ -34,6 +36,7 @@ class BikePresenter(
     private val navigator: Navigator,
     private val repository: BikeRepository,
     private val developerTools: DeveloperTools,
+    private val capture: CaptureController,
     private val clock: Clock,
 ) : Presenter<BikeUiState> {
 
@@ -55,21 +58,39 @@ class BikePresenter(
             }
         }
 
+        var refresh by remember { mutableStateOf<RefreshButton>(RefreshButton.Idle) }
+
         val eventSink: (BikeEvent) -> Unit = { event ->
             when (event) {
                 is BikeEvent.OpenComponent -> navigator.goTo(ComponentScreen(event.id))
                 // Settings arrives with the settings feature; the gallery stands in for now.
                 BikeEvent.OpenSettings -> navigator.goTo(DesignGalleryScreen)
                 BikeEvent.AddBike -> navigator.goTo(AddBikeScreen)
-                // Refresh needs capture, which is ported next.
-                BikeEvent.Refresh -> Unit
-                BikeEvent.LoadSampleBike -> scope.launch { developerTools.loadSampleBike() }
+                BikeEvent.Refresh ->
+                    if (refresh !is RefreshButton.Scanning) {
+                        scope.launch {
+                            capture.refresh().collect { progress ->
+                                refresh =
+                                    when (progress) {
+                                        is RefreshProgress.Scanning ->
+                                            RefreshButton.Scanning(progress.secondsLeft)
+                                        is RefreshProgress.Done -> RefreshButton.Idle
+                                        RefreshProgress.NotReady -> RefreshButton.Unavailable
+                                    }
+                            }
+                        }
+                    }
+                BikeEvent.LoadSampleBike ->
+                    scope.launch {
+                        developerTools.loadSampleBike()
+                        capture.ensureBackgroundCapture("sample bike loaded")
+                    }
             }
         }
 
         val loaded = overview ?: return BikeUiState.Loading(eventSink)
         val bike = loaded.overview ?: return BikeUiState.Empty(eventSink)
-        return bike.toLoaded(now, eventSink)
+        return bike.toLoaded(now, eventSink).copy(refresh = refresh)
     }
 
     /** Wraps the nullable overview so "loading" and "no bike" are different states. */

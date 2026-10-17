@@ -24,6 +24,7 @@ fun com.r0adkll.cassette.data.db.Bike.toDomain(): Bike =
         hubSerial = hub_serial,
         createdAt = Instant.fromEpochMilliseconds(created_at),
         lastSeenAt = last_seen_at?.let(Instant::fromEpochMilliseconds),
+        hubReadAt = hub_read_at?.let(Instant::fromEpochMilliseconds),
     )
 
 fun com.r0adkll.cassette.data.db.Component.toDomain(): Component =
@@ -40,6 +41,7 @@ fun com.r0adkll.cassette.data.db.Component.toDomain(): Component =
         addedAt = Instant.fromEpochMilliseconds(added_at),
         lastSeenAt = last_seen_at?.let(Instant::fromEpochMilliseconds),
         removedAt = removed_at?.let(Instant::fromEpochMilliseconds),
+        address = address,
     )
 
 fun Battery_sample.toDomain(): BatteryReading =

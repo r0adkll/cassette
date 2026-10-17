@@ -18,8 +18,18 @@ sealed interface BikeUiState : CircuitUiState {
         val position: String,
         val status: BikeStatus,
         val components: List<ComponentRowModel>,
+        val refresh: RefreshButton = RefreshButton.Idle,
         override val eventSink: (BikeEvent) -> Unit,
     ) : BikeUiState
+}
+
+sealed interface RefreshButton {
+    data object Idle : RefreshButton
+
+    data class Scanning(val secondsLeft: Int) : RefreshButton
+
+    /** Bluetooth is off or the Nearby devices permission is missing. */
+    data object Unavailable : RefreshButton
 }
 
 /** What the status block says (decision 0012). */

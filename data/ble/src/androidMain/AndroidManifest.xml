@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="true" />
+
+    <!-- We never derive location from scans, which keeps this to the "Nearby devices" permission. -->
+    <uses-permission
+        android:name="android.permission.BLUETOOTH_SCAN"
+        android:usesPermissionFlags="neverForLocation" />
+    <!-- Hub battery tables and the power meter's Battery Level are short GATT reads. -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application>
+        <receiver
+            android:name="com.r0adkll.cassette.data.ble.ScanResultReceiver"
+            android:exported="false" />
+
+        <receiver
+            android:name="com.r0adkll.cassette.data.ble.RearmReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

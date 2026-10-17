@@ -28,10 +28,11 @@ ported. Don't build new features on the POC.
   parameters; use `fun interface` instead of function typealiases; Android entry points (receivers, tile
   service, widgets, `CompanionDeviceService`, Wear listener) reach the graph through component accessors.
 - **Database:** every `.sq` change ships a `.sqm` migration and a new schema snapshot
-  (`./gradlew :data:db:generateCommonMainCassetteDatabaseSchema`); CI runs `verifySqlDelightMigration`.
+  (`./gradlew :data:db:generateCommonMainCassetteDatabaseSchema`, run on its own: it trips Gradle's
+  task-ordering check alongside other tasks); CI runs `verifySqlDelightMigration`.
 - **Changelog:** behaviour changes get a CHANGELOG.md entry under `[Unreleased]` (Keep a Changelog).
 - **Notifications:** keep a ledger of notification ids and channels in this file; give each PendingIntent
-  its own request code.
+  its own request code (ledger below).
 - **Formatting:** ktfmt, KotlinLang style. Run `scripts/ktfmt --format` before committing. The CLI
   version (`ktfmt-cli` in `libs.versions.toml`) must match what the ktfmt Gradle plugin bundles.
 - **Design system:** screens use `:common:compose` (`CassetteTheme`, components, `LucideIcons`); Material 3
@@ -57,3 +58,9 @@ diagnostic surfaces.
 | Id | Channel | Purpose |
 |---|---|---|
 | (none yet) | | |
+
+## PendingIntent request codes
+
+| Code | Owner | Purpose |
+|---|---|---|
+| 100 | `data/ble` `ScanResultReceiver` | Background scan results |
