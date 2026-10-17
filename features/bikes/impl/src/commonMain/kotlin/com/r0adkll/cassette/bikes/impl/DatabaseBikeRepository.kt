@@ -2,18 +2,22 @@ package com.r0adkll.cassette.bikes.impl
 
 import app.cash.sqldelight.coroutines.asFlow
 import app.cash.sqldelight.coroutines.mapToList
+import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.r0adkll.cassette.bikes.api.BikeOverview
 import com.r0adkll.cassette.bikes.api.BikeRepository
+import com.r0adkll.cassette.bikes.api.ComponentDetail
 import com.r0adkll.cassette.bikes.api.ComponentWithReading
 import com.r0adkll.cassette.core.Bike
 import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.core.CassetteDispatchers
+import com.r0adkll.cassette.core.ComponentId
 import com.r0adkll.cassette.data.db.CassetteDatabase
 import com.r0adkll.cassette.data.db.toDomain
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import kotlin.time.Instant
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -56,6 +60,35 @@ class DatabaseBikeRepository(
             bikeCount = count,
             components = components.map { ComponentWithReading(it.toDomain(), latest[it.id]) },
           )
+        }
+      }
+
+  override fun observeComponent(id: ComponentId, since: Instant): Flow<ComponentDetail?> =
+    db.componentQueries
+      .selectById(id.value)
+      .asFlow()
+      .mapToOneOrNull(dispatchers.io)
+      .flatMapLatest { row ->
+        if (row == null) return@flatMapLatest flowOf(null)
+        combine(
+          db.bikeQueries.selectById(row.bike_id).asFlow().mapToOneOrNull(dispatchers.io),
+          db.batterySampleQueries
+            .historyForComponent(row.id, since.toEpochMilliseconds())
+            .asFlow()
+            .mapToList(dispatchers.io),
+          db.batterySampleQueries
+            .latestForComponent(row.id)
+            .asFlow()
+            .mapToOneOrNull(dispatchers.io),
+        ) { bike, history, latest ->
+          bike?.let {
+            ComponentDetail(
+              component = row.toDomain(),
+              bike = it.toDomain(),
+              latest = latest?.toDomain(),
+              history = history.map { sample -> sample.toDomain() },
+            )
+          }
         }
       }
 }
