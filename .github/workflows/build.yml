@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  danger:
+    name: Danger
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'pull_request' }}
+    container:
+      image: docker://ghcr.io/r0adkll/danger-kotlin:2.0.8
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Trust the checkout
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Run Danger
+        run: danger-kotlin ci --failOnErrors --no-publish-check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  android:
+    name: Format, test and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Check formatting
+        run: ./gradlew ktfmtCheck
+
+      - name: Unit tests
+        run: ./gradlew jvmTest testAndroidHostTest :poc:testDebugUnitTest
+
+      - name: Build
+        run: ./gradlew :app:android:assembleDebug :poc:assembleDebug
+
+      - name: Upload design gallery
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: design-gallery
+          path: common/compose/build/gallery/*.png
+          if-no-files-found: ignore
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v7
+        with:
+          name: apks
+          path: |
+            app/android/build/outputs/apk/debug/*.apk
+            poc/build/outputs/apk/debug/*.apk
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: '**/build/reports/tests/'
+
+  ios:
+    name: iOS compile
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      # iOS ships in milestone 3; until then, shared code must keep compiling for it.
+      - name: Compile for iOS
+        run: ./gradlew compileKotlinIosSimulatorArm64 compileKotlinIosArm64
