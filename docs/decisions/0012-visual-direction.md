@@ -60,7 +60,7 @@ SRAM-app quality, which must be our own (never SRAM's artwork).
 - **Add bike**: wake (listening pulse, timer, "not finding it?"), found (components read from the hub),
   the system companion-link dialog, name and type (road / gravel / MTB / other) with an optional local
   photo, power meter picked from nearby Quarqs by signal strength (spin the crank to confirm), then the
-  background-capture permissions, each with its own explainer.
+  background-capture permissions (one screen, see Onboarding below).
 - **Quick Settings tile**: Android draws it, so status shows as the Lucide status icon plus words in the
   subtitle. States: good, low, refreshing (60 s countdown), not seen (inactive).
 - **Notifications**: SRAM red accent; pre-ride heads-up with "Snooze until tomorrow", status-change alerts,
@@ -73,6 +73,17 @@ SRAM-app quality, which must be our own (never SRAM's artwork).
 - **Wear**: bike list, bike screen (status block then one bar per component), a tile with Refresh (asks the
   phone to scan), and complications (weakest component as a ranged value, status as short text). Watch
   faces may override our colours, so icons and words carry status there too.
+
+## Onboarding (iteration 6, approved 2026-10-17)
+
+- **Welcome (C · Poster)**: a full-bleed SRAM red block ("Know before you ride.") running up under the status
+  bar, three numbered points (hears the bike when it wakes, shows it at a glance, warns you before a ride),
+  Get started, and the unofficial notice as a one-line footnote.
+- **Permissions (P1 · Checklist)**: "Two things to allow." Each permission is a panel with its own Allow chip,
+  one system prompt per tap; granted shows a green check and ALLOWED, blocked shows a Settings chip and a
+  line in amber. Continue is always enabled. States are re-read when the app resumes, so a change made in
+  system settings shows straight away.
+- Two screens, then add bike. Rejected: A · Product hero, B · Everywhere, P2 · One button.
 
 Defaults taken where nothing was decided: power-meter choice by signal strength; scan profile lives only in
 Diagnostics; no activity log on the bike screen yet.

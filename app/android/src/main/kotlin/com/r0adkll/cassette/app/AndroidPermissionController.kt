@@ -9,30 +9,43 @@ import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
 import com.r0adkll.cassette.common.compose.AppPermission
 import com.r0adkll.cassette.common.compose.PermissionController
 import com.r0adkll.cassette.common.compose.PermissionState
+import kotlinx.coroutines.flow.MutableStateFlow
 
 /**
  * Runtime permissions for the UI layer. Create it before the activity starts (it registers an
  * activity-result launcher). "Blocked" is: asked before, not granted, and Android no longer shows a
- * rationale, so only the app's system settings can grant it.
+ * rationale, so only the app's system settings can grant it. States are re-read on every resume, so
+ * a change made in system settings shows up when the user comes back.
  */
 class AndroidPermissionController(private val activity: ComponentActivity) : PermissionController {
-  private var pending: ((PermissionState) -> Unit)? = null
-  private var pendingPermission: AppPermission? = null
   // Lazy: this object is created before the activity has a context.
   private val prefs by lazy { activity.getSharedPreferences("permissions", Context.MODE_PRIVATE) }
 
+  override val states by lazy { MutableStateFlow(readAll()) }
+
   private val launcher: ActivityResultLauncher<Array<String>> =
     activity.registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-      val permission = pendingPermission ?: return@registerForActivityResult
-      pending?.invoke(state(permission))
-      pending = null
-      pendingPermission = null
+      states.value = readAll()
     }
 
-  override fun state(permission: AppPermission): PermissionState {
+  init {
+    activity.lifecycle.addObserver(
+      object : DefaultLifecycleObserver {
+        override fun onResume(owner: LifecycleOwner) {
+          states.value = readAll()
+        }
+      }
+    )
+  }
+
+  private fun readAll() = AppPermission.entries.associateWith(::state)
+
+  private fun state(permission: AppPermission): PermissionState {
     val names = permission.manifestNames
     if (names.all { activity.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED })
       return PermissionState.Granted
@@ -41,10 +54,8 @@ class AndroidPermissionController(private val activity: ComponentActivity) : Per
     return if (asked && !rationale) PermissionState.Blocked else PermissionState.Askable
   }
 
-  override fun request(permission: AppPermission, onResult: (PermissionState) -> Unit) {
+  override fun request(permission: AppPermission) {
     prefs.edit().putBoolean(permission.name, true).apply()
-    pending = onResult
-    pendingPermission = permission
     launcher.launch(permission.manifestNames)
   }
 
