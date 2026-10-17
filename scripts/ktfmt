@@ -1,0 +1,50 @@
+#!/bin/sh
+# Checks or applies ktfmt (KotlinLang style) on every tracked .kt and .kts file, build-logic included.
+# Much faster than ./gradlew ktfmtCheck: no Gradle configuration. Downloads the pinned ktfmt
+# (gradle/libs.versions.toml, `ktfmt-cli`) once and caches it under ${XDG_CACHE_HOME:-~/.cache}/cassette.
+#
+# Usage:
+#   scripts/ktfmt             # check only; exits non-zero if anything would change
+#   scripts/ktfmt --format    # reformat in place
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+VERSION="$(sed -n 's/^ktfmt-cli *= *"\(.*\)"/\1/p' "$REPO_ROOT/gradle/libs.versions.toml")"
+if [ -z "$VERSION" ]; then
+  echo "error: ktfmt-cli version not found in gradle/libs.versions.toml" >&2
+  exit 1
+fi
+
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/cassette"
+JAR="$CACHE_DIR/ktfmt-$VERSION.jar"
+URL="https://repo1.maven.org/maven2/com/facebook/ktfmt/$VERSION/ktfmt-$VERSION-with-dependencies.jar"
+
+if [ ! -f "$JAR" ]; then
+  mkdir -p "$CACHE_DIR"
+  echo "Downloading ktfmt $VERSION..."
+  curl -fsSL -o "$JAR.tmp" "$URL"
+  mv "$JAR.tmp" "$JAR"
+fi
+
+case "${1:-}" in
+  "" | --check) ARGS="--dry-run --set-exit-if-changed" ;;
+  --format | -F) ARGS="" ;;
+  -h | --help)
+    sed -n '2,9p' "$0"
+    exit 0
+    ;;
+  *)
+    echo "error: unknown option $1 (use --format, or nothing to check)" >&2
+    exit 2
+    ;;
+esac
+
+cd "$REPO_ROOT"
+# With --dry-run, ktfmt prints the files it would change.
+if ! git ls-files -z '*.kt' '*.kts' | xargs -0 java -jar "$JAR" --kotlinlang-style --quiet $ARGS; then
+  echo "ktfmt: the files above need formatting. Run scripts/ktfmt --format." >&2
+  exit 1
+fi
