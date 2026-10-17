@@ -11,7 +11,9 @@ Date: 2026-10-16 · Status: accepted
    links the bike's hub.
 4. Done: background capture on, with a tip to wake the bike now and then.
 
-The widget and Quick Settings tile are offered later as tips on the bike screen, not as onboarding steps.
+The widget and Quick Settings tile are offered later as tips on the bike screen, not as onboarding steps. One tip at a
+time under Refresh, widget first (only while no Cassette widget is placed and the launcher can pin one), then
+the tile (Android 13+). Accepting or dismissing a tip ends it; adding the tile from the shade's editor counts.
 The battery-optimisation exemption is only requested if the fallback scan needs it.
 
 ## Notification channels

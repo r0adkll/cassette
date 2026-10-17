@@ -12,6 +12,8 @@ import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.capture.api.RefreshProgress
 import com.r0adkll.cassette.common.compose.components.word
 import com.r0adkll.cassette.common.compose.theme.StatusTone
+import com.r0adkll.cassette.settings.api.CassetteSettings
+import com.r0adkll.cassette.settings.api.Tip
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesTo
 import dev.zacsweers.metro.Inject
@@ -35,6 +37,7 @@ interface TileComponent {
   val captureController: CaptureController
   val clock: Clock
   val tileRefresh: TileRefresh
+  val settings: CassetteSettings
 }
 
 /** Implemented by the Application so the tile service, which Android creates, reaches the graph. */
@@ -87,6 +90,12 @@ class BikeTileService : TileService() {
 
   private val host
     get() = applicationContext as TileHost
+
+  /** Added from the shade's editor or the bike screen's tip: either way the tip is done. */
+  override fun onTileAdded() {
+    super.onTileAdded()
+    host.tileScope.launch { host.tileComponent.settings.dismissTip(Tip.QuickSettingsTile) }
+  }
 
   override fun onStartListening() {
     super.onStartListening()

@@ -7,11 +7,13 @@ import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.data.ble.ScanProfile
 import com.r0adkll.cassette.settings.api.CaptureHealth
 import com.r0adkll.cassette.settings.api.CassetteSettings
 import com.r0adkll.cassette.settings.api.NotificationSettings
+import com.r0adkll.cassette.settings.api.Tip
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
@@ -76,6 +78,18 @@ class DataStoreSettings(file: SettingsFile) : CassetteSettings {
     store.edit { it[ONBOARDED] = true }
   }
 
+  override val dismissedTips: Flow<Set<Tip>> =
+    store.data.map { prefs ->
+      prefs[DISMISSED_TIPS]
+        .orEmpty()
+        .mapNotNull { name -> Tip.entries.find { it.name == name } }
+        .toSet()
+    }
+
+  override suspend fun dismissTip(tip: Tip) {
+    store.edit { it[DISMISSED_TIPS] = it[DISMISSED_TIPS].orEmpty() + tip.name }
+  }
+
   override val captureHealth: Flow<CaptureHealth> =
     store.data.map {
       CaptureHealth(
@@ -105,6 +119,7 @@ class DataStoreSettings(file: SettingsFile) : CassetteSettings {
     val PROFILE = stringPreferencesKey("scan_profile")
     val PINNED_BIKE = longPreferencesKey("pinned_bike")
     val ONBOARDED = booleanPreferencesKey("onboarded")
+    val DISMISSED_TIPS = stringSetPreferencesKey("dismissed_tips")
     val ALERTS = booleanPreferencesKey("notify_battery_alerts")
     val PRE_RIDE = booleanPreferencesKey("notify_pre_ride")
     val REMINDERS = booleanPreferencesKey("notify_not_seen")
