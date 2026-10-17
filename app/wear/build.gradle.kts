@@ -5,6 +5,7 @@ plugins {
   id("cassette.di")
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.kotlin.parcelize)
+  alias(libs.plugins.drop)
 }
 
 android {
@@ -62,6 +63,15 @@ android {
   buildFeatures { compose = true }
 
   testOptions { unitTests.isReturnDefaultValues = true }
+}
+
+// Drop (decisions 0008 and 0013): CI uploads the internal build as a Wear Build beside the phone's.
+// The plugin stamps it with its run and Channel and gives it the phone's commit-count version code;
+// the SDK isn't started, so nothing checks for updates on the watch yet.
+drop {
+  serverUrl = "https://drop.thescavengers.software"
+  versionCodeFromCommits = true
+  enableFor { it.buildType == "debug" || it.buildType == "internal" }
 }
 
 dependencies {
