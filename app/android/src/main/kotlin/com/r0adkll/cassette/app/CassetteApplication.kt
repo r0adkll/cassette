@@ -12,6 +12,7 @@ import com.r0adkll.cassette.surfaces.tile.TileComponent
 import com.r0adkll.cassette.surfaces.tile.TileHost
 import com.r0adkll.cassette.surfaces.widget.WidgetComponent
 import com.r0adkll.cassette.surfaces.widget.WidgetHost
+import com.r0adkll.drop.Drop
 import dev.zacsweers.metro.createGraphFactory
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +22,15 @@ class CassetteApplication : Application(), BleHost, WidgetHost, TileHost, Alerts
   /** Android entry points reach the graph through this (decision 0007). */
   val graph: AndroidAppGraph by lazy {
     createGraphFactory<AndroidAppGraph.Factory>().create(this)
+  }
+
+  /** One Drop per process (its SDK's rule); checks run on the main thread's scope. */
+  val updates: DropAppUpdates by lazy {
+    DropAppUpdates(
+      Drop(this),
+      CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+      enabled = DropAppUpdates.isDebuggable(applicationInfo),
+    )
   }
 
   /** Lives as long as the process: background wakes and widget updates run here. */

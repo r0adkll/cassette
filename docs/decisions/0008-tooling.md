@@ -22,6 +22,15 @@ Commits keep their `Co-Authored-By` attribution lines. Unlike Campfire, Cassette
 
 ## Distribution
 
-Sideload only for now. CI builds a signed APK on merges to `main` and uploads it to Drop (our build
-distribution platform); until CI exists, install with adb. Play/Fastlane tooling is adopted but unused until
-a listing is decided.
+Sideload only for now, through Drop (our build distribution platform) at
+https://drop.thescavengers.software. Play/Fastlane tooling is adopted but unused until a listing is decided.
+
+- CI signs the debug build with one internal key, so every Drop build can update every other. The key lives
+  only in repository secrets (`CASSETTE_KEYSTORE_BASE64`, `CASSETTE_KEYSTORE_PASSWORD`, `CASSETTE_KEY_ALIAS`,
+  `CASSETTE_KEY_PASSWORD`), with its owner's copy kept outside the repo. Local builds keep the debug key,
+  so an adb install and a Drop build can't update each other.
+- Pushes to `main` upload to the `main` channel and same-repository pull requests to `pr/<number>`, with
+  Drop's GitHub Action (OIDC, no upload secrets). Without the internal key, nothing is uploaded.
+- Drop's Gradle plugin gives the debug build its SDK: Settings → App updates shows what's waiting and opens
+  Drop's update sheet, and a red dot on the bike screen's Settings button says one is waiting. Version codes
+  count first-parent commits.

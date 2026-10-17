@@ -1,5 +1,6 @@
 package com.r0adkll.cassette.settings.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,19 +12,27 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.r0adkll.cassette.common.compose.LocalAppUpdates
+import com.r0adkll.cassette.common.compose.UpdateStatus
+import com.r0adkll.cassette.common.compose.components.Chevron
 import com.r0adkll.cassette.common.compose.components.IconCircleButton
 import com.r0adkll.cassette.common.compose.components.SettingsRow
 import com.r0adkll.cassette.common.compose.components.SettingsSection
 import com.r0adkll.cassette.common.compose.components.SettingsSwitchRow
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
+import com.r0adkll.cassette.common.compose.theme.CassetteRed
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.screens.LicencesScreen
 import com.r0adkll.cassette.common.screens.SettingsScreen
@@ -132,6 +141,7 @@ fun SettingsUi(state: SettingsUiState, modifier: Modifier = Modifier) {
       )
     }
     SettingsSection("More") {
+      AppUpdatesRow()
       SettingsRow(
         "Diagnostics",
         subtitle = "Raw adverts, hub tables, scan profile",
@@ -202,3 +212,29 @@ private val LICENCES =
       "Copyright Lucide Contributors 2022; portions Copyright Cole Bemis 2013–2022 (Feather, MIT)",
     ),
   )
+
+/** Only on builds that update themselves (Drop's): what's waiting, and the way to it. */
+@Composable
+private fun AppUpdatesRow() {
+  val updates = LocalAppUpdates.current
+  val status by updates.status.collectAsState()
+  val subtitle =
+    when (val s = status) {
+      UpdateStatus.Off -> return
+      UpdateStatus.Checking -> "Checking…"
+      UpdateStatus.UpToDate -> "Up to date · tap to check"
+      is UpdateStatus.Available -> "New build: ${s.headline}"
+      is UpdateStatus.Failed -> "Couldn't check: ${s.message}"
+    }
+  val available = status is UpdateStatus.Available
+  SettingsRow(
+    "App updates",
+    subtitle = subtitle,
+    icon = LucideIcons.Download,
+    onClick = if (available) updates::open else updates::check,
+    trailing = {
+      if (available) Box(Modifier.size(10.dp).clip(CircleShape).background(CassetteRed))
+      else Chevron()
+    },
+  )
+}
