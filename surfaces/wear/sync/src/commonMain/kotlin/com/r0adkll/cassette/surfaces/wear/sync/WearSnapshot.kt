@@ -187,5 +187,11 @@ fun WearSnapshot.toOverviews(): List<BikeOverview> = bikes.map { bike ->
   )
 }
 
+/** The bike the tile and complications show: the phone's default, else the first. */
+fun WearSnapshot.defaultBike(): BikeOverview? =
+  toOverviews().let { bikes ->
+    bikes.firstOrNull { it.bike.id.value == defaultBikeId } ?: bikes.firstOrNull()
+  }
+
 private inline fun <reified T : Enum<T>> enumOr(name: String, fallback: T): T =
   enumValues<T>().firstOrNull { it.name == name } ?: fallback

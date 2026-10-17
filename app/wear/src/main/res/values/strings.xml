@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Cassette</string>
+    <string name="complication_label">Bike battery</string>
     <string name="tile_label">Bike battery</string>
     <string name="tile_description">Your bike\'s weakest battery, with Refresh</string>
 </resources>
