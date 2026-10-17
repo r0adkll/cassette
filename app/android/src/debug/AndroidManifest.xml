@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Debug only: hosts our widgets without the launcher (see WidgetPreviewActivity). -->
+    <application>
+        <activity
+            android:name="com.r0adkll.cassette.app.debug.WidgetPreviewActivity"
+            android:exported="true"
+            android:label="Widget preview" />
+    </application>
+</manifest>

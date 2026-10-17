@@ -18,11 +18,11 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
-/** Pure mapping from data to what the bike screen shows; tested without Compose. */
-internal fun BikeOverview.toLoaded(
-  now: Instant,
-  eventSink: (BikeEvent) -> Unit,
-): BikeUiState.Loaded {
+/**
+ * Pure mapping from data to what the bike screen shows; tested without Compose. Widgets use it too,
+ * so they word and colour things exactly like the app.
+ */
+fun BikeOverview.toLoaded(now: Instant, eventSink: (BikeEvent) -> Unit = {}): BikeUiState.Loaded {
   val stale = isStale(bike.lastSeenAt, now)
   val rows = components.map { it.toRow(stale) }
   return BikeUiState.Loaded(

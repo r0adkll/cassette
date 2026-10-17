@@ -53,5 +53,7 @@ include(":features:bikes:ui")
 
 include(":protocol")
 
+include(":surfaces:widget")
+
 // The proof of concept, kept installable (and its diagnostics usable) until features are ported.
 include(":poc")

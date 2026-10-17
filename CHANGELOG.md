@@ -15,6 +15,9 @@ All notable changes to Cassette are documented here. The format follows
   with year-long retention and daily down-sampling, and alert state.
 - `scripts/ktfmt`: the ktfmt CLI, the only formatter (CI and the pre-push hook), covering build-logic.
   Google style: 2-space indents.
+- Home-screen widgets (Glance): a bike widget that adapts to its size (status block; a bar per
+  component; thick bars with values inside) and an all-bikes widget, worded and coloured like the app,
+  updated whenever capture writes and every 30 minutes.
 - Capture log: background arms, wakes (with the raw adverts heard), GATT reads (with timing and the
   hub table's bytes) and wakes that ran out of time, kept as capped JSON lines. Ride tests mark
   sessions in it and summarise wake rate, gaps, read success and phone battery used (ported from the
