@@ -38,3 +38,40 @@ internal fun barBitmap(
   canvas.drawRoundRect(fillRect, radius, radius, paint)
   return bitmap
 }
+
+/**
+ * Display text in Barlow Condensed Bold. RemoteViews can only use system fonts, so the big type the
+ * design leans on (headlines, bike names) is drawn into a bitmap; callers pass the text as the
+ * image's content description.
+ */
+internal fun displayTextBitmap(
+  context: android.content.Context,
+  text: String,
+  sizeSp: Float,
+  color: Color,
+  maxWidth: Dp,
+  maxLines: Int = 1,
+): Bitmap {
+  val density = context.resources.displayMetrics.density
+  val paint =
+    android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+      typeface = context.resources.getFont(R.font.barlow_condensed_bold)
+      textSize = sizeSp * context.resources.displayMetrics.scaledDensity
+      this.color = color.toArgb()
+      letterSpacing = -0.02f
+    }
+  val width = (maxWidth.value * density).toInt().coerceAtLeast(1)
+  val layout =
+    android.text.StaticLayout.Builder.obtain(text, 0, text.length, paint, width)
+      .setMaxLines(maxLines)
+      .setEllipsize(android.text.TextUtils.TruncateAt.END)
+      .setLineSpacing(0f, 0.92f)
+      .setIncludePad(false)
+      .build()
+  val lineWidth =
+    (0 until layout.lineCount).maxOf { layout.getLineWidth(it) }.toInt().coerceAtLeast(1)
+  val bitmap =
+    Bitmap.createBitmap(lineWidth, layout.height.coerceAtLeast(1), Bitmap.Config.ARGB_8888)
+  layout.draw(Canvas(bitmap))
+  return bitmap
+}

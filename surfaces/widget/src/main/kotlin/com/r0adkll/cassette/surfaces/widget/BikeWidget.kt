@@ -124,15 +124,12 @@ class BikeWidget : GlanceAppWidget() {
         maxLines = 1,
       )
       Spacer(GlanceModifier.defaultWeight())
-      Text(
+      DisplayText(
         state.status.headline,
-        style =
-          TextStyle(
-            fontFamily = Condensed,
-            fontWeight = FontWeight.Bold,
-            fontSize = 34.sp,
-            color = content,
-          ),
+        // The design's small widget sets the headline large, over two lines.
+        40f,
+        blockContentColor(tone),
+        LocalSize.current.width - 32.dp,
         maxLines = 2,
       )
       Spacer(GlanceModifier.defaultWeight())
@@ -293,18 +290,8 @@ class BikeWidget : GlanceAppWidget() {
   @Composable
   private fun Header(state: BikeUiState.Loaded) {
     Row(GlanceModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-      Text(
-        state.name,
-        style =
-          TextStyle(
-            fontFamily = Condensed,
-            fontWeight = FontWeight.Bold,
-            fontSize = 22.sp,
-            color = WidgetColors.text,
-          ),
-        modifier = GlanceModifier.defaultWeight(),
-        maxLines = 1,
-      )
+      DisplayText(state.name, 22f, textColor(), LocalSize.current.width - 150.dp)
+      Spacer(GlanceModifier.defaultWeight())
       Text(
         "${state.status.tone.word} · ${state.status.meta.removePrefix("Seen ").uppercase()}",
         style =
@@ -335,6 +322,34 @@ class BikeWidget : GlanceAppWidget() {
 class BikeWidgetReceiver : GlanceAppWidgetReceiver() {
   override val glanceAppWidget = BikeWidget()
 }
+
+/** Barlow Condensed display text, drawn (see displayTextBitmap) and read out as [text]. */
+@Composable
+internal fun DisplayText(
+  text: String,
+  sizeSp: Float,
+  color: androidx.compose.ui.graphics.Color,
+  maxWidth: androidx.compose.ui.unit.Dp,
+  maxLines: Int = 1,
+) {
+  val context = LocalContext.current
+  Image(
+    ImageProvider(displayTextBitmap(context, text, sizeSp, color, maxWidth, maxLines)),
+    contentDescription = text,
+  )
+}
+
+@Composable
+internal fun textColor() =
+  if (LocalContext.current.isNight())
+    com.r0adkll.cassette.common.compose.theme.DarkCassetteColors.text
+  else com.r0adkll.cassette.common.compose.theme.LightCassetteColors.text
+
+@Composable
+internal fun blockContentColor(tone: com.r0adkll.cassette.common.compose.theme.StatusTone) =
+  if (LocalContext.current.isNight())
+    com.r0adkll.cassette.common.compose.theme.DarkCassetteColors.block(tone).content
+  else com.r0adkll.cassette.common.compose.theme.LightCassetteColors.block(tone).content
 
 /** Worst first; null when nothing has a reading. */
 internal fun List<ComponentRowModel>.weakest(): ComponentRowModel? = filter {

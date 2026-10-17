@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.LocalContext
+import androidx.glance.LocalSize
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -40,6 +41,8 @@ import kotlinx.coroutines.flow.flowOf
 
 /** Every bike as a row tinted by its weakest status (decision 0010). */
 class AllBikesWidget : GlanceAppWidget() {
+  override val sizeMode = androidx.glance.appwidget.SizeMode.Exact
+
   @OptIn(ExperimentalCoroutinesApi::class)
   override suspend fun provideGlance(context: Context, id: GlanceId) {
     val graph = context.widgets
@@ -99,18 +102,8 @@ class AllBikesWidget : GlanceAppWidget() {
               .padding(horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
           ) {
-            Text(
-              bike.name,
-              style =
-                TextStyle(
-                  fontFamily = Condensed,
-                  fontWeight = FontWeight.Bold,
-                  fontSize = 20.sp,
-                  color = WidgetColors.text,
-                ),
-              modifier = GlanceModifier.defaultWeight(),
-              maxLines = 1,
-            )
+            DisplayText(bike.name, 20f, textColor(), LocalSize.current.width - 150.dp)
+            Spacer(GlanceModifier.defaultWeight())
             val weakest = bike.components.weakest()
             Text(
               if (
