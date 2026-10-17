@@ -2,8 +2,8 @@
 
 ## M0: Design and spikes (now)
 
-- Design iteration 1: bike overview, component detail and widgets in four directions, light and dark
-  ([design-process.md](design-process.md)); narrow to one direction, then the remaining surfaces.
+- ~~Design iterations~~: done, direction and every v1 surface approved
+  ([0012](decisions/0012-visual-direction.md)).
 - CompanionDeviceManager spike on the POC ([0009](decisions/0009-background-capture.md)).
 - Ride tests: Batched 30 s profile, and one ride longer than 30 minutes.
 - `docs/protocol.md`: the AXS protocol as we understand it, in our own words, with sources.

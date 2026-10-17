@@ -55,4 +55,24 @@ SRAM-app quality, which must be our own (never SRAM's artwork).
 - **Widgets**: small is the status block; medium is one vertical bar per component; large and all-bikes use
   thick bars with the name and value inside the bar (like Pixel's battery widget).
 
-Still to design: add bike, Quick Settings tile, notifications, diagnostics, Wear.
+## Remaining surfaces (iteration 5, approved)
+
+- **Add bike**: wake (listening pulse, timer, "not finding it?"), found (components read from the hub),
+  the system companion-link dialog, name and type (road / gravel / MTB / other) with an optional local
+  photo, power meter picked from nearby Quarqs by signal strength (spin the crank to confirm), then the
+  background-capture permissions, each with its own explainer.
+- **Quick Settings tile**: Android draws it, so status shows as the Lucide status icon plus words in the
+  subtitle. States: good, low, refreshing (60 s countdown), not seen (inactive).
+- **Notifications**: SRAM red accent; pre-ride heads-up with "Snooze until tomorrow", status-change alerts,
+  not-seen reminders, and a minimised capture notice. The small icon waits on the app icon.
+- **Settings**: default bike, background capture and refresh length, one switch per notification channel,
+  diagnostics, licences (Barlow, Lucide), "Unofficial. Not affiliated with SRAM."
+- **Diagnostics**: capture-health panel, then live adverts (monospace hex, frame tag, RSSI, filters), nearby
+  devices, hub tables (decoded battery and firmware tables plus raw hex), ride tests, scan profile, and
+  "Share diagnostics". Monospace is JetBrains Mono.
+- **Wear**: bike list, bike screen (status block then one bar per component), a tile with Refresh (asks the
+  phone to scan), and complications (weakest component as a ranged value, status as short text). Watch
+  faces may override our colours, so icons and words carry status there too.
+
+Defaults taken where nothing was decided: power-meter choice by signal strength; scan profile lives only in
+Diagnostics; no activity log on the bike screen yet.
