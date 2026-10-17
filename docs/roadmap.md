@@ -24,6 +24,8 @@ Wear app, tile and complications fed from the phone over the Data Layer
 3. The Wear tile.
 4. Complications.
 
+Still to do: check it all on a real watch paired to a phone, and ship the Wear APK through Drop.
+
 ## M3: iOS
 
 iOS app with Core Bluetooth, if still wanted.

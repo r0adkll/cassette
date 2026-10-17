@@ -7,6 +7,10 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Added
 
+- Wear complications (decision 0013): the default bike's weakest component as a ranged value ("78",
+  "RD") and its status as short text ("GOOD", "FD LOW", "CHARGE"), each with the status icon so they
+  still read when the watch face recolours them. Tapping opens the bike; they update when the phone
+  sends data, and hourly.
 - Wear tile (decision 0013): the default bike's status icon, headline, weakest component and when it was
   seen, in our colours. Refresh asks the phone to scan and counts down on the tile; tapping the tile
   opens the app at that bike. It updates whenever the phone sends new data.

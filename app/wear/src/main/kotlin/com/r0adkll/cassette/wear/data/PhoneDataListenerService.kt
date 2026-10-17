@@ -3,6 +3,7 @@ package com.r0adkll.cassette.wear.data
 import androidx.wear.tiles.TileService
 import com.google.android.gms.wearable.DataEventBuffer
 import com.google.android.gms.wearable.WearableListenerService
+import com.r0adkll.cassette.wear.complication.BikeComplicationService
 import com.r0adkll.cassette.wear.tile.BikeTileService
 
 /**
@@ -12,5 +13,6 @@ import com.r0adkll.cassette.wear.tile.BikeTileService
 class PhoneDataListenerService : WearableListenerService() {
   override fun onDataChanged(events: DataEventBuffer) {
     TileService.getUpdater(this).requestUpdate(BikeTileService::class.java)
+    BikeComplicationService.update(this)
   }
 }

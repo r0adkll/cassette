@@ -43,8 +43,7 @@ import com.r0adkll.cassette.bikes.summary.BikeSummary
 import com.r0adkll.cassette.bikes.summary.toSummary
 import com.r0adkll.cassette.common.compose.theme.DarkCassetteColors
 import com.r0adkll.cassette.common.compose.theme.StatusTone
-import com.r0adkll.cassette.surfaces.wear.sync.WearSnapshot
-import com.r0adkll.cassette.surfaces.wear.sync.toOverviews
+import com.r0adkll.cassette.surfaces.wear.sync.defaultBike
 import com.r0adkll.cassette.wear.R
 import com.r0adkll.cassette.wear.WatchRefresh
 import com.r0adkll.cassette.wear.WearActivity
@@ -194,11 +193,6 @@ class BikeTileService : TileService() {
         layoutConstraint = StringLayoutConstraint.Builder("0:00").build(),
       )
   }
-
-  private fun WearSnapshot.defaultBike() =
-    toOverviews().let { bikes ->
-      bikes.firstOrNull { it.bike.id.value == defaultBikeId } ?: bikes.firstOrNull()
-    }
 
   /** Both ends set: the renderer reads an unset end as 0, not "forever". */
   private fun validity(from: Instant, until: Instant?) =

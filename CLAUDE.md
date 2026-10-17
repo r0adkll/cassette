@@ -87,3 +87,4 @@ Channels from decision 0011 (`AndroidNotifier` in `:features:alerts:impl`):
 | 100 | `data/ble` `ScanResultReceiver` | Background scan results |
 | notification id | `AndroidNotifier` | Each notification's tap (opens the app) |
 | 2,500,000 + bike id | `AndroidNotifier` → `SnoozeReceiver` | "Snooze until tomorrow" on the pre-ride nudge |
+| 4,000,000 + bike id | `:app:wear` `BikeComplicationService` | A complication's tap (opens the bike on the watch) |
