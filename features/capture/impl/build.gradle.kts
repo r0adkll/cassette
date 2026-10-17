@@ -11,6 +11,7 @@ kotlin {
       implementation(project(":data:ble"))
       implementation(project(":data:db"))
       implementation(project(":features:settings:api"))
+      implementation(project(":features:alerts:api"))
       implementation(libs.metro.runtime)
       implementation(libs.okio)
     }

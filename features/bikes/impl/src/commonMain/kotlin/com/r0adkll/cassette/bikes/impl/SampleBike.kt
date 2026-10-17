@@ -1,6 +1,7 @@
 package com.r0adkll.cassette.bikes.impl
 
 import com.r0adkll.cassette.bikes.api.DeveloperTools
+import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.core.BikeType
 import com.r0adkll.cassette.core.CassetteDispatchers
 import com.r0adkll.cassette.core.ReadMethod
@@ -55,6 +56,24 @@ class DatabaseDeveloperTools(
           )
         }
       }
+    }
+
+  override suspend fun simulateLowBattery(bike: BikeId): Boolean =
+    withContext(dispatchers.io) {
+      val components = db.componentQueries.selectForBike(bike.value).executeAsList()
+      val target =
+        components.firstOrNull { it.kind == ComponentKind.FRONT_DERAILLEUR.name }
+          ?: components.firstOrNull()
+          ?: return@withContext false
+      db.batterySampleQueries.insert(
+        target.id,
+        clock.now().toEpochMilliseconds(),
+        7_400,
+        null,
+        BatteryStatus.LOW.name,
+        ReadMethod.Hub.name,
+      )
+      true
     }
 
   private class Sample(

@@ -3,7 +3,6 @@ package com.r0adkll.cassette.bikes.ui.component
 import com.r0adkll.cassette.bikes.api.ComponentDetail
 import com.r0adkll.cassette.bikes.ui.ago
 import com.r0adkll.cassette.bikes.ui.tone
-import com.r0adkll.cassette.bikes.ui.valueText
 import com.r0adkll.cassette.common.compose.theme.StatusTone
 import com.r0adkll.cassette.core.ReadMethod
 import com.r0adkll.cassette.core.charges
@@ -11,6 +10,7 @@ import com.r0adkll.cassette.core.isEstimate
 import com.r0adkll.cassette.core.isStale
 import com.r0adkll.cassette.core.level
 import com.r0adkll.cassette.core.status
+import com.r0adkll.cassette.core.valueText
 import com.r0adkll.cassette.protocol.PACK_MIN_MILLIVOLTS
 import kotlin.math.roundToInt
 import kotlin.time.Instant

@@ -1,5 +1,6 @@
 package com.r0adkll.cassette.capture.impl
 
+import com.r0adkll.cassette.alerts.api.Alerts
 import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.capture.api.CaptureEvent
 import com.r0adkll.cassette.capture.api.CaptureLog
@@ -16,6 +17,7 @@ import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -36,6 +38,7 @@ class DefaultCaptureController(
   private val db: CassetteDatabase,
   private val settings: CassetteSettings,
   private val log: CaptureLog,
+  private val alerts: Alerts,
   private val clock: Clock,
 ) : CaptureController {
 
@@ -66,6 +69,8 @@ class DefaultCaptureController(
               bikeIds += it.bike.id.value
             }
             if (refresher.refresh(heard, CaptureMode.Live).hubRead) hubRead = true
+            // The app is open: battery alerts only; the pre-ride nudge is for background wakes.
+            alerts.onCaptured(heard.map { it.bike.id }.toSet(), woke = emptySet())
           }
           val left =
             (REFRESH_LENGTH - (clock.now() - started)).inWholeSeconds.toInt().coerceAtLeast(0)
@@ -141,12 +146,23 @@ class DefaultCaptureController(
         error = errorCode,
       )
     )
+    val seenBefore =
+      db.bikeQueries.selectAll().executeAsList().associate { it.id to it.last_seen_at }
     val heard = recorder.record(readings)
     refresher.refresh(heard, CaptureMode.Background)
+    val bikes = heard.map { it.bike.id }.toSet()
+    // Woke: heard now after a quiet spell (or never heard before).
+    val cutoff = (clock.now() - ASLEEP_AFTER).toEpochMilliseconds()
+    val woke = bikes.filter { seenBefore[it.value]?.let { seen -> seen < cutoff } ?: true }.toSet()
+    alerts.onCaptured(bikes, woke)
   }
 
   private companion object {
     val REFRESH_LENGTH = 60.seconds
+    /**
+     * AXS components sleep after a few minutes still; this much quiet means the bike was put away.
+     */
+    val ASLEEP_AFTER = 30.minutes
   }
 }
 

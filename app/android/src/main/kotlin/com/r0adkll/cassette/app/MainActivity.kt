@@ -62,6 +62,11 @@ class MainActivity : ComponentActivity() {
 
   private companion object {
     val BLUETOOTH_PERMISSIONS =
-      arrayOf(Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT)
+      arrayOf(
+        Manifest.permission.BLUETOOTH_SCAN,
+        Manifest.permission.BLUETOOTH_CONNECT,
+        // Battery alerts, pre-ride nudges and reminders (decision 0011).
+        Manifest.permission.POST_NOTIFICATIONS,
+      )
   }
 }

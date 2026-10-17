@@ -63,12 +63,19 @@ diagnostic surfaces.
 
 ## Notification ledger
 
+Channels from decision 0011 (`AndroidNotifier` in `:features:alerts:impl`):
+
 | Id | Channel | Purpose |
 |---|---|---|
-| (none yet) | | |
+| 1,000,000 + component id | `battery_alerts` (default) | A component dropped to low or charge now |
+| 2,000,000 + bike id | `pre_ride` (high, heads-up) | The bike woke and something is low; at most every 12 h |
+| 3,000,000 + bike id | `reminders` (low) | Bike not seen for 14, then 30 days |
+| (not yet) | `capture` (min) | Only while a foreground read runs, if one is ever needed |
 
 ## PendingIntent request codes
 
 | Code | Owner | Purpose |
 |---|---|---|
 | 100 | `data/ble` `ScanResultReceiver` | Background scan results |
+| notification id | `AndroidNotifier` | Each notification's tap (opens the app) |
+| 2,500,000 + bike id | `AndroidNotifier` → `SnoozeReceiver` | "Snooze until tomorrow" on the pre-ride nudge |

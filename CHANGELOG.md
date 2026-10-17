@@ -15,6 +15,10 @@ All notable changes to Cassette are documented here. The format follows
   with year-long retention and daily down-sampling, and alert state.
 - `scripts/ktfmt`: the ktfmt CLI, the only formatter (CI and the pre-push hook), covering build-logic.
   Google style: 2-space indents.
+- Notifications: battery alerts when a component drops to low or charge now (once per change), a
+  heads-up pre-ride nudge when the bike wakes with something already low (at most every 12 hours,
+  "Snooze until tomorrow"), and not-seen reminders at 14 and 30 days, each with its switch in Settings.
+  Diagnostics can simulate a low battery to test them.
 - Quick Settings tile: the default bike's weakest status (icon and words, since Android draws the
   tile); tapping runs the 60-second refresh with a countdown, which keeps going after the shade closes.
 - Home-screen widgets (Glance): a bike widget that adapts to its size (status block; a bar per

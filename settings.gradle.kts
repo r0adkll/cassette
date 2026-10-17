@@ -31,6 +31,10 @@ include(":data:ble")
 
 include(":data:db")
 
+include(":features:alerts:api")
+
+include(":features:alerts:impl")
+
 include(":features:bikes:api")
 
 include(":features:capture:api")

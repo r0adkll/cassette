@@ -1,0 +1,7 @@
+-- v2 -> v3: per-bike notification bookkeeping.
+CREATE TABLE bike_alert (
+    bike_id INTEGER PRIMARY KEY REFERENCES bike(id) ON DELETE CASCADE,
+    pre_ride_not_before INTEGER,
+    reminded_days INTEGER NOT NULL DEFAULT 0,
+    reminded_for_seen_at INTEGER
+);

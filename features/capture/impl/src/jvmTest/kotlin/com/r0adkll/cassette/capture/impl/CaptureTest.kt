@@ -41,6 +41,7 @@ class CaptureTest {
     }
   private val gatt = FakeGatt()
   private val captureLog = InMemoryCaptureLog()
+  private val alerts = RecordingAlerts()
   private val recorder = CaptureRecorder(db, dispatchers)
   private val refresher = BatteryRefresher(recorder, gatt, db, captureLog, clock)
 
@@ -178,6 +179,7 @@ class CaptureTest {
         db,
         InMemorySettings(),
         captureLog,
+        alerts,
         clock,
       )
 
@@ -202,6 +204,7 @@ class CaptureTest {
         db,
         InMemorySettings(),
         captureLog,
+        alerts,
         clock,
       )
     controller.ensureBackgroundCapture("test")
@@ -210,6 +213,30 @@ class CaptureTest {
     bikeWithHub()
     controller.ensureBackgroundCapture("test")
     assertNotNull(scanner.armed)
+  }
+
+  @Test
+  fun backgroundWakesTellAlertsWhichBikesWoke() = runTest {
+    val bike = bikeWithHub()
+    db.bikeQueries.markSeen((now - kotlin.time.Duration.parse("2h")).toEpochMilliseconds(), bike)
+    val controller =
+      DefaultCaptureController(
+        FakeScanner(),
+        recorder,
+        refresher,
+        db,
+        InMemorySettings(),
+        captureLog,
+        alerts,
+        clock,
+      )
+
+    controller.onBackgroundDelivery(listOf(rdStatus()))
+    now += kotlin.time.Duration.parse("1m")
+    controller.onBackgroundDelivery(listOf(rdStatus(at = now)))
+
+    val id = com.r0adkll.cassette.core.BikeId(bike)
+    assertEquals(listOf(setOf(id) to setOf(id), setOf(id) to emptySet()), alerts.captured)
   }
 
   private fun bikeWithHub(): Long {
@@ -274,7 +301,16 @@ class CaptureTest {
     val scanner = FakeScanner()
     val settings = InMemorySettings()
     val controller =
-      DefaultCaptureController(scanner, recorder, refresher, db, settings, captureLog, clock)
+      DefaultCaptureController(
+        scanner,
+        recorder,
+        refresher,
+        db,
+        settings,
+        captureLog,
+        alerts,
+        clock,
+      )
 
     settings.setScanProfile(com.r0adkll.cassette.data.ble.ScanProfile.Batched30s)
     controller.ensureBackgroundCapture("test")

@@ -55,3 +55,23 @@ val BatteryStatus.severity: Int
       BatteryStatus.OK -> 1
       BatteryStatus.UNKNOWN -> 0
     }
+
+/**
+ * How a reading is written everywhere (app, widgets, tile, notifications): "78%", "≈97%" for a pack
+ * estimate (decision 0003), or "2.91 V" for a coin cell.
+ */
+fun BatteryReading.valueText(): String {
+  val percent = displayPercent
+  return when {
+    percent != null && isEstimate -> "≈$percent%"
+    percent != null -> "$percent%"
+    millivolts != null -> "${volts(millivolts)} V"
+    else -> "—"
+  }
+}
+
+/** Millivolts as volts with two decimals: 2910 → "2.91". */
+fun volts(millivolts: Int): String {
+  val hundredths = kotlin.math.round(millivolts / 10.0).toInt()
+  return "${hundredths / 100}.${(hundredths % 100).toString().padStart(2, '0')}"
+}

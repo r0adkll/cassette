@@ -24,6 +24,8 @@ ANDROID_ICONS = {
     ROOT / "surfaces/tile/src/main/res/drawable": [
         "circle-check", "battery-low", "battery-warning", "history", "circle-help", "refresh-cw", "bike",
     ],
+    # Notification small icon.
+    ROOT / "features/alerts/impl/src/androidMain/res/drawable": ["battery-medium"],
 }
 
 
