@@ -14,7 +14,8 @@ ported. Don't build new features on the POC.
 
 - `./gradlew :app:android:assembleDebug`: the app (currently the design-system gallery).
 - `./gradlew :common:compose:jvmTest`: renders the gallery to `common/compose/build/gallery/*.png` in every
-  status state, light and dark. Use it to check UI changes without a device.
+  status state, light and dark. Feature UI modules render their screens to `build/screens/` the same way
+  (e.g. `:features:bikes:ui:jvmTest`). Use them to check UI without a device; CI uploads both.
 - `scripts/ktfmt` checks formatting in under a second (`--format` fixes it), build-logic included; CI
   and the pre-push hook (`./gradlew bootstrap`) use it. `./gradlew ktfmtFormat` still works but skips
   build-logic.

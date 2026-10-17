@@ -5,12 +5,7 @@ import com.r0adkll.cassette.capture.api.RefreshProgress
 import com.r0adkll.cassette.core.BikeType
 import com.r0adkll.cassette.core.CassetteDispatchers
 import com.r0adkll.cassette.core.ReadMethod
-import com.r0adkll.cassette.data.ble.AdvertScanner
-import com.r0adkll.cassette.data.ble.ArmResult
 import com.r0adkll.cassette.data.ble.BATTERY_LEVEL_CHARACTERISTIC
-import com.r0adkll.cassette.data.ble.GattClient
-import com.r0adkll.cassette.data.ble.GattResult
-import com.r0adkll.cassette.data.ble.ScanProfile
 import com.r0adkll.cassette.data.db.CassetteDatabase
 import com.r0adkll.cassette.data.db.createInMemoryDriver
 import com.r0adkll.cassette.data.db.toDomain
@@ -28,12 +23,9 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.time.Clock
-import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.runTest
 
 class CaptureTest {
@@ -58,9 +50,9 @@ class CaptureTest {
 
         val heard = recorder.record(listOf(rdStatus(), stranger()))
 
-        assertEquals(listOf(HUB.toString()), heard.map { it.component.key })
-        val rd = db.componentQueries.selectByKey(HUB.toString()).executeAsOne()
-        assertEquals(RD_ADDRESS, rd.address)
+        assertEquals(listOf(Fixtures.HUB.toString()), heard.map { it.component.key })
+        val rd = db.componentQueries.selectByKey(Fixtures.HUB.toString()).executeAsOne()
+        assertEquals(Fixtures.RD_ADDRESS, rd.address)
         val sample = db.batterySampleQueries.latestForComponent(rd.id).executeAsOne().toDomain()
         assertEquals(78, sample.percent)
         assertEquals(ReadMethod.Advert, sample.method)
@@ -77,7 +69,7 @@ class CaptureTest {
 
         val heard = recorder.record(listOf(rdStatus(serial = null, at = now + 1.minutes)))
 
-        assertEquals(HUB.toString(), heard.single().component.key)
+        assertEquals(Fixtures.HUB.toString(), heard.single().component.key)
     }
 
     @Test
@@ -85,8 +77,8 @@ class CaptureTest {
         bikeWithHub()
         gatt.values =
             mapOf(
-                SystemBatteryTable.CHARACTERISTIC to RED_TABLE,
-                SystemBatteryTable.VERSIONS_CHARACTERISTIC to RED_VERSIONS,
+                SystemBatteryTable.CHARACTERISTIC to Fixtures.RED_TABLE,
+                SystemBatteryTable.VERSIONS_CHARACTERISTIC to Fixtures.RED_VERSIONS,
             )
 
         val outcome = refresher.refresh(recorder.record(listOf(rdStatus())), CaptureMode.Live)
@@ -119,7 +111,7 @@ class CaptureTest {
     @Test
     fun hubIsNotReadAgainUntilItIsDue() = runTest {
         bikeWithHub()
-        gatt.values = mapOf(SystemBatteryTable.CHARACTERISTIC to RED_TABLE)
+        gatt.values = mapOf(SystemBatteryTable.CHARACTERISTIC to Fixtures.RED_TABLE)
         refresher.refresh(recorder.record(listOf(rdStatus())), CaptureMode.Background)
 
         now += 5.minutes
@@ -168,7 +160,7 @@ class CaptureTest {
     @Test
     fun refreshEndsOnceEverythingIsRead() = runTest {
         bikeWithHub()
-        gatt.values = mapOf(SystemBatteryTable.CHARACTERISTIC to RED_TABLE)
+        gatt.values = mapOf(SystemBatteryTable.CHARACTERISTIC to Fixtures.RED_TABLE)
         val scanner = FakeScanner()
         val controller = DefaultCaptureController(scanner, recorder, refresher, db, clock)
 
@@ -195,12 +187,12 @@ class CaptureTest {
     }
 
     private fun bikeWithHub(): Long {
-        db.bikeQueries.insert("Road bike", BikeType.Road.name, null, HUB, 0, null)
+        db.bikeQueries.insert("Road bike", BikeType.Road.name, null, Fixtures.HUB, 0, null)
         val bike = db.bikeQueries.lastInsertedId().executeAsOne()
         db.componentQueries.insert(
             bike,
-            HUB.toString(),
-            HUB,
+            Fixtures.HUB.toString(),
+            Fixtures.HUB,
             ComponentKind.REAR_DERAILLEUR.name,
             1066,
             0x81,
@@ -212,11 +204,11 @@ class CaptureTest {
         return bike
     }
 
-    private fun rdStatus(serial: Long? = HUB, at: Instant = now) =
+    private fun rdStatus(serial: Long? = Fixtures.HUB, at: Instant = now) =
         AxsReading(
-            key = serial?.toString() ?: RD_ADDRESS,
+            key = serial?.toString() ?: Fixtures.RD_ADDRESS,
             serial = serial,
-            address = RD_ADDRESS,
+            address = Fixtures.RD_ADDRESS,
             name = null,
             rssi = -60,
             timestampMillis = at.toEpochMilliseconds(),
@@ -250,62 +242,4 @@ class CaptureTest {
             serviceDataHex = null,
             modelId = 7,
         )
-
-    private class FakeGatt : GattClient {
-        var values: Map<String, ByteArray> = emptyMap()
-        var fail = false
-        var reads = 0
-        override val isReady = true
-
-        override suspend fun read(
-            address: String,
-            characteristics: List<String>,
-            timeout: Duration,
-        ): GattResult {
-            reads++
-            return if (fail) GattResult.Failed
-            else GattResult.Values(values.filterKeys { it in characteristics }, emptyList())
-        }
-    }
-
-    private class FakeScanner : AdvertScanner {
-        val adverts = MutableSharedFlow<AxsReading>(replay = 10)
-        var armed: ScanProfile? = null
-        override val isReady = true
-
-        override fun live(): Flow<AxsReading> = adverts
-
-        override fun startBackground(profile: ScanProfile): ArmResult {
-            armed = profile
-            return ArmResult.Armed
-        }
-
-        override fun stopBackground() {
-            armed = null
-        }
-    }
-
-    private companion object {
-        const val HUB = 1405188718L
-        const val RD_ADDRESS = "AA:BB:CC:DD:EE:01"
-
-        /** A real read of the hub's battery table (see SystemBatteryTableTest). */
-        val RED_TABLE =
-            bytes(
-                "01 04 6e 7a c1 53 80 ea 03 cb 66 63 4e 03 97 1f 00 00 00 00 00 00 " +
-                    "00 00 00 00 d0 07 00 00 01 ec 03 f2 fe 7a 43 03 78 0b 00 00 00 00 " +
-                    "00 00 00 00 00 00 00 00 00 00 00 ed 03 31 2e 7b 43 03 82 0b 00 00 " +
-                    "00 00 00 00 00 00 00 00 00 00 00 00 81 2a 04 6e 7a c1 53 03 cc 1e " +
-                    "00 00 00 00 00 00 d2 42 ed f3 24 30 00 00"
-            )
-        val RED_VERSIONS =
-            bytes(
-                "02 04 6e 7a c1 53 81 2a 04 6e 7a c1 53 00 08 37 02 4c 01 04 01 01 " +
-                    "80 ea 03 cb 66 63 4e 00 03 07 02 00 00 00 00 00 01 ec 03 f2 fe 7a " +
-                    "43 00 03 07 02 00 00 00 00 ff 00 ed 03 31 2e 7b 43 00 03 07 02 00 " +
-                    "00 00 00 ff"
-            )
-
-        fun bytes(hex: String) = hex.split(" ").map { it.toInt(16).toByte() }.toByteArray()
-    }
 }

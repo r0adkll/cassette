@@ -3,6 +3,7 @@ package com.r0adkll.cassette.bikes.ui
 import com.r0adkll.cassette.bikes.api.BikeOverview
 import com.r0adkll.cassette.bikes.api.ComponentWithReading
 import com.r0adkll.cassette.common.compose.theme.StatusTone
+import com.r0adkll.cassette.core.BatteryReading
 import com.r0adkll.cassette.core.ReadMethod
 import com.r0adkll.cassette.core.displayPercent
 import com.r0adkll.cassette.core.isEstimate
@@ -115,16 +116,18 @@ private val ComponentWithReading.name: String
 
 /** Decision 0003: reported first, estimates marked, coin cells in volts. */
 internal val ComponentWithReading.value: String
-    get() {
-        val reading = latest ?: return "—"
-        val percent = reading.displayPercent
-        return when {
-            percent != null && reading.isEstimate -> "≈$percent%"
-            percent != null -> "$percent%"
-            reading.millivolts != null -> "${volts(reading.millivolts!!)} V"
-            else -> "—"
-        }
+    get() = latest?.valueText() ?: "—"
+
+/** "78%", "≈97%" for a pack estimate, or "2.91 V" for a coin cell. */
+internal fun BatteryReading.valueText(): String {
+    val percent = displayPercent
+    return when {
+        percent != null && isEstimate -> "≈$percent%"
+        percent != null -> "$percent%"
+        millivolts != null -> "${volts(millivolts!!)} V"
+        else -> "—"
     }
+}
 
 private val ComponentWithReading.source: String
     get() {
@@ -139,7 +142,7 @@ private val ComponentWithReading.source: String
         }
     }
 
-private val BatteryStatus.tone: StatusTone
+internal val BatteryStatus.tone: StatusTone
     get() =
         when (this) {
             BatteryStatus.OK -> StatusTone.Good
