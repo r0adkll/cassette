@@ -75,6 +75,33 @@ class DatabaseBikeRepositoryTest {
   }
 
   @Test
+  fun componentsAreListedInBikeOrderNotInTheOrderTheyWereFound() = runTest {
+    val dispatcher = StandardTestDispatcher(testScheduler)
+    val dispatchers = CassetteDispatchers(dispatcher, dispatcher, dispatcher)
+    // As add bike saved the validation bike: power meter first, rear derailleur last.
+    db.bikeQueries.insert("Kish Ti", "Road", null, 1405188718, 0, 0)
+    val bike = db.bikeQueries.lastInsertedId().executeAsOne()
+    listOf("POWER_METER", "FRONT_DERAILLEUR", "RIGHT_SHIFTER", "LEFT_SHIFTER", "REAR_DERAILLEUR")
+      .forEachIndexed { i, kind ->
+        db.componentQueries.insert(bike, "k$i", null, kind, null, null, null, null, 0, 0)
+      }
+
+    DatabaseBikeRepository(db, dispatchers, InMemorySettings()).observeOverview(null).test {
+      assertEquals(
+        listOf(
+          ComponentKind.REAR_DERAILLEUR,
+          ComponentKind.FRONT_DERAILLEUR,
+          ComponentKind.LEFT_SHIFTER,
+          ComponentKind.RIGHT_SHIFTER,
+          ComponentKind.POWER_METER,
+        ),
+        awaitItem()!!.components.map { it.component.kind },
+      )
+      cancelAndIgnoreRemainingEvents()
+    }
+  }
+
+  @Test
   fun componentDetailWithHistory() = runTest {
     val dispatcher = StandardTestDispatcher(testScheduler)
     val dispatchers = CassetteDispatchers(dispatcher, dispatcher, dispatcher)
