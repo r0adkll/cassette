@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.r0adkll.cassette.common.compose.components.IconCircleButton
 import com.r0adkll.cassette.common.compose.components.SettingsRow
 import com.r0adkll.cassette.common.compose.components.SettingsSection
-import com.r0adkll.cassette.common.compose.components.Toggle
+import com.r0adkll.cassette.common.compose.components.SettingsSwitchRow
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.screens.LicencesScreen
@@ -89,15 +89,14 @@ fun SettingsUi(state: SettingsUiState, modifier: Modifier = Modifier) {
       }
     }
     SettingsSection("Capture") {
-      SettingsRow(
+      SettingsSwitchRow(
         "Background capture",
         subtitle =
           if (state.backgroundCapture) "On · reads the bike when it wakes"
           else "Off · only Refresh reads the bike",
         icon = LucideIcons.Bluetooth,
-        trailing = {
-          Toggle(state.backgroundCapture, { sink(SettingsEvent.SetBackgroundCapture(it)) })
-        },
+        checked = state.backgroundCapture,
+        onCheckedChange = { sink(SettingsEvent.SetBackgroundCapture(it)) },
       )
       SettingsRow(
         "Refresh scan length",
@@ -109,36 +108,27 @@ fun SettingsUi(state: SettingsUiState, modifier: Modifier = Modifier) {
     }
     SettingsSection("Notifications") {
       val n = state.notifications
-      SettingsRow(
+      SettingsSwitchRow(
         "Battery alerts",
         subtitle = "When a component gets low or needs charging",
         icon = LucideIcons.Bell,
-        trailing = {
-          Toggle(
-            n.batteryAlerts,
-            { sink(SettingsEvent.SetNotifications(n.copy(batteryAlerts = it))) },
-          )
-        },
+        checked = n.batteryAlerts,
+        onCheckedChange = { sink(SettingsEvent.SetNotifications(n.copy(batteryAlerts = it))) },
       )
-      SettingsRow(
+      SettingsSwitchRow(
         "Pre-ride nudge",
         subtitle = "At most every 12 hours",
         icon = LucideIcons.BellRing,
-        trailing = {
-          Toggle(n.preRide, { sink(SettingsEvent.SetNotifications(n.copy(preRide = it))) })
-        },
+        checked = n.preRide,
+        onCheckedChange = { sink(SettingsEvent.SetNotifications(n.copy(preRide = it))) },
       )
-      SettingsRow(
+      SettingsSwitchRow(
         "Not-seen reminders",
         subtitle = "14 and 30 days",
         icon = LucideIcons.History,
         divider = false,
-        trailing = {
-          Toggle(
-            n.notSeenReminders,
-            { sink(SettingsEvent.SetNotifications(n.copy(notSeenReminders = it))) },
-          )
-        },
+        checked = n.notSeenReminders,
+        onCheckedChange = { sink(SettingsEvent.SetNotifications(n.copy(notSeenReminders = it))) },
       )
     }
     SettingsSection("More") {

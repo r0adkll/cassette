@@ -53,7 +53,10 @@ fun BikeUi(state: BikeUiState, modifier: Modifier = Modifier) {
         .padding(vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-      TopBar(onSettings = { state.eventSink(BikeEvent.OpenSettings) })
+      TopBar(
+        onAddBike = { state.eventSink(BikeEvent.AddBike) }.takeIf { state is BikeUiState.Loaded },
+        onSettings = { state.eventSink(BikeEvent.OpenSettings) },
+      )
       when (state) {
         is BikeUiState.Loading -> Unit
         is BikeUiState.Empty -> EmptyBike(state.eventSink)
@@ -64,9 +67,15 @@ fun BikeUi(state: BikeUiState, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun TopBar(onSettings: () -> Unit) {
-  Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.CenterVertically) {
+private fun TopBar(onAddBike: (() -> Unit)?, onSettings: () -> Unit) {
+  Row(
+    Modifier.padding(horizontal = 20.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+  ) {
     Kicker("Cassette", Modifier.weight(1f))
+    // The empty state has its own Add bike button.
+    if (onAddBike != null) IconCircleButton(LucideIcons.BikePlus, "Add bike", onClick = onAddBike)
     IconCircleButton(LucideIcons.Settings, "Settings", onClick = onSettings)
   }
 }
@@ -82,14 +91,16 @@ private fun LoadedBike(state: BikeUiState.Loaded) {
       color = colors.text,
       modifier = Modifier.weight(1f),
     )
-    Row(Modifier.padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-      Kicker(state.position)
-      Icon(
-        LucideIcons.ChevronDown,
-        null,
-        tint = colors.muted,
-        modifier = Modifier.size(14.dp),
-      )
+    state.position?.let { position ->
+      Row(Modifier.padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        Kicker(position)
+        Icon(
+          LucideIcons.ChevronDown,
+          null,
+          tint = colors.muted,
+          modifier = Modifier.size(14.dp),
+        )
+      }
     }
   }
   StatusBlock(state.status.headline, state.status.tone) {

@@ -8,11 +8,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import com.r0adkll.cassette.common.compose.LocalPermissionController
@@ -65,7 +65,15 @@ class MainActivity : ComponentActivity() {
                     screens.drop(1).forEach(navigator::goTo)
                   }
                 }
-                NavigableCircuitContent(navigator, backStack, Modifier.safeDrawingPadding())
+                val background = CassetteTheme.colors.background
+                NavigableCircuitContent(
+                  navigator,
+                  backStack,
+                  decoration =
+                    remember(background) {
+                      OpaqueScreens(circuit.defaultNavDecoration, background)
+                    },
+                )
               }
             }
           }

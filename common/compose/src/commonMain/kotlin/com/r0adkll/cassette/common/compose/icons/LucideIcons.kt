@@ -329,6 +329,18 @@ object LucideIcons {
       stroke("m6 6 12 12")
     }
   }
+
+  /** Cassette's `bike-plus`: Lucide `bike` plus a +. */
+  val BikePlus: ImageVector by lazy {
+    lucide("BikePlus") {
+      stroke("M15.0 17.5a3.5 3.5 0 1 0 7.0 0a3.5 3.5 0 1 0 -7.0 0Z")
+      stroke("M2.0 17.5a3.5 3.5 0 1 0 7.0 0a3.5 3.5 0 1 0 -7.0 0Z")
+      stroke("M14.0 5.0a1.0 1.0 0 1 0 2.0 0a1.0 1.0 0 1 0 -2.0 0Z")
+      stroke("M12 17.5V14l-3-3 4-3 2 3h2")
+      stroke("M5 2v6")
+      stroke("M2 5h6")
+    }
+  }
 }
 
 private class LucideBuilder(val builder: ImageVector.Builder) {
