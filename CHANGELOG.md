@@ -5,6 +5,11 @@ All notable changes to Cassette are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- In-app updates work again in the builds Drop ships: since the R8 `internal` build, they were switched
+  off because that build isn't debuggable.
+
 ### Changed
 
 - Builds uploaded to Drop are the R8-optimised `internal` build type (same app id, key and icon as the
