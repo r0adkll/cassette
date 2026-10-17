@@ -18,6 +18,7 @@ class TileViewTest {
     vararg rows: ComponentRowModel,
   ) =
     BikeUiState.Loaded(
+      1,
       "Road bike",
       "1 OF 1",
       BikeStatus(tone, headline, "summary", meta),

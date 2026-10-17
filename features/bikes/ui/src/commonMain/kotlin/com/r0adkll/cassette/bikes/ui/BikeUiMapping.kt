@@ -25,6 +25,7 @@ fun BikeOverview.toLoaded(now: Instant, eventSink: (BikeEvent) -> Unit = {}): Bi
   val stale = isStale(bike.lastSeenAt, now)
   val rows = components.map { it.toRow(stale) }
   return BikeUiState.Loaded(
+    bikeId = bike.id.value,
     name = bike.name,
     position = "1 OF $bikeCount",
     status = status(stale, now),

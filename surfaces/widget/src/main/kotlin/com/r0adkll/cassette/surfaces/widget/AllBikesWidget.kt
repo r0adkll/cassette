@@ -32,6 +32,7 @@ import androidx.glance.text.TextStyle
 import com.r0adkll.cassette.bikes.ui.BikeUiState
 import com.r0adkll.cassette.bikes.ui.toLoaded
 import com.r0adkll.cassette.common.compose.components.word
+import com.r0adkll.cassette.common.screens.DeepLinks
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -92,6 +93,7 @@ class AllBikesWidget : GlanceAppWidget() {
             GlanceModifier.fillMaxWidth()
               .padding(bottom = 6.dp)
               .height(54.dp)
+              .clickable(openLink(LocalContext.current, DeepLinks.bike(bike.bikeId)))
               .cornerRadius(18.dp)
               .background(
                 ColorProvider(

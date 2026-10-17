@@ -42,6 +42,8 @@ import com.r0adkll.cassette.bikes.ui.BikeUiState
 import com.r0adkll.cassette.bikes.ui.ComponentRowModel
 import com.r0adkll.cassette.bikes.ui.toLoaded
 import com.r0adkll.cassette.common.compose.components.word
+import com.r0adkll.cassette.common.screens.DeepLinks
+import com.r0adkll.cassette.common.screens.deepLinkIntent
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 
@@ -68,7 +70,8 @@ class BikeWidget : GlanceAppWidget() {
   @Composable
   private fun Content(state: BikeUiState.Loaded?) {
     val size = LocalSize.current
-    val open = launchApp(LocalContext.current)
+    val context = LocalContext.current
+    val open = state?.let { openLink(context, DeepLinks.bike(it.bikeId)) } ?: launchApp(context)
     val modifier =
       GlanceModifier.fillMaxSize()
         .cornerRadius(26.dp)
@@ -168,6 +171,7 @@ class BikeWidget : GlanceAppWidget() {
             GlanceModifier.defaultWeight()
               .fillMaxHeight()
               .padding(start = if (i > 0) GAP.dp else 0.dp)
+              .clickable(openLink(context, DeepLinks.component(state.bikeId, row.id)))
           ) {
             Image(
               ImageProvider(
@@ -227,7 +231,10 @@ class BikeWidget : GlanceAppWidget() {
       Column(GlanceModifier.fillMaxWidth().padding(top = 8.dp)) {
         state.components.take(MAX_ROWS).forEach { row ->
           Box(
-            GlanceModifier.fillMaxWidth().height(52.dp).padding(bottom = 6.dp),
+            GlanceModifier.fillMaxWidth()
+              .height(52.dp)
+              .padding(bottom = 6.dp)
+              .clickable(openLink(context, DeepLinks.component(state.bikeId, row.id))),
             contentAlignment = Alignment.CenterStart,
           ) {
             Image(
@@ -363,3 +370,7 @@ internal fun Context.isNight() =
 
 internal fun launchApp(context: Context) =
   actionStartActivity(context.packageManager.getLaunchIntentForPackage(context.packageName)!!)
+
+/** Opens a bike or component screen (decision 0010: the widget opens what it shows). */
+internal fun openLink(context: Context, link: String) =
+  actionStartActivity(context.deepLinkIntent(link))
