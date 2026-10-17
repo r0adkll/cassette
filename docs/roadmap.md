@@ -24,7 +24,7 @@ Wear app, tile and complications fed from the phone over the Data Layer
 3. The Wear tile.
 4. Complications.
 
-Still to do: check it all on a real watch paired to a phone, and ship the Wear APK through Drop.
+Checked on a real watch paired to a phone (2026-10-17). Still to do: ship the Wear APK through Drop.
 
 ## M3: iOS
 
