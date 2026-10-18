@@ -18,6 +18,9 @@ class WindowSizeTest {
   @Test
   fun anOpenFoldIsMedium() {
     assertEquals(WindowSize.Medium, WindowSize.of(790.dp, 820.dp))
+    // The Pixel 10 Pro Fold reports over 840 dp wide, either way up.
+    assertEquals(WindowSize.Medium, WindowSize.of(852.dp, 883.dp))
+    assertEquals(WindowSize.Medium, WindowSize.of(883.dp, 852.dp))
   }
 
   @Test
@@ -33,6 +36,7 @@ class WindowSizeTest {
   @Test
   fun breakpointsAreInclusive() {
     assertEquals(WindowSize.Medium, WindowSize.of(600.dp, 480.dp))
-    assertEquals(WindowSize.Expanded, WindowSize.of(840.dp, 480.dp))
+    assertEquals(WindowSize.Medium, WindowSize.of(999.dp, 480.dp))
+    assertEquals(WindowSize.Expanded, WindowSize.of(1000.dp, 480.dp))
   }
 }

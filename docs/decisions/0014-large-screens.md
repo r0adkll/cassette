@@ -16,12 +16,16 @@ Layouts follow the window, not the device, so split screen and resizing work.
 | Window | Example | Layout |
 |---|---|---|
 | Narrow (under 600 dp wide, or under 480 dp tall) | Phones, the Fold closed, phones in landscape | The phone layout, as today |
-| Medium (600 to 839 dp wide) | The Pixel 10 Pro Fold open (≈790 × 820 dp at default display size; to confirm on the device), tablets in portrait | Dashboard; the component sheet covers most of the screen |
-| Expanded (840 dp and wider) | Tablets; the iPhone foldable (rumoured 4:3, about iPad mini size) | A bike rail on the left, then the dashboard; a narrower sheet |
+| Medium (600 to 999 dp wide) | The Pixel 10 Pro Fold open (about 850 dp wide, either way up), tablets in portrait | Dashboard, bikes as chips in the top bar; the component sheet covers most of the screen |
+| Expanded (1000 dp and wider) | Tablets in landscape | A bike rail on the left, then the dashboard; a narrower sheet |
 
-Phones in landscape keep the phone layout: they are wide but too short for the dashboard. The Fold's dp
-size is computed from its 2076 × 2152 px panel at Pixel's usual density; check it with `adb shell wm size`
-and `wm density` before tuning.
+Phones in landscape keep the phone layout: they are wide but too short for the dashboard.
+
+Expanded starts at 1000 dp rather than Material's 840. The first build put the open Fold on the tablet
+layout: it reports just over 840 dp wide (its 2076 × 2152 px panel at its default density, not the 790 dp
+first estimated), and the 240 dp rail would leave its dashboard about 610 dp. Read the exact figure with
+`adb shell wm size` and `wm density` before tuning further. The iPhone foldable (rumoured 4:3, about iPad
+mini size) falls on whichever side its point size lands; M3 checks it.
 
 ## Bike screen: dashboard (iteration 10, C)
 
@@ -40,8 +44,8 @@ Tapping a tile slides the component screen in from the right as a sheet over the
 (to reach tiles it covers), then the component screen's content: status block with the value, stats,
 history chart and the link to raw data.
 
-- **Medium:** 600 of the open Fold's ≈790 dp, crossing the hinge. The strip of dashboard left showing is
-  dimmed; tapping it closes the sheet.
+- **Medium:** about three quarters of the width (iteration 10c drew 600 of 790 dp), crossing the hinge.
+  The strip of dashboard left showing is dimmed; tapping it closes the sheet.
 - **Expanded:** 480 dp, over the dashboard's right side, with the rail still in reach. No dimming: tapping
   another visible tile switches the sheet.
 - Narrow windows keep navigating to the component screen.

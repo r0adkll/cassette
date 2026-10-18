@@ -15,16 +15,23 @@ import androidx.compose.ui.unit.dp
 enum class WindowSize {
   /** Phones, a closed foldable, and phones in landscape (wide but too short): the phone layouts. */
   Narrow,
-  /** An open foldable such as the Pixel 10 Pro Fold: the dashboard and a wide component sheet. */
+  /**
+   * An open foldable such as the Pixel 10 Pro Fold (about 850 dp wide either way up), or a tablet
+   * in portrait: the dashboard and a wide component sheet.
+   */
   Medium,
-  /** Tablets: the bike rail, the dashboard and a narrower component sheet. */
+  /** Tablets in landscape: the bike rail, the dashboard and a narrower component sheet. */
   Expanded;
 
   companion object {
+    /**
+     * Expanded starts at 1000 dp, not Material's 840: the open Fold is just over 840, and the 240
+     * dp rail would leave its dashboard too little room.
+     */
     fun of(width: Dp, height: Dp): WindowSize =
       when {
         width < 600.dp || height < 480.dp -> Narrow
-        width < 840.dp -> Medium
+        width < 1000.dp -> Medium
         else -> Expanded
       }
   }

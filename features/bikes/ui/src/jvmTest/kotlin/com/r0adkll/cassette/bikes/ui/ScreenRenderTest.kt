@@ -223,7 +223,7 @@ class ScreenRenderTest {
   /** Window sizes in dp. The fold's is computed from its panel, not yet read off the device. */
   private enum class RenderSize(val width: Int, val height: Int) {
     Phone(412, 892),
-    Fold(790, 820),
+    Fold(852, 883),
     Tablet(1280, 800),
   }
 
