@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,9 +37,9 @@ import com.r0adkll.cassette.bikes.api.BikeRepository
 import com.r0adkll.cassette.bikes.summary.code
 import com.r0adkll.cassette.common.compose.LocalScreenLayout
 import com.r0adkll.cassette.common.compose.ScreenLayout
-import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.ChoiceChips
 import com.r0adkll.cassette.common.compose.components.CodeBadge
+import com.r0adkll.cassette.common.compose.components.DestructiveButton
 import com.r0adkll.cassette.common.compose.components.IconCircleButton
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.SettingsSection
@@ -57,6 +58,8 @@ import com.slack.circuit.runtime.Navigator
 import com.slack.circuit.runtime.presenter.Presenter
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
+import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 data class BikeSettingsUiState(
@@ -87,9 +90,12 @@ sealed interface BikeSettingsEvent : CircuitUiEvent {
 
   data class SetOpensFirst(val opensFirst: Boolean) : BikeSettingsEvent
 
-  /** First tap asks, second removes and goes back. */
+  /** First tap asks, second (within [RemoveTimeout]) removes and goes back. */
   data object Remove : BikeSettingsEvent
 }
+
+/** How long "Tap again to remove" waits for the second tap. */
+internal val RemoveTimeout = 5.seconds
 
 @CircuitInject(BikeSettingsScreen::class, AppScope::class)
 @Inject
@@ -107,6 +113,13 @@ class BikeSettingsPresenter(
     val overview by remember { bikes.observeOverview(id) }.collectAsRetainedState(null)
     val pinned by remember { settings.pinnedBike }.collectAsRetainedState(null)
     var confirmRemove by remember { mutableStateOf(false) }
+    // An unanswered "Tap again to remove" goes back to Remove bike.
+    LaunchedEffect(confirmRemove) {
+      if (confirmRemove) {
+        delay(RemoveTimeout)
+        confirmRemove = false
+      }
+    }
 
     val bike = overview?.bike
     val model = overview?.let { o ->
@@ -301,11 +314,11 @@ private fun Components(model: BikeSettingsModel) {
 @Composable
 private fun Remove(confirm: Boolean, sink: (BikeSettingsEvent) -> Unit) {
   Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-    CassetteButton(
+    DestructiveButton(
       if (confirm) "Tap again to remove" else "Remove bike",
       onClick = { sink(BikeSettingsEvent.Remove) },
-      primary = false,
-      icon = LucideIcons.X,
+      armed = confirm,
+      icon = LucideIcons.Trash,
     )
     Text(
       "Removes the bike and its history from this phone. Add it again by waking it.",

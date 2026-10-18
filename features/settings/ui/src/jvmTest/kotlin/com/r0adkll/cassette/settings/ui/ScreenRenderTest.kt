@@ -155,6 +155,10 @@ class ScreenRenderTest {
           BikeSettingsUi(BikeSettingsUiState(model, confirmRemove = false) {})
         }
       }
+      val armed = Shot("bike", RenderSize.Phone, state, UpdateStatus.UpToDate)
+      render("settings-bike-page-remove-${if (dark) "dark" else "light"}", dark, armed) {
+        BikeSettingsUi(BikeSettingsUiState(model, confirmRemove = true) {})
+      }
     }
   }
 

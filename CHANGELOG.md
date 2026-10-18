@@ -19,7 +19,9 @@ All notable changes to Cassette are documented here. The format follows
 - Settings' Bikes page is a garage: a card per bike with its components and status, an "Open the last
   bike seen" switch, and the bike that opens first marked. Each bike has its own page to rename it,
   change its type, make it open first, see its components and remove it; on an open foldable or a
-  tablet the bike's details sit on the left and its components on the right.
+  tablet the bike's details sit on the left and its components on the right. Remove bike is red with
+  a trash can; after the first tap it fills red and the can shakes until the second tap, or resets
+  after 5 seconds.
 - Settings' App updates page says what's waiting: the build, what's new, its size and when it was
   uploaded, the installed build, and one action (Install, or Reinstall with a warning that it clears
   the bikes). Up to date and couldn't-check states say when it last checked.

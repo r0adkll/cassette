@@ -126,6 +126,26 @@ class BikeSettingsTest {
     }
   }
 
+  @Test
+  fun anUnansweredRemoveResetsAfterTheTimeout() = runTest {
+    BikeSettingsPresenter(
+        BikeSettingsScreen(2),
+        FakeNavigator(BikeSettingsScreen(2)),
+        repository,
+        settings,
+      )
+      .test {
+        val loaded = awaitUntil { it.bike != null }
+        loaded.eventSink(BikeSettingsEvent.Remove)
+        awaitUntil { it.confirmRemove }
+        val armedAt = testScheduler.currentTime
+        awaitUntil { !it.confirmRemove }
+        assertEquals(RemoveTimeout.inWholeMilliseconds, testScheduler.currentTime - armedAt)
+        assertTrue(repository.deleted.isEmpty())
+        cancelAndIgnoreRemainingEvents()
+      }
+  }
+
   private suspend fun <T> ReceiveTurbine<T>.awaitUntil(until: (T) -> Boolean): T {
     while (true) {
       val state = awaitItem()

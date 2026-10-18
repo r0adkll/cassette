@@ -347,6 +347,17 @@ object LucideIcons {
     }
   }
 
+  /** Lucide `trash-2`. */
+  val Trash: ImageVector by lazy {
+    lucide("Trash") {
+      stroke("M3 6h18")
+      stroke("M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6")
+      stroke("M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2")
+      stroke("M10.0 11.0L10.0 17.0")
+      stroke("M14.0 11.0L14.0 17.0")
+    }
+  }
+
   /** Lucide `x`. */
   val X: ImageVector by lazy {
     lucide("X") {
