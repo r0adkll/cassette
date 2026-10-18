@@ -25,6 +25,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.r0adkll.cassette.common.compose.theme.CassetteRed
@@ -128,7 +130,8 @@ private fun CircleButton(icon: ImageVector, contentDescription: String, onClick:
 
 /**
  * An action that can't be undone ("REMOVE BIKE"), in the critical red: outlined at first, filled
- * while [armed] (waiting for the second tap), when its [icon] shakes every second or so.
+ * while [armed] (waiting for the second tap), when its [icon] shakes every second or so. The first
+ * tap ticks and the second buzzes.
  */
 @Composable
 fun DestructiveButton(
@@ -141,6 +144,7 @@ fun DestructiveButton(
   val colors = CassetteTheme.colors
   val shape = RoundedCornerShape(26.dp)
   val content = if (armed) Color.White else colors.critical
+  val haptics = LocalHapticFeedback.current
   val angle = remember { Animatable(0f) }
   LaunchedEffect(armed) {
     if (!armed) {
@@ -162,7 +166,13 @@ fun DestructiveButton(
           if (armed) Modifier.background(colors.critical)
           else Modifier.border(1.dp, colors.critical, shape)
         )
-        .clickable(role = Role.Button, onClick = onClick)
+        .clickable(role = Role.Button) {
+          // A tick to arm it, a firmer buzz when it goes.
+          haptics.performHapticFeedback(
+            if (armed) HapticFeedbackType.Confirm else HapticFeedbackType.ContextClick
+          )
+          onClick()
+        }
         .padding(horizontal = 22.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
