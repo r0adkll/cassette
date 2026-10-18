@@ -51,6 +51,8 @@ targets:
         # Local builds sit beside TestFlight's on the same phone.
         Debug:
           PRODUCT_BUNDLE_IDENTIFIER: com.r0adkll.cassette.debug
+    scheme:
+      testTargets: [CassetteUITests]
     preBuildScripts:
       - name: Build CassetteKit
         basedOnDependencyAnalysis: false
@@ -59,3 +61,15 @@ targets:
           [ -z "$JAVA_HOME" ] && export JAVA_HOME="$(/usr/libexec/java_home)"
           cd "$SRCROOT/../../.."
           ./gradlew :app:ios:embedAndSignAppleFrameworkForXcode
+  # Drives the app on a Simulator (scripts/ios-uitest), without touching the desktop.
+  CassetteUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies:
+      - target: Cassette
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.r0adkll.cassette.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Cassette

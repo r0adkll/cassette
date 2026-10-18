@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Runs the iOS UI tests (app/ios/Cassette/UITests) from a fresh install and exports each step's
+# screenshot to app/ios/Cassette/build/uitest-screens/. Nothing touches the desktop.
+#
+#   IOS_SIMULATOR=<udid> scripts/ios-uitest
+#
+# Simulators are shared with other sessions, so the UDID is required: use one you created.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+: "${IOS_SIMULATOR:?Set IOS_SIMULATOR to the UDID of a Simulator you created (xcrun simctl list devices)}"
+
+build=app/ios/Cassette/build
+result=$build/uitests.xcresult
+screens=$build/uitest-screens
+
+xcodegen generate --quiet --spec app/ios/Cassette/project.yml
+xcrun simctl bootstatus "$IOS_SIMULATOR" -b >/dev/null
+# A fresh install, so the test starts from the welcome screen.
+xcrun simctl uninstall "$IOS_SIMULATOR" com.r0adkll.cassette.debug || true
+
+rm -rf "$result" "$screens"
+status=0
+xcodebuild -project app/ios/Cassette/Cassette.xcodeproj -scheme Cassette -configuration Debug \
+  -destination "platform=iOS Simulator,id=$IOS_SIMULATOR" -derivedDataPath "$build" \
+  -resultBundlePath "$result" -quiet test || status=$?
+
+mkdir -p "$screens"
+xcrun xcresulttool export attachments --path "$result" --output-path "$screens" >/dev/null
+# Name each file after the step that took it.
+python3 -I - "$screens" <<'EOF'
+import json, os, sys
+out = sys.argv[1]
+for test in json.load(open(os.path.join(out, "manifest.json"))):
+    for a in test["attachments"]:
+        name = a["suggestedHumanReadableName"].split("_")[0]
+        os.rename(os.path.join(out, a["exportedFileName"]), os.path.join(out, name + ".png"))
+EOF
+echo "Screenshots: $screens"
+exit $status

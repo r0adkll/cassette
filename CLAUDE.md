@@ -37,6 +37,9 @@ ported. Don't build new features on the POC.
   scheme in Xcode or with `xcodebuild` (its build phase runs `:app:ios:embedAndSignAppleFrameworkForXcode`).
   Debug installs as `com.r0adkll.cassette.debug`. Bluetooth needs an iPhone; the Simulator shows the UI.
   `scripts/ios-run` does all of it on the Simulator (`--device` for a connected iPhone).
+  `IOS_SIMULATOR=<udid> scripts/ios-uitest` runs the XCUITest walk-through (first run to the sample
+  bike) from a fresh install and saves a screenshot per step to `app/ios/Cassette/build/uitest-screens/`.
+  Simulators are shared between sessions: create your own (`xcrun simctl create`) and pass its UDID.
   `./gradlew :app:ios:linkDebugFrameworkIosSimulatorArm64` checks the Kotlin half (and its Metro graph).
 - `scripts/ktfmt` checks formatting in under a second (`--format` fixes it), build-logic included. It is
   the only formatter: CI and the pre-push hook (`./gradlew bootstrap`) use it, and there is no Gradle
