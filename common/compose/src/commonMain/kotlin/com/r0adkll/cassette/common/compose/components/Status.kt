@@ -7,9 +7,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -109,9 +113,10 @@ fun StatusBlock(
 private val LocalBlockContainer = staticCompositionLocalOf { Color.Unspecified }
 
 /**
- * The dashboard's status block (decision 0014): [kicker], [title] with its icon and [content] on
- * the left, and [aside] (the meta line and Refresh) in a fixed column on the right. Like
- * [StatusBlock], callers make it bleed to the edges of its pane.
+ * The dashboard's status block (decision 0014): [kicker], [title] and [content] on the left, the
+ * status icon in the top-right corner (as on [StatusBlock]), and [aside] (the meta line and
+ * Refresh) at the bottom of a fixed column on the right. Like [StatusBlock], callers make it bleed
+ * to the edges of its pane.
  */
 @Composable
 fun WideStatusBlock(
@@ -127,44 +132,44 @@ fun WideStatusBlock(
   val colors = CassetteTheme.colors.block(tone)
   val outline = colors.outline
   val type = CassetteTheme.type
+  // Both columns take the taller one's height: the text sits at the bottom on the left, and the
+  // right column has the icon in the top corner and the aside at the bottom.
   Row(
     modifier =
       modifier
         .fillMaxWidth()
+        .height(IntrinsicSize.Min)
         .background(colors.container)
         .then(if (outline != null) Modifier.border(1.dp, outline) else Modifier)
         .padding(horizontal = horizontalPadding, vertical = 20.dp),
-    verticalAlignment = Alignment.Bottom,
     horizontalArrangement = Arrangement.spacedBy(24.dp),
   ) {
     CompositionLocalProvider(
       LocalBlockContent provides colors.content,
       LocalBlockContainer provides colors.container,
     ) {
-      Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+      Column(
+        Modifier.weight(1f).fillMaxHeight(),
+        verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.Bottom),
+      ) {
         if (kicker != null)
           Text(kicker.uppercase(), style = type.label, color = colors.content.copy(alpha = 0.85f))
-        Row(
-          verticalAlignment = Alignment.CenterVertically,
-          horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-          Text(
-            title,
-            style = type.display.copy(fontSize = type.display.fontSize * 1.07f),
-            color = colors.content,
-            modifier = Modifier.weight(1f, fill = false),
-          )
-          Icon(
-            tone.icon,
-            contentDescription = tone.word,
-            tint = colors.content,
-            modifier = Modifier.size(38.dp),
-          )
-        }
+        Text(
+          title,
+          style = type.display.copy(fontSize = type.display.fontSize * 1.07f),
+          color = colors.content,
+        )
         content()
       }
-      Column(Modifier.width(asideWidth), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        aside()
+      Column(Modifier.width(asideWidth).fillMaxHeight()) {
+        Icon(
+          tone.icon,
+          contentDescription = tone.word,
+          tint = colors.content,
+          modifier = Modifier.align(Alignment.End).size(34.dp),
+        )
+        Spacer(Modifier.weight(1f).heightIn(min = 16.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { aside() }
       }
     }
   }
