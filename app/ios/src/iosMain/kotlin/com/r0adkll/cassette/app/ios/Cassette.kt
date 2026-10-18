@@ -52,6 +52,7 @@ object Cassette {
    */
   fun didFinishLaunching() {
     graph.central.start()
+    IosReminders({ graph.alerts }, scope).register()
     IosNotifier.registerCategories()
     UNUserNotificationCenter.currentNotificationCenter().delegate = notifications
   }

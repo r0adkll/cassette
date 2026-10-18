@@ -30,6 +30,8 @@ class IosAdvertScanner(private val central: IosCentral) : AdvertScanner {
   override fun startBackground(profile: ScanProfile): ArmResult = central.arm()
 
   override fun stopBackground() = central.disarm()
+
+  override fun describe(profile: ScanProfile) = "FE51, restorable"
 }
 
 /** Short, read-only GATT sessions by peripheral identifier. */

@@ -28,7 +28,9 @@ targets:
       properties:
         CFBundleDisplayName: Cassette
         UILaunchScreen: {}
-        UIBackgroundModes: [bluetooth-central]
+        # fetch: the daily not-seen reminders run as a background app refresh.
+        UIBackgroundModes: [bluetooth-central, fetch]
+        BGTaskSchedulerPermittedIdentifiers: [com.r0adkll.cassette.reminders]
         NSBluetoothAlwaysUsageDescription: >-
           Cassette listens for your bike's SRAM AXS components to read their batteries. It never
           changes their settings.
@@ -45,12 +47,15 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.r0adkll.cassette
+        # Drawn from the Android icon by scripts/generate-ios-icon.py.
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         FRAMEWORK_SEARCH_PATHS: $(SRCROOT)/../build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
         OTHER_LDFLAGS: [$(inherited), -framework, CassetteKit, -lsqlite3]
       configs:
         # Local builds sit beside TestFlight's on the same phone.
         Debug:
           PRODUCT_BUNDLE_IDENTIFIER: com.r0adkll.cassette.debug
+          ASSETCATALOG_COMPILER_APPICON_NAME: AppIconDebug
     scheme:
       testTargets: [CassetteUITests]
     preBuildScripts:
