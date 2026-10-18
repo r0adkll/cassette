@@ -12,12 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -26,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
 import com.r0adkll.cassette.common.compose.LocalScreenLayout
@@ -200,7 +199,7 @@ internal fun WideSettings(
           // Lines the title up with the list's, which sits under its back button.
           Spacer(Modifier.height(44.dp))
           Text(selected.title(), style = CassetteTheme.type.title, color = colors.text)
-          CategoryBody(selected, state)
+          CategoryBody(selected, state, wide = true, gutter = 32.dp)
         }
       }
     }
@@ -215,39 +214,23 @@ private fun DiagnosticsPane() {
   NavigableCircuitContent(navigator, backStack)
 }
 
-/** A category's sentence on what it covers, then its rows. Shared by the phone and the pane. */
+/**
+ * A category's sentence on what it covers, then its rows. Shared by the phone and the pane; [wide]
+ * lays the garage out two across and puts Install inside the update hero.
+ */
 @Composable
-private fun ColumnScope.CategoryBody(category: SettingsCategory, state: SettingsUiState) {
+private fun ColumnScope.CategoryBody(
+  category: SettingsCategory,
+  state: SettingsUiState,
+  wide: Boolean = false,
+  gutter: Dp = 20.dp,
+) {
   val sink = state.eventSink
   val colors = CassetteTheme.colors
   category.blurb()?.let { Text(it, style = CassetteTheme.type.body, color = colors.muted) }
   when (category) {
-    SettingsCategory.Bikes ->
-      Panel {
-        SettingsRow(
-          "Default bike",
-          subtitle = state.defaultBikeLabel,
-          icon = LucideIcons.Pin,
-          onClick = { sink(SettingsEvent.ChooseBike) },
-          divider = state.choosingBike,
-        )
-        if (state.choosingBike) {
-          SettingsRow(
-            "Most recently seen",
-            onClick = { sink(SettingsEvent.PinBike(null)) },
-            divider = state.bikes.isNotEmpty(),
-            trailing = { if (state.pinned == null) Check() },
-          )
-          state.bikes.forEachIndexed { i, bike ->
-            SettingsRow(
-              bike.name,
-              onClick = { sink(SettingsEvent.PinBike(bike.id)) },
-              divider = i < state.bikes.lastIndex,
-              trailing = { if (state.pinned == bike.id) Check() },
-            )
-          }
-        }
-      }
+    SettingsCategory.Bikes -> Garage(state, columns = if (wide) 2 else 1)
+    SettingsCategory.Updates -> UpdatesBody(wide, gutter)
     SettingsCategory.Capture ->
       Panel {
         SettingsSwitchRow(
@@ -295,7 +278,6 @@ private fun ColumnScope.CategoryBody(category: SettingsCategory, state: Settings
           },
         )
       }
-    SettingsCategory.Updates -> Panel { AppUpdatesRow(divider = false) }
     SettingsCategory.Licences -> LicencesList()
     // Opens as its own screen on a phone, and in the pane on a wide window.
     SettingsCategory.Diagnostics -> Unit
@@ -312,7 +294,7 @@ private data class CategoryInfo(
 
 private fun SettingsUiState.info(category: SettingsCategory, update: UpdateStatus): CategoryInfo =
   when (category) {
-    SettingsCategory.Bikes -> CategoryInfo(LucideIcons.Pin, "Bikes", defaultBikeLabel)
+    SettingsCategory.Bikes -> CategoryInfo(LucideIcons.Pin, "Bikes", opensFirstLabel)
     SettingsCategory.Capture ->
       CategoryInfo(
         LucideIcons.Bluetooth,
@@ -354,14 +336,15 @@ private fun SettingsCategory.title(): String =
 
 private fun SettingsCategory.blurb(): String? =
   when (this) {
-    SettingsCategory.Bikes -> "Which bike opens first. The widgets and the tile follow it."
+    SettingsCategory.Bikes -> null
     SettingsCategory.Capture ->
       "How Cassette hears your bike: in the background whenever it wakes, and for a while " +
         "after you tap Refresh."
     SettingsCategory.Notifications ->
       "One switch for each kind of notification. Android's notification settings can still " +
         "turn one off."
-    SettingsCategory.Updates -> "New builds of Cassette, from Drop."
+    // The update hero says it all.
+    SettingsCategory.Updates -> null
     SettingsCategory.Licences -> "Third-party fonts and icons Cassette ships."
     SettingsCategory.Diagnostics -> null
   }
@@ -370,9 +353,11 @@ private fun UpdateStatus.summary(): String =
   when (this) {
     UpdateStatus.Off -> ""
     UpdateStatus.Checking -> "Checking…"
-    UpdateStatus.UpToDate -> "Up to date · tap to check"
-    is UpdateStatus.Available -> "New build: $headline"
-    is UpdateStatus.Failed -> "Couldn't check: $message"
+    UpdateStatus.UpToDate -> "Up to date"
+    is UpdateStatus.Available ->
+      if (build.reinstall != null) "Build ${build.number} needs a reinstall"
+      else "Build ${build.number} is ready"
+    is UpdateStatus.Failed -> "Couldn't check"
   }
 
 @Composable
@@ -384,11 +369,6 @@ private fun Footnote(modifier: Modifier = Modifier) {
     textAlign = TextAlign.Center,
     modifier = modifier,
   )
-}
-
-@Composable
-private fun Check() {
-  Icon(LucideIcons.Check, null, tint = CassetteTheme.colors.text, modifier = Modifier.size(18.dp))
 }
 
 data class LicencesUiState(val onBack: () -> Unit) : CircuitUiState
@@ -434,20 +414,3 @@ private val LICENCES =
       "Copyright Lucide Contributors 2022; portions Copyright Cole Bemis 2013–2022 (Feather, MIT)",
     ),
   )
-
-/** Only on builds that update themselves (Drop's): what's waiting, and the way to it. */
-@Composable
-private fun AppUpdatesRow(divider: Boolean = true) {
-  val updates = LocalAppUpdates.current
-  val status by updates.status.collectAsState()
-  if (status == UpdateStatus.Off) return
-  val available = status is UpdateStatus.Available
-  SettingsRow(
-    "App updates",
-    subtitle = status.summary(),
-    icon = LucideIcons.Download,
-    onClick = if (available) updates::open else updates::check,
-    divider = divider,
-    trailing = { if (available) WaitingDot() else Chevron() },
-  )
-}

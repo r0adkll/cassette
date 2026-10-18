@@ -33,7 +33,6 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -64,10 +63,7 @@ class BikePresenter(
 
     // Every bike with its status, for the rail and the chips on large screens (decision 0014).
     val bikes by remember {
-      repository.observeBikes().flatMapLatest { list ->
-        if (list.isEmpty()) flowOf(emptyList())
-        else combine(list.map { repository.observeOverview(it.id) }) { it.filterNotNull() }
-      }
+      repository.observeOverviews()
     }
       .collectAsRetainedState(initial = emptyList())
 

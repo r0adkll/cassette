@@ -6,9 +6,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.r0adkll.cassette.common.compose.AppUpdates
+import com.r0adkll.cassette.common.compose.AvailableBuild
+import com.r0adkll.cassette.common.compose.ReinstallReason
 import com.r0adkll.cassette.common.compose.UpdateStatus
 import com.r0adkll.drop.Drop
+import com.r0adkll.drop.ReinstallReason as DropReinstallReason
+import com.r0adkll.drop.Update
 import com.r0adkll.drop.UpdateCheckResult
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,8 +29,13 @@ class DropAppUpdates(
   val drop: Drop,
   private val scope: CoroutineScope,
   private val enabled: Boolean,
+  installedVersionCode: Long,
 ) : AppUpdates {
   override val status = MutableStateFlow(if (enabled) UpdateStatus.UpToDate else UpdateStatus.Off)
+
+  override val installedBuild: Long? = installedVersionCode.takeIf { enabled }
+
+  override val lastChecked = MutableStateFlow<Instant?>(null)
 
   var sheetOpen by mutableStateOf(false)
     private set
@@ -37,16 +48,18 @@ class DropAppUpdates(
     checking = scope.launch {
       status.value =
         when (val result = drop.check()) {
-          is UpdateCheckResult.Available -> UpdateStatus.Available(result.update.headline)
-          is UpdateCheckResult.ReinstallRequired -> UpdateStatus.Available(result.update.headline)
+          is UpdateCheckResult.Available -> UpdateStatus.Available(result.update.toBuild())
+          is UpdateCheckResult.ReinstallRequired ->
+            UpdateStatus.Available(result.update.toBuild(reinstall = true))
           is UpdateCheckResult.ChannelEnded ->
-            result.update?.let { UpdateStatus.Available(it.headline) } ?: UpdateStatus.UpToDate
+            result.update?.let { UpdateStatus.Available(it.toBuild()) } ?: UpdateStatus.UpToDate
           UpdateCheckResult.UpToDate -> UpdateStatus.UpToDate
           // A build from a local machine isn't known to Drop: nothing to update to.
           UpdateCheckResult.UnknownProduct -> UpdateStatus.UpToDate
           UpdateCheckResult.SignInRequired -> UpdateStatus.Failed("Sign in to Drop to check")
           is UpdateCheckResult.Failed -> UpdateStatus.Failed(result.message)
         }
+      lastChecked.value = Clock.System.now()
     }
   }
 
@@ -58,6 +71,27 @@ class DropAppUpdates(
     sheetOpen = false
     check()
   }
+
+  /** What the App updates page shows of a build (iteration 13). */
+  private fun Update.toBuild(reinstall: Boolean = requiresReinstall != null) =
+    AvailableBuild(
+      number = versionCode,
+      headline = headline,
+      sizeBytes = fileSize,
+      uploadedAt = uploadedAt,
+      whatsNew = whatsNew?.takeIf { it.isNotBlank() },
+      pullRequest = pullRequest,
+      channel = channel,
+      reinstall =
+        if (!reinstall) null
+        else
+          when (requiresReinstall) {
+            DropReinstallReason.Signer -> ReinstallReason.DifferentKey
+            DropReinstallReason.VersionCode -> ReinstallReason.LowerBuild
+            DropReinstallReason.Unknown,
+            null -> ReinstallReason.Unknown
+          },
+    )
 
   companion object {
     /**

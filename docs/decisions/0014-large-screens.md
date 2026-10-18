@@ -87,6 +87,20 @@ come from the same adaptive library (`windowPosture`: `isTabletop` and the hinge
   opens beside the bike rail. Rows keep the approved anatomy: icon, title, subtitle, switches in the text
   colour. Diagnostics' tools open in the category's pane. Rejected: S1 (the approved list with a detail
   pane) and S2 (two columns).
+- **Bikes (iteration 13, B2 · garage):** an "Open the last bike seen" switch (off pins the most recent
+  bike; it is the same setting as the default bike), then a card per bike: name, type and when seen, a
+  chip per component with its status dot, the bike's status, and OPENS FIRST on the pinned bike. Cards
+  sit two across in the wide pane, then Add bike. A card opens the bike's own page: name and type,
+  Opens first, its components with serials, and Remove bike (two taps). Wide windows split that page
+  in two: the bike (name and type, Opens first, Remove) on the left, where its photo will go, and its
+  components on the right. Rejected: B1 (an "Opens first"
+  choice above a plain list).
+- **App updates (iteration 13):** a hero filled in the ink colour with the red dot while a build waits
+  ("Build 41 is ready." with the pull request's title, size, upload time and PR), outlined when not; then
+  what's new, the installed build and channel, Check again, and the one action (Install, or Reinstall,
+  which says it clears the bikes and their history). On wide windows the action sits in the hero. Up to
+  date shows only the installed build and when it was checked: Drop says nothing about the latest build
+  then. Couldn't check gives the reason and Try again.
 - Screens not listed (licences, hub tables, ride tests, permissions) cap their content at phone width
   and centre it, as `TitledScreen` already does.
 

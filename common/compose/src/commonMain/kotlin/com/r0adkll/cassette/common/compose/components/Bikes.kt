@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -115,6 +116,112 @@ fun BikeChip(
       style = CassetteTheme.type.button.copy(fontSize = CassetteTheme.type.button.fontSize * 0.85f),
       color = if (selected) colors.onInk else colors.muted,
       maxLines = 1,
+    )
+  }
+}
+
+/**
+ * A bike's card in Settings' garage (iteration 13, B2): its name, [details] ("Road · seen 2 min
+ * ago"), a chip per component with its status dot, the bike's status, and OPENS FIRST on the bike
+ * that always opens first. A [narrow] card (two across on a fold) moves the status and OPENS FIRST
+ * to a line of their own, so the name keeps the full width.
+ */
+@Composable
+fun BikeCard(
+  name: String,
+  details: String,
+  tone: StatusTone,
+  components: List<Pair<String, StatusTone>>,
+  opensFirst: Boolean,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  narrow: Boolean = false,
+) {
+  val colors = CassetteTheme.colors
+  val type = CassetteTheme.type
+  val shape = RoundedCornerShape(20.dp)
+  Column(
+    modifier =
+      modifier
+        .fillMaxWidth()
+        .clip(shape)
+        .background(colors.panel)
+        .border(1.dp, colors.line, shape)
+        .clickable(role = Role.Button, onClick = onClick)
+  ) {
+    Box(Modifier.padding(16.dp)) {
+      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+          verticalAlignment = Alignment.Top,
+          horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+          Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+              name,
+              style = type.numeral.copy(fontSize = type.numeral.fontSize * 1.15f),
+              color = colors.text,
+              maxLines = 1,
+              overflow = TextOverflow.Ellipsis,
+            )
+            Text(details, style = type.bodySmall, color = colors.muted)
+          }
+          if (opensFirst && !narrow) OpensFirstPill()
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          FlowRow(
+            Modifier.weight(1f),
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+          ) {
+            components.forEach { (code, componentTone) -> ComponentChip(code, componentTone) }
+          }
+          if (!narrow) StatusLabel(tone)
+        }
+        if (narrow)
+          Row(verticalAlignment = Alignment.CenterVertically) {
+            StatusLabel(tone, Modifier.weight(1f))
+            if (opensFirst) OpensFirstPill()
+          }
+      }
+    }
+  }
+}
+
+@Composable
+private fun OpensFirstPill() {
+  val colors = CassetteTheme.colors
+  Row(
+    Modifier.height(26.dp).clip(CircleShape).background(colors.ink).padding(horizontal = 10.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(5.dp),
+  ) {
+    Icon(LucideIcons.Pin, null, tint = colors.onInk, modifier = Modifier.size(12.dp))
+    Text(
+      "OPENS FIRST",
+      style = CassetteTheme.type.button.copy(fontSize = CassetteTheme.type.button.fontSize * 0.65f),
+      color = colors.onInk,
+    )
+  }
+}
+
+/** A component's code with a dot in its status colour. */
+@Composable
+private fun ComponentChip(code: String, tone: StatusTone) {
+  val colors = CassetteTheme.colors
+  Row(
+    Modifier.height(28.dp)
+      .clip(RoundedCornerShape(9.dp))
+      .background(colors.track)
+      .padding(horizontal = 7.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(4.dp),
+  ) {
+    Box(Modifier.size(6.dp).clip(CircleShape).background(colors.status(tone)))
+    Text(
+      code,
+      style =
+        CassetteTheme.type.numeral.copy(fontSize = CassetteTheme.type.numeral.fontSize * 0.5f),
+      color = colors.text,
     )
   }
 }

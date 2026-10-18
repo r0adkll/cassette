@@ -39,6 +39,9 @@ enum class SettingsCategory {
  */
 @Parcelize data class SettingsScreen(val category: SettingsCategory? = null) : ParcelableScreen
 
+/** A bike's own settings page (iteration 13): name and type, opens first, components, remove. */
+@Parcelize data class BikeSettingsScreen(val bikeId: Long) : ParcelableScreen
+
 /**
  * Diagnostics. [inPane] shows it inside Settings' pane on a wide window, where it has no back
  * button; its tools still open within the pane.

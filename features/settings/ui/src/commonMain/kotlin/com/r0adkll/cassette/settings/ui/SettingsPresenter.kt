@@ -6,14 +6,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import com.r0adkll.cassette.bikes.api.BikeOverview
 import com.r0adkll.cassette.bikes.api.BikeRepository
+import com.r0adkll.cassette.bikes.summary.toSummary
 import com.r0adkll.cassette.capture.api.CaptureController
+import com.r0adkll.cassette.common.compose.theme.StatusTone
+import com.r0adkll.cassette.common.screens.AddBikeScreen
+import com.r0adkll.cassette.common.screens.BikeSettingsScreen
 import com.r0adkll.cassette.common.screens.DiagnosticsScreen
 import com.r0adkll.cassette.common.screens.LicencesScreen
 import com.r0adkll.cassette.common.screens.SettingsCategory
 import com.r0adkll.cassette.common.screens.SettingsScreen
-import com.r0adkll.cassette.core.Bike
 import com.r0adkll.cassette.core.BikeId
+import com.r0adkll.cassette.core.BikeType
 import com.r0adkll.cassette.settings.api.CassetteSettings
 import com.r0adkll.cassette.settings.api.NotificationSettings
 import com.slack.circuit.codegen.annotations.CircuitInject
@@ -25,12 +30,15 @@ import com.slack.circuit.runtime.Navigator
 import com.slack.circuit.runtime.presenter.Presenter
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
+import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlinx.coroutines.launch
 
 data class SettingsUiState(
-  val bikes: List<Bike>,
+  /** Every bike, most recently seen first. */
+  val garage: List<GarageBike>,
+  /** The bike that always opens first; null opens the last bike seen. */
   val pinned: BikeId?,
-  val choosingBike: Boolean,
   val backgroundCapture: Boolean,
   val notifications: NotificationSettings,
   /** The screen's category: on a phone, null is the list and a category is its own screen. */
@@ -39,20 +47,36 @@ data class SettingsUiState(
   val selected: SettingsCategory = category ?: SettingsCategory.Bikes,
   val eventSink: (SettingsEvent) -> Unit,
 ) : CircuitUiState {
-  /** "Most recently seen (Road bike)" or the pinned bike's name. */
-  val defaultBikeLabel: String
+  /** "Gravel bike opens first", or the last bike seen does. */
+  val opensFirstLabel: String
     get() =
-      bikes.firstOrNull { it.id == pinned }?.name
-        ?: bikes.firstOrNull()?.let { "Most recently seen (${it.name})" }
-        ?: "Most recently seen"
+      garage.firstOrNull { it.opensFirst }?.let { "${it.name} opens first" }
+        ?: "The last bike seen opens first"
 }
+
+/** A bike's card in the garage (iteration 13, B2). */
+data class GarageBike(
+  val id: Long,
+  val name: String,
+  /** "Road", "Gravel", "MTB" or "Other". */
+  val type: String,
+  /** "seen 2 min ago", "never seen". */
+  val seen: String,
+  val tone: StatusTone,
+  /** Each component's code with its status. */
+  val components: List<Pair<String, StatusTone>>,
+  val opensFirst: Boolean,
+)
 
 sealed interface SettingsEvent : CircuitUiEvent {
   data object Back : SettingsEvent
 
-  data object ChooseBike : SettingsEvent
+  /** On: the last bike seen opens first. Off: the most recent one is pinned, until changed. */
+  data class SetFollowLastSeen(val follow: Boolean) : SettingsEvent
 
-  data class PinBike(val id: BikeId?) : SettingsEvent
+  data class OpenBike(val id: Long) : SettingsEvent
+
+  data object AddBike : SettingsEvent
 
   data class SetBackgroundCapture(val enabled: Boolean) : SettingsEvent
 
@@ -73,27 +97,27 @@ class SettingsPresenter(
   private val settings: CassetteSettings,
   private val bikes: BikeRepository,
   private val capture: CaptureController,
+  private val clock: Clock,
 ) : Presenter<SettingsUiState> {
 
   @Composable
   override fun present(): SettingsUiState {
     val scope = rememberCoroutineScope()
-    val bikeList by remember { bikes.observeBikes() }.collectAsRetainedState(emptyList())
+    val overviews by remember { bikes.observeOverviews() }.collectAsRetainedState(emptyList())
     val pinned by remember { settings.pinnedBike }.collectAsRetainedState(null)
     val background by remember { settings.backgroundCapture }.collectAsRetainedState(true)
     val notifications by remember {
       settings.notifications
     }
       .collectAsRetainedState(NotificationSettings())
-    var choosing by remember { mutableStateOf(false) }
     var selected by rememberRetained {
       mutableStateOf(screen.category ?: SettingsCategory.Bikes)
     }
+    val garage = overviews.toGarage(pinned, clock.now())
 
     return SettingsUiState(
-      bikeList,
+      garage,
       pinned,
-      choosing,
       background,
       notifications,
       category = screen.category,
@@ -101,11 +125,14 @@ class SettingsPresenter(
     ) { event ->
       when (event) {
         SettingsEvent.Back -> navigator.pop()
-        SettingsEvent.ChooseBike -> choosing = !choosing
-        is SettingsEvent.PinBike -> {
-          choosing = false
-          scope.launch { settings.setPinnedBike(event.id) }
-        }
+        is SettingsEvent.SetFollowLastSeen ->
+          scope.launch {
+            settings.setPinnedBike(
+              if (event.follow) null else garage.firstOrNull()?.id?.let(::BikeId)
+            )
+          }
+        is SettingsEvent.OpenBike -> navigator.goTo(BikeSettingsScreen(event.id))
+        SettingsEvent.AddBike -> navigator.goTo(AddBikeScreen)
         is SettingsEvent.SetBackgroundCapture ->
           scope.launch {
             settings.setBackgroundCapture(event.enabled)
@@ -121,11 +148,32 @@ class SettingsPresenter(
               else -> SettingsScreen(event.category)
             }
           )
-        is SettingsEvent.SelectCategory -> {
-          choosing = false
-          selected = event.category
-        }
+        is SettingsEvent.SelectCategory -> selected = event.category
       }
     }
   }
 }
+
+/** The garage's cards, worded by the shared summary like the bike screen. */
+internal fun List<BikeOverview>.toGarage(pinned: BikeId?, now: Instant): List<GarageBike> =
+  map { overview ->
+    val summary = overview.toSummary(now)
+    GarageBike(
+      id = summary.bikeId,
+      name = summary.name,
+      type = overview.bike.type.label,
+      seen = summary.status.meta.replaceFirstChar { it.lowercase() },
+      tone = summary.status.tone,
+      components = summary.components.map { it.code to it.tone },
+      opensFirst = overview.bike.id == pinned,
+    )
+  }
+
+internal val BikeType.label: String
+  get() =
+    when (this) {
+      BikeType.Road -> "Road"
+      BikeType.Gravel -> "Gravel"
+      BikeType.Mtb -> "MTB"
+      BikeType.Other -> "Other"
+    }

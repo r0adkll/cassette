@@ -16,6 +16,13 @@ All notable changes to Cassette are documented here. The format follows
   Diagnostics and Licences, each with a line on where it stands ("2 of 3 on", a red dot for a waiting
   build). On a phone each category opens its own screen; on an open foldable or a tablet the list sits
   beside the open category, and Diagnostics' tools open in that pane.
+- Settings' Bikes page is a garage: a card per bike with its components and status, an "Open the last
+  bike seen" switch, and the bike that opens first marked. Each bike has its own page to rename it,
+  change its type, make it open first, see its components and remove it; on an open foldable or a
+  tablet the bike's details sit on the left and its components on the right.
+- Settings' App updates page says what's waiting: the build, what's new, its size and when it was
+  uploaded, the installed build, and one action (Install, or Reinstall with a warning that it clears
+  the bikes). Up to date and couldn't-check states say when it last checked.
 
 - The app icon (phone and watch, release and dev) drops its four small screw dots.
 - The watch app's internal build goes to Drop as a Wear Build in the same run as the phone's (Drop

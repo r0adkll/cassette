@@ -9,78 +9,165 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Density
 import com.r0adkll.cassette.common.compose.AppUpdates
+import com.r0adkll.cassette.common.compose.AvailableBuild
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
 import com.r0adkll.cassette.common.compose.LocalScreenLayout
+import com.r0adkll.cassette.common.compose.ReinstallReason
 import com.r0adkll.cassette.common.compose.UpdateStatus
 import com.r0adkll.cassette.common.compose.currentScreenLayout
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
+import com.r0adkll.cassette.common.compose.theme.StatusTone
 import com.r0adkll.cassette.common.screens.SettingsCategory
-import com.r0adkll.cassette.core.Bike
 import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.core.BikeType
 import com.r0adkll.cassette.settings.api.NotificationSettings
 import java.io.File
 import kotlin.test.Test
+import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.jetbrains.skia.EncodedImageFormat
 
 /**
  * Renders Settings to `build/screens/` on a phone, an open fold and a tablet, light and dark, for
- * review without a device (decision 0014).
+ * review without a device (decisions 0014; iteration 13 for Bikes and App updates).
  */
 class ScreenRenderTest {
   private val out = File("build/screens").apply { mkdirs() }
-  private val now = Instant.fromEpochMilliseconds(1_792_000_000_000)
 
   private val state =
     SettingsUiState(
-      bikes =
+      garage =
         listOf(
-          Bike(BikeId(1), "Road bike", BikeType.Road, null, 1, now, now),
-          Bike(BikeId(2), "Gravel bike", BikeType.Gravel, null, 1, now, now),
+          GarageBike(
+            1,
+            "Road bike",
+            "Road",
+            "seen 2 min ago",
+            StatusTone.Low,
+            listOf(
+              "RD" to StatusTone.Good,
+              "FD" to StatusTone.Low,
+              "L" to StatusTone.Good,
+              "R" to StatusTone.Good,
+              "PM" to StatusTone.Good,
+            ),
+            opensFirst = false,
+          ),
+          GarageBike(
+            2,
+            "Gravel bike",
+            "Gravel",
+            "seen 3 days ago",
+            StatusTone.Good,
+            listOf(
+              "RD" to StatusTone.Good,
+              "L" to StatusTone.Good,
+              "R" to StatusTone.Good,
+              "DP" to StatusTone.Good,
+            ),
+            opensFirst = true,
+          ),
         ),
-      pinned = null,
-      choosingBike = false,
+      pinned = BikeId(2),
       backgroundCapture = true,
       notifications = NotificationSettings(notSeenReminders = false),
     ) {}
 
+  private val build =
+    AvailableBuild(
+      number = 41,
+      headline = "Group settings by category on every size",
+      sizeBytes = 9_800_000,
+      uploadedAt = Clock.System.now() - 2.hours,
+      whatsNew =
+        "- Settings are grouped by category.\n" +
+          "- Diagnostics opens in the settings pane on wide screens.\n" +
+          "- Tablets list the bikes on the left.",
+      pullRequest = 47,
+      channel = "internal",
+    )
+
   @Test
   fun settings() {
+    val ready = UpdateStatus.Available(build)
     val screens =
       listOf(
-        Triple("phone", RenderSize.Phone, state),
-        Triple("phone-notifications", RenderSize.Phone, state.copy(category = Notifications)),
-        Triple("fold-notifications", RenderSize.Fold, state.copy(selected = Notifications)),
-        Triple(
-          "tablet-bikes",
-          RenderSize.Tablet,
-          state.copy(selected = SettingsCategory.Bikes, choosingBike = true),
+        Shot("phone", RenderSize.Phone, state, ready),
+        Shot("phone-notifications", RenderSize.Phone, state.copy(category = Notifications), ready),
+        Shot("phone-bikes", RenderSize.Phone, state.copy(category = Bikes), ready),
+        Shot("fold-notifications", RenderSize.Fold, state.copy(selected = Notifications), ready),
+        Shot("fold-bikes", RenderSize.Fold, state.copy(selected = Bikes), ready),
+        Shot("tablet-bikes", RenderSize.Tablet, state.copy(selected = Bikes), ready),
+        Shot("phone-updates-ready", RenderSize.Phone, state.copy(category = Updates), ready),
+        Shot("fold-updates-ready", RenderSize.Fold, state.copy(selected = Updates), ready),
+        Shot(
+          "phone-updates-up-to-date",
+          RenderSize.Phone,
+          state.copy(category = Updates),
+          UpdateStatus.UpToDate,
+        ),
+        Shot(
+          "phone-updates-reinstall",
+          RenderSize.Phone,
+          state.copy(category = Updates),
+          UpdateStatus.Available(build.copy(number = 42, reinstall = ReinstallReason.DifferentKey)),
+        ),
+        Shot(
+          "phone-updates-failed",
+          RenderSize.Phone,
+          state.copy(category = Updates),
+          UpdateStatus.Failed("Sign in to Drop to check"),
         ),
       )
     for (dark in listOf(true, false)) {
-      for ((name, size, screen) in screens) {
-        render("settings-$name-${if (dark) "dark" else "light"}", dark, size) {
-          SettingsUi(screen)
+      for (shot in screens) {
+        render("settings-${shot.name}-${if (dark) "dark" else "light"}", dark, shot) {
+          SettingsUi(shot.state)
         }
       }
     }
   }
 
-  private fun render(
-    name: String,
-    dark: Boolean,
-    size: RenderSize,
-    content: @Composable () -> Unit,
-  ) {
+  @Test
+  fun bikePage() {
+    val model =
+      BikeSettingsModel(
+        name = "Road bike",
+        type = BikeType.Road,
+        opensFirst = false,
+        components =
+          listOf(
+            ComponentLine("RD", "Rear derailleur", "1405188718"),
+            ComponentLine("FD", "Front derailleur", "1405117203"),
+            ComponentLine("L", "Left shifter", "1405260941"),
+            ComponentLine("R", "Right shifter", "1405260958"),
+            ComponentLine("PM", "Power meter", "Quarq AGN12387"),
+          ),
+      )
+    for (dark in listOf(true, false)) {
+      for (size in RenderSize.entries) {
+        val shot = Shot("bike", size, state, UpdateStatus.UpToDate)
+        val prefix = if (size == RenderSize.Phone) "" else "${size.name.lowercase()}-"
+        render("settings-${prefix}bike-page-${if (dark) "dark" else "light"}", dark, shot) {
+          BikeSettingsUi(BikeSettingsUiState(model, confirmRemove = false) {})
+        }
+      }
+    }
+  }
+
+  private fun render(name: String, dark: Boolean, shot: Shot, content: @Composable () -> Unit) {
+    val size = shot.size
+    val updates = FakeUpdates(shot.update)
     val scene =
       ImageComposeScene(width = size.width * 2, height = size.height * 2, density = Density(2f)) {
         CassetteTheme(darkTheme = dark) {
           // The scene is the window, so its size class picks the layout as on a device.
           CompositionLocalProvider(
             LocalScreenLayout provides currentScreenLayout(),
-            LocalAppUpdates provides WaitingUpdate,
+            LocalAppUpdates provides updates,
           ) {
             Box(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) { content() }
           }
@@ -92,9 +179,20 @@ class ScreenRenderTest {
     scene.close()
   }
 
-  /** A build waiting, so App updates shows with its dot. */
-  private object WaitingUpdate : AppUpdates {
-    override val status = MutableStateFlow<UpdateStatus>(UpdateStatus.Available("Build 41"))
+  private class Shot(
+    val name: String,
+    val size: RenderSize,
+    val state: SettingsUiState,
+    val update: UpdateStatus,
+  )
+
+  /** Updates in a fixed state, installed as build 40 and checked 5 minutes ago. */
+  private class FakeUpdates(status: UpdateStatus) : AppUpdates {
+    override val status = MutableStateFlow(status)
+
+    override val installedBuild: Long = 40
+
+    override val lastChecked = MutableStateFlow<Instant?>(Clock.System.now() - 5.minutes)
 
     override fun check() = Unit
 
@@ -109,6 +207,8 @@ class ScreenRenderTest {
   }
 
   private companion object {
+    val Bikes = SettingsCategory.Bikes
     val Notifications = SettingsCategory.Notifications
+    val Updates = SettingsCategory.Updates
   }
 }

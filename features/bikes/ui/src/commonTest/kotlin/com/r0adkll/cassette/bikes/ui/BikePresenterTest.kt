@@ -47,6 +47,8 @@ class BikePresenterTest {
 
       override fun observeComponent(id: ComponentId, since: Instant) = emptyFlow<ComponentDetail?>()
 
+      override suspend fun updateBike(id: BikeId, name: String, type: BikeType) = Unit
+
       override suspend fun deleteBike(id: BikeId) = Unit
     }
 

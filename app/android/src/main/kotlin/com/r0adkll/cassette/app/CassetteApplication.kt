@@ -32,6 +32,7 @@ class CassetteApplication : Application(), BleHost, WidgetHost, TileHost, Alerts
       Drop(this),
       CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
       enabled = DropAppUpdates.hasDrop(this),
+      installedVersionCode = packageManager.getPackageInfo(packageName, 0).longVersionCode,
     )
   }
 
