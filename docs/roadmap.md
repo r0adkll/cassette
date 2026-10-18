@@ -38,7 +38,8 @@ Layouts for open foldables and tablets, before iOS so the iPhone foldable starts
    renders at fold and tablet sizes beside the phone ones.
 2. The bike screen as a dashboard, the bike rail on large windows.
 3. The component sheet over the dashboard.
-4. Settings by category, on every size.
+4. Settings by category, on every size. Still to do: on large windows, Settings opening beside the
+   bike rail (the rail would need to live outside the bike screen).
 5. Tabletop refresh on a half-open fold.
 6. Welcome and add bike split at the hinge.
 

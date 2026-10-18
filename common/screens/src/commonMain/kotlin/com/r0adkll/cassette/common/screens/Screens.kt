@@ -22,9 +22,28 @@ data class ComponentScreen(val componentId: Long, val inSheet: Boolean = false) 
 /** First run: both permissions explained and asked for on one screen. */
 @Parcelize data object OnboardingPermissionsScreen : ParcelableScreen
 
-@Parcelize data object SettingsScreen : ParcelableScreen
+/** Settings' categories, in list order (decision 0014). */
+enum class SettingsCategory {
+  Bikes,
+  Capture,
+  Notifications,
+  Updates,
+  Diagnostics,
+  Licences,
+}
 
-@Parcelize data object DiagnosticsScreen : ParcelableScreen
+/**
+ * Settings (decision 0014). On a phone, no [category] is the list of categories and a [category] is
+ * that category's own screen; on wide windows the list sits beside the open category, [category] or
+ * the first.
+ */
+@Parcelize data class SettingsScreen(val category: SettingsCategory? = null) : ParcelableScreen
+
+/**
+ * Diagnostics. [inPane] shows it inside Settings' pane on a wide window, where it has no back
+ * button; its tools still open within the pane.
+ */
+@Parcelize data class DiagnosticsScreen(val inPane: Boolean = false) : ParcelableScreen
 
 @Parcelize data object LicencesScreen : ParcelableScreen
 

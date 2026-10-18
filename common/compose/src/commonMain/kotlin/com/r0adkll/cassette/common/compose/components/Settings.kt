@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -26,9 +27,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
+import com.r0adkll.cassette.common.compose.theme.CassetteRed
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 
 /** A labelled group of rows in one panel (Settings, Diagnostics). */
@@ -130,6 +135,58 @@ fun Chevron() {
     tint = CassetteTheme.colors.muted,
     modifier = Modifier.size(18.dp),
   )
+}
+
+/** The red dot for something waiting behind a row (an app update). */
+@Composable
+fun WaitingDot() {
+  Box(Modifier.size(10.dp).clip(CircleShape).background(CassetteRed))
+}
+
+/**
+ * A settings category in the list beside the open one on wide windows (decision 0014): icon, title
+ * and a one-line summary, outlined in the text colour when [selected]. [badge] adds the red dot.
+ */
+@Composable
+fun CategoryItem(
+  icon: ImageVector,
+  title: String,
+  summary: String,
+  selected: Boolean,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  badge: Boolean = false,
+) {
+  val colors = CassetteTheme.colors
+  val shape = RoundedCornerShape(14.dp)
+  Row(
+    modifier =
+      modifier
+        .fillMaxWidth()
+        .clip(shape)
+        .then(
+          if (selected) Modifier.background(colors.panel).border(2.dp, colors.text, shape)
+          else Modifier
+        )
+        .clickable(role = Role.Tab, onClick = onClick)
+        .semantics { this.selected = selected }
+        .padding(horizontal = 12.dp, vertical = 10.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(12.dp),
+  ) {
+    Icon(icon, null, tint = colors.text, modifier = Modifier.size(20.dp))
+    Column(Modifier.weight(1f)) {
+      Text(title, style = CassetteTheme.type.itemTitle, color = colors.text)
+      Text(
+        summary,
+        style = CassetteTheme.type.bodySmall,
+        color = colors.muted,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+      )
+    }
+    if (badge) WaitingDot()
+  }
 }
 
 /** The panel's horizontal padding, which rows bleed through. */

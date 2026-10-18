@@ -10,6 +10,7 @@ import com.r0adkll.cassette.bikes.api.BikeRepository
 import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.common.screens.DiagnosticsScreen
 import com.r0adkll.cassette.common.screens.LicencesScreen
+import com.r0adkll.cassette.common.screens.SettingsCategory
 import com.r0adkll.cassette.common.screens.SettingsScreen
 import com.r0adkll.cassette.core.Bike
 import com.r0adkll.cassette.core.BikeId
@@ -17,6 +18,7 @@ import com.r0adkll.cassette.settings.api.CassetteSettings
 import com.r0adkll.cassette.settings.api.NotificationSettings
 import com.slack.circuit.codegen.annotations.CircuitInject
 import com.slack.circuit.retained.collectAsRetainedState
+import com.slack.circuit.retained.rememberRetained
 import com.slack.circuit.runtime.CircuitUiEvent
 import com.slack.circuit.runtime.CircuitUiState
 import com.slack.circuit.runtime.Navigator
@@ -31,6 +33,10 @@ data class SettingsUiState(
   val choosingBike: Boolean,
   val backgroundCapture: Boolean,
   val notifications: NotificationSettings,
+  /** The screen's category: on a phone, null is the list and a category is its own screen. */
+  val category: SettingsCategory? = null,
+  /** The category open beside the list on wide windows. */
+  val selected: SettingsCategory = category ?: SettingsCategory.Bikes,
   val eventSink: (SettingsEvent) -> Unit,
 ) : CircuitUiState {
   /** "Most recently seen (Road bike)" or the pinned bike's name. */
@@ -52,14 +58,17 @@ sealed interface SettingsEvent : CircuitUiEvent {
 
   data class SetNotifications(val settings: NotificationSettings) : SettingsEvent
 
-  data object OpenDiagnostics : SettingsEvent
+  /** On a phone: the category's screen (Diagnostics and Licences open their own). */
+  data class OpenCategory(val category: SettingsCategory) : SettingsEvent
 
-  data object OpenLicences : SettingsEvent
+  /** On a wide window: the category beside the list. */
+  data class SelectCategory(val category: SettingsCategory) : SettingsEvent
 }
 
 @CircuitInject(SettingsScreen::class, AppScope::class)
 @Inject
 class SettingsPresenter(
+  private val screen: SettingsScreen,
   private val navigator: Navigator,
   private val settings: CassetteSettings,
   private val bikes: BikeRepository,
@@ -77,8 +86,19 @@ class SettingsPresenter(
     }
       .collectAsRetainedState(NotificationSettings())
     var choosing by remember { mutableStateOf(false) }
+    var selected by rememberRetained {
+      mutableStateOf(screen.category ?: SettingsCategory.Bikes)
+    }
 
-    return SettingsUiState(bikeList, pinned, choosing, background, notifications) { event ->
+    return SettingsUiState(
+      bikeList,
+      pinned,
+      choosing,
+      background,
+      notifications,
+      category = screen.category,
+      selected = selected,
+    ) { event ->
       when (event) {
         SettingsEvent.Back -> navigator.pop()
         SettingsEvent.ChooseBike -> choosing = !choosing
@@ -93,8 +113,18 @@ class SettingsPresenter(
           }
         is SettingsEvent.SetNotifications ->
           scope.launch { settings.setNotifications(event.settings) }
-        SettingsEvent.OpenDiagnostics -> navigator.goTo(DiagnosticsScreen)
-        SettingsEvent.OpenLicences -> navigator.goTo(LicencesScreen)
+        is SettingsEvent.OpenCategory ->
+          navigator.goTo(
+            when (event.category) {
+              SettingsCategory.Diagnostics -> DiagnosticsScreen()
+              SettingsCategory.Licences -> LicencesScreen
+              else -> SettingsScreen(event.category)
+            }
+          )
+        is SettingsEvent.SelectCategory -> {
+          choosing = false
+          selected = event.category
+        }
       }
     }
   }

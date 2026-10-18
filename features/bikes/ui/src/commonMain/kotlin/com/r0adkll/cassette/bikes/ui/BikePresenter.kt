@@ -121,7 +121,7 @@ class BikePresenter(
         is BikeEvent.ShowComponent -> sheet = event.id
         BikeEvent.CloseSheet -> sheet = null
         is BikeEvent.SheetNavigation -> navigator.onNavEvent(event.event)
-        BikeEvent.OpenSettings -> navigator.goTo(SettingsScreen)
+        BikeEvent.OpenSettings -> navigator.goTo(SettingsScreen())
         BikeEvent.AddBike -> navigator.goTo(AddBikeScreen)
         is BikeEvent.AcceptTip -> {
           when (event.tip) {

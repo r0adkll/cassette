@@ -12,6 +12,11 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Changed
 
+- Settings are grouped by category (decision 0014): Bikes, Capture, Notifications, App updates,
+  Diagnostics and Licences, each with a line on where it stands ("2 of 3 on", a red dot for a waiting
+  build). On a phone each category opens its own screen; on an open foldable or a tablet the list sits
+  beside the open category, and Diagnostics' tools open in that pane.
+
 - The app icon (phone and watch, release and dev) drops its four small screw dots.
 - The watch app's internal build goes to Drop as a Wear Build in the same run as the phone's (Drop
   0.4.0), with the phone's commit-count version code, so it installs from its Build page instead of a
