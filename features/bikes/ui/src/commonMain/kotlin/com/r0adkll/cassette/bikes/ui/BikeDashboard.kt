@@ -124,10 +124,12 @@ private fun Dashboard(state: BikeUiState.Loaded, rail: Boolean) {
       } else {
         ChipBar(state, updateWaiting, Modifier.padding(horizontal = gutter))
       }
+      // Screen readers get the plain title (decision 0015).
       WideStatusBlock(
-        state.status.headline,
+        state.title,
         state.status.tone,
         kicker = state.name.takeUnless { rail },
+        titleDescription = state.status.headline,
         horizontalPadding = gutter,
         asideWidth = if (rail) 260.dp else 220.dp,
         content = { StatusBlockText(state.status.summary) },

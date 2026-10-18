@@ -347,6 +347,16 @@ object LucideIcons {
     }
   }
 
+  /** Lucide `smile`. */
+  val Smile: ImageVector by lazy {
+    lucide("Smile") {
+      stroke("M2.0 12.0a10.0 10.0 0 1 0 20.0 0a10.0 10.0 0 1 0 -20.0 0Z")
+      stroke("M8 14s1.5 2 4 2 4-2 4-2")
+      stroke("M9.0 9.0L9.01 9.0")
+      stroke("M15.0 9.0L15.01 9.0")
+    }
+  }
+
   /** Lucide `sun-moon`. */
   val SunMoon: ImageVector by lazy {
     lucide("SunMoon") {

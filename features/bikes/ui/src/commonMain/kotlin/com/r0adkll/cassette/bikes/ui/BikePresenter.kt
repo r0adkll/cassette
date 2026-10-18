@@ -52,6 +52,7 @@ class BikePresenter(
   private val clock: Clock,
   private val settings: CassetteSettings,
   private val surfaces: HomeSurfaces,
+  private val titles: StatusTitles,
 ) : Presenter<BikeUiState> {
 
   @Composable
@@ -170,11 +171,18 @@ class BikePresenter(
       }
     }
 
+    val playful by settings.playfulTitles.collectAsRetainedState(initial = null)
+    val session by titles.session.collectAsRetainedState()
+
     val loaded = overview ?: return BikeUiState.Loading(eventSink)
     val bike = loaded.overview ?: return BikeUiState.Empty(eventSink)
+    // Wait for the setting, so a playful title doesn't replace the plain one as the screen opens.
+    val showPlayful = playful ?: return BikeUiState.Loading(eventSink)
     val loadedBike = bike.toLoaded(now, eventSink)
     val started = refreshStarted
     return loadedBike.copy(
+      title =
+        if (showPlayful) titles.title(loadedBike.status, session) else loadedBike.status.headline,
       heard =
         started?.let {
           bike.components

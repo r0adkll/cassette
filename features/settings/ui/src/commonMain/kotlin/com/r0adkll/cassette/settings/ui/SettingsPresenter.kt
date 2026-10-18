@@ -41,6 +41,7 @@ data class SettingsUiState(
   /** The bike that always opens first; null opens the last bike seen. */
   val pinned: BikeId?,
   val backgroundCapture: Boolean,
+  val playfulTitles: Boolean,
   val notifications: NotificationSettings,
   val themeMode: ThemeMode = ThemeMode.System,
   /** The screen's category: on a phone, null is the list and a category is its own screen. */
@@ -82,6 +83,8 @@ sealed interface SettingsEvent : CircuitUiEvent {
 
   data class SetBackgroundCapture(val enabled: Boolean) : SettingsEvent
 
+  data class SetPlayfulTitles(val enabled: Boolean) : SettingsEvent
+
   data class SetNotifications(val settings: NotificationSettings) : SettingsEvent
 
   data class SetThemeMode(val mode: ThemeMode) : SettingsEvent
@@ -110,6 +113,7 @@ class SettingsPresenter(
     val overviews by remember { bikes.observeOverviews() }.collectAsRetainedState(emptyList())
     val pinned by remember { settings.pinnedBike }.collectAsRetainedState(null)
     val background by remember { settings.backgroundCapture }.collectAsRetainedState(true)
+    val playful by remember { settings.playfulTitles }.collectAsRetainedState(true)
     val notifications by remember {
       settings.notifications
     }
@@ -124,6 +128,7 @@ class SettingsPresenter(
       garage,
       pinned,
       background,
+      playful,
       notifications,
       themeMode = themeMode,
       category = screen.category,
@@ -144,6 +149,8 @@ class SettingsPresenter(
             settings.setBackgroundCapture(event.enabled)
             capture.ensureBackgroundCapture("settings changed")
           }
+        is SettingsEvent.SetPlayfulTitles ->
+          scope.launch { settings.setPlayfulTitles(event.enabled) }
         is SettingsEvent.SetNotifications ->
           scope.launch { settings.setNotifications(event.settings) }
         is SettingsEvent.SetThemeMode -> scope.launch { settings.setThemeMode(event.mode) }

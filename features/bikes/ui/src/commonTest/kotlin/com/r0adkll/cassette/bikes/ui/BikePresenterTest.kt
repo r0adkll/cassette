@@ -8,6 +8,7 @@ import com.r0adkll.cassette.bikes.api.ComponentWithReading
 import com.r0adkll.cassette.bikes.api.HomeSurfaces
 import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.capture.api.RefreshProgress
+import com.r0adkll.cassette.common.compose.theme.StatusTone
 import com.r0adkll.cassette.common.screens.BikeScreen
 import com.r0adkll.cassette.common.screens.ComponentScreen
 import com.r0adkll.cassette.core.BatteryReading
@@ -22,11 +23,13 @@ import com.r0adkll.cassette.settings.api.Tip
 import com.r0adkll.cassette.settings.test.InMemorySettings
 import com.slack.circuit.test.FakeNavigator
 import com.slack.circuit.test.test
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -93,7 +96,9 @@ class BikePresenterTest {
     }
 
   private fun presenter(navigator: FakeNavigator) =
-    BikePresenter(BikeScreen(), navigator, repository, capture, clock, settings, surfaces)
+    BikePresenter(BikeScreen(), navigator, repository, capture, clock, settings, surfaces, titles)
+
+  private val titles = StatusTitles(Random(2))
 
   private val roadBike =
     BikeOverview(Bike(BikeId(1), "Road bike", BikeType.Road, null, 1, now, now), 2, emptyList())
@@ -179,6 +184,37 @@ class BikePresenterTest {
 
       switched.eventSink(BikeEvent.CloseSheet)
       awaitLoaded { it.sheet == null }
+      cancelAndIgnoreRemainingEvents()
+    }
+  }
+
+  @Test
+  fun theStatusTitleIsPlayfulUnlessTurnedOff() = runTest {
+    // Not seen for 20 days: a status with playful titles.
+    val stale = roadBike.copy(bike = roadBike.bike.copy(lastSeenAt = now - 20.days))
+    overviews.emit(stale)
+    presenter(FakeNavigator(BikeScreen())).test {
+      val on = awaitLoaded()
+      assertEquals("Not seen in 20 days.", on.status.headline)
+      assertTrue(on.title in listOf(on.status.headline) + PlayfulTitles.getValue(StatusTone.Stale))
+
+      settings.setPlayfulTitles(false)
+      assertEquals("Not seen in 20 days.", awaitLoaded { it.title == it.status.headline }.title)
+      cancelAndIgnoreRemainingEvents()
+    }
+  }
+
+  @Test
+  fun aNewTitleOnlyWhenTheAppComesBack() = runTest {
+    val stale = roadBike.copy(bike = roadBike.bike.copy(lastSeenAt = now - 20.days))
+    overviews.emit(stale)
+    presenter(FakeNavigator(BikeScreen())).test {
+      val first = awaitLoaded().title
+      titles.appBackgrounded()
+      val next = awaitLoaded { it.title != first }
+      assertTrue(
+        next.title in listOf(next.status.headline) + PlayfulTitles.getValue(StatusTone.Stale)
+      )
       cancelAndIgnoreRemainingEvents()
     }
   }

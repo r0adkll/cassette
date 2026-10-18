@@ -100,6 +100,12 @@ class DataStoreSettings(file: SettingsFile) : CassetteSettings {
     store.edit { it[DISMISSED_TIPS] = it[DISMISSED_TIPS].orEmpty() + tip.name }
   }
 
+  override val playfulTitles: Flow<Boolean> = store.data.map { it[PLAYFUL_TITLES] ?: true }
+
+  override suspend fun setPlayfulTitles(enabled: Boolean) {
+    store.edit { it[PLAYFUL_TITLES] = enabled }
+  }
+
   override val captureHealth: Flow<CaptureHealth> =
     store.data.map {
       CaptureHealth(
@@ -134,6 +140,7 @@ class DataStoreSettings(file: SettingsFile) : CassetteSettings {
     val ALERTS = booleanPreferencesKey("notify_battery_alerts")
     val PRE_RIDE = booleanPreferencesKey("notify_pre_ride")
     val REMINDERS = booleanPreferencesKey("notify_not_seen")
+    val PLAYFUL_TITLES = booleanPreferencesKey("playful_titles")
     val ARM_RESULT = stringPreferencesKey("capture_arm_result")
     val ARMED_AT = longPreferencesKey("capture_armed_at")
     val LAST_DELIVERY = longPreferencesKey("capture_last_delivery")

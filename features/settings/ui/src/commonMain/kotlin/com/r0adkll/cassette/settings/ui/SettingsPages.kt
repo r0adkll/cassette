@@ -61,8 +61,8 @@ import com.r0adkll.cassette.settings.api.ThemeMode
 import kotlin.time.Clock
 
 /**
- * Bikes (iteration 13, B2): whether the last bike seen opens first, then a card per bike, then Add
- * bike. Cards open the bike's own page.
+ * Bikes (iteration 13, B2): whether the last bike seen opens first and playful status titles
+ * (decision 0015), then a card per bike, then Add bike. Cards open the bike's own page.
  */
 @Composable
 internal fun ColumnScope.Garage(state: SettingsUiState, columns: Int) {
@@ -74,6 +74,15 @@ internal fun ColumnScope.Garage(state: SettingsUiState, columns: Int) {
       onCheckedChange = { sink(SettingsEvent.SetFollowLastSeen(it)) },
       subtitle = "Off: the bike marked Opens first, always",
       icon = LucideIcons.History,
+    )
+    SettingsSwitchRow(
+      "Playful titles",
+      checked = state.playfulTitles,
+      onCheckedChange = { sink(SettingsEvent.SetPlayfulTitles(it)) },
+      subtitle =
+        if (state.playfulTitles) "On: a new one each time the app opens"
+        else "Off: plain status titles",
+      icon = LucideIcons.Smile,
       divider = false,
     )
   }

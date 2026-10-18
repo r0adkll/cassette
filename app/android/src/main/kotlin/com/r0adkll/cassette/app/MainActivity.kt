@@ -117,6 +117,12 @@ class MainActivity : ComponentActivity() {
     }
   }
 
+  override fun onStop() {
+    super.onStop()
+    // Leaving the app, not rotating it: the bike screen picks a new status title (decision 0015).
+    if (!isChangingConfigurations) app.graph.statusTitles.appBackgrounded()
+  }
+
   override fun onNewIntent(intent: Intent) {
     super.onNewIntent(intent)
     intent.link()?.let(newLinks::trySend)

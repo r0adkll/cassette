@@ -41,6 +41,11 @@ interface CassetteSettings {
 
   suspend fun dismissTip(tip: Tip)
 
+  /** Playful status titles on the bike screen (Settings → Bikes, decision 0015). On by default. */
+  val playfulTitles: Flow<Boolean>
+
+  suspend fun setPlayfulTitles(enabled: Boolean)
+
   /** What background capture has been doing, for Diagnostics. */
   val captureHealth: Flow<CaptureHealth>
 

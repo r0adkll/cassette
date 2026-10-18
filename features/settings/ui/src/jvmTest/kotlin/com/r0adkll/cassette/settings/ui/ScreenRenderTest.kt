@@ -74,6 +74,7 @@ class ScreenRenderTest {
         ),
       pinned = BikeId(2),
       backgroundCapture = true,
+      playfulTitles = true,
       notifications = NotificationSettings(notSeenReminders = false),
     ) {}
 
