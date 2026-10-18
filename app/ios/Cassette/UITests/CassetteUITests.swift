@@ -41,13 +41,18 @@ final class CassetteUITests: XCTestCase {
     tap("Diagnostics")
     expect("scan (Core Bluetooth, FE51)")
     shot("06-diagnostics")
+    // G1: the content scrolls under the glass back button (iOS 26 glass, or the frosted fallback).
+    app.swipeUp(velocity: .slow)
+    shot("06b-diagnostics-scrolled")
     tap("Load sample bike", scrolling: true)
     shot("07-sample-loaded")
     tap("Back")
+    expect("Settings.")
     tap("Back")
 
-    // The sample bike's screen.
-    expect("Front derailleur")
+    // The sample bike's screen (its title, which Diagnostics doesn't show).
+    expect("Sample bike")
+    XCTAssertFalse(element("Share diagnostics").exists, "Still on Diagnostics")
     shot("08-bike")
     tap("Front derailleur")
     expect("Firmware")

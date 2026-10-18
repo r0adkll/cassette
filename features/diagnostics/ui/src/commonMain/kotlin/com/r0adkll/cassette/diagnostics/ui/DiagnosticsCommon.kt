@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.widthIn
@@ -18,6 +19,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.r0adkll.cassette.common.compose.AppPlatform
+import com.r0adkll.cassette.common.compose.LocalAppPlatform
+import com.r0adkll.cassette.common.compose.components.GlassIconButton
 import com.r0adkll.cassette.common.compose.components.IconCircleButton
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
@@ -37,6 +41,8 @@ internal fun DiagnosticsScaffold(
   action: @Composable () -> Unit = {},
   content: @Composable ColumnScope.() -> Unit,
 ) {
+  // iOS (iteration 14, G1): the back row floats in glass while the content scrolls under it.
+  val floating = onBack != null && LocalAppPlatform.current == AppPlatform.Ios
   Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
     Column(
       Modifier.widthIn(max = 480.dp)
@@ -46,7 +52,8 @@ internal fun DiagnosticsScaffold(
         .padding(horizontal = 20.dp, vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-      if (onBack != null)
+      if (floating) Spacer(Modifier.height(46.dp))
+      else if (onBack != null)
         Row(verticalAlignment = Alignment.CenterVertically) {
           IconCircleButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
           Spacer(Modifier.weight(1f))
@@ -55,6 +62,15 @@ internal fun DiagnosticsScaffold(
       Text(title, style = CassetteTheme.type.title, color = CassetteTheme.colors.text)
       content()
     }
+    if (floating && onBack != null)
+      Row(
+        Modifier.widthIn(max = 480.dp).fillMaxWidth().padding(horizontal = 20.dp, vertical = 24.dp),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        GlassIconButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
+        Spacer(Modifier.weight(1f))
+        action()
+      }
   }
 }
 
