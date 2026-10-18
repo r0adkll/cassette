@@ -4,7 +4,7 @@ plugins {
   id("cassette.di")
 }
 
-// The iPhone app's Kotlin half (decision 0016): the graph and the Compose host, built as the static
+// The iPhone app's Kotlin half (decision 0017): the graph and the Compose host, built as the static
 // CassetteKit framework that the Xcode project in Cassette/ links.
 kotlin {
   compilerOptions { freeCompilerArgs.add("-opt-in=kotlin.time.ExperimentalTime") }

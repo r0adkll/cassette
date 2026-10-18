@@ -33,7 +33,7 @@ import platform.UIKit.UIDevice
 import platform.UIKit.UIViewController
 import platform.UIKit.popoverPresentationController
 
-/** No widgets or Control Center control yet (decision 0016): the bike screen offers neither. */
+/** No widgets or Control Center control yet (decision 0017): the bike screen offers neither. */
 @ContributesBinding(AppScope::class)
 @Inject
 class IosHomeSurfaces : HomeSurfaces {

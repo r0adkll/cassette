@@ -90,7 +90,7 @@ deliver them separately. [HW] [PA]
 
 **iOS:** callbacks that carry the scan response (name and `FE51` service data) hold only the `0000,0400`
 records. In the background, iOS delivers no scan response at all: the battery records arrive, but not
-the serial. [HW] (iOS spike, decision 0016)
+the serial. [HW] (iOS spike, decision 0017)
 
 ### 3.2 Service data `0xFE51`: the SRAM service frame
 

@@ -13,7 +13,7 @@ import platform.Foundation.dateWithTimeIntervalSinceNow
 
 /**
  * The daily not-seen check (14 and 30 days), Android's ReminderWorker on iOS: a background app
- * refresh that iOS runs when it sees fit, so a reminder may come late (decision 0016).
+ * refresh that iOS runs when it sees fit, so a reminder may come late (decision 0017).
  */
 @OptIn(ExperimentalForeignApi::class)
 internal class IosReminders(private val alerts: () -> Alerts, private val scope: CoroutineScope) {

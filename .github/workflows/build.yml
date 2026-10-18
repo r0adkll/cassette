@@ -222,7 +222,7 @@ jobs:
       - name: Compile for iOS
         run: ./gradlew compileKotlinIosSimulatorArm64 compileKotlinIosArm64
 
-  # The iPhone app (decision 0016): builds it and walks it on a Simulator with the UI test.
+  # The iPhone app (decision 0017): builds it and walks it on a Simulator with the UI test.
   ios-app:
     name: iOS app
     runs-on: macos-latest

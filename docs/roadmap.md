@@ -49,7 +49,7 @@ folded, and a "Raw data in diagnostics" link in the component sheet.
 
 ## M3: iOS
 
-An iPhone app sharing everything up to the screens ([0016](decisions/0016-ios.md)), from a Core
+An iPhone app sharing everything up to the screens ([0017](decisions/0017-ios.md)), from a Core
 Bluetooth spike on the bike (branch `spike/ios-corebluetooth`, 2026-10-18):
 
 1. The app shell: `:app:ios` and the Xcode project, the iOS graph, the shared screens on an iPhone.
@@ -73,5 +73,5 @@ Waiting on an iPhone and the bike (deferred to a later phase, 2026-10-18):
   refresh, live adverts and hub reads.
 - Notifications posting, the snooze action and taps opening the bike; the reminders' refresh.
 - The spike's ride test, identifiers across days and a battery swap, and a hub read from a background
-  discovery; then background capture's tuning in 0016.
+  discovery; then background capture's tuning in 0017.
 - The first TestFlight build installed from TestFlight.

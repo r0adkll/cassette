@@ -69,7 +69,7 @@ enum class BluetoothState {
 }
 
 /**
- * The app's one `CBCentralManager` (decision 0016). It runs on the main queue, is created with a
+ * The app's one `CBCentralManager` (decision 0017). It runs on the main queue, is created with a
  * restore identifier so iOS can relaunch the app for the background scan, and holds one scan at a
  * time: unfiltered while anything collects [live], otherwise the `FE51` scan if background capture
  * is armed. Read-only: it never writes a characteristic.
@@ -193,7 +193,7 @@ class IosCentral(private val deliveries: Lazy<BackgroundDeliveryHandler>) {
 
   private fun onDiscover(peripheral: CBPeripheral, advertisement: Map<Any?, *>, rssi: Int) {
     val name = advertisement[CBAdvertisementDataLocalNameKey] as? String ?: peripheral.name
-    // Core Bluetooth merges every 0x0933 structure into one blob (the spike, decision 0016).
+    // Core Bluetooth merges every 0x0933 structure into one blob (the spike, decision 0017).
     val manufacturer =
       (advertisement[CBAdvertisementDataManufacturerDataKey] as? NSData)
         ?.toByteArray()

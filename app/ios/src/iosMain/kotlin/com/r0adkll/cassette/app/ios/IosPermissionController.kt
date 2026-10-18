@@ -28,7 +28,7 @@ import platform.UserNotifications.UNAuthorizationStatusNotDetermined
 import platform.UserNotifications.UNUserNotificationCenter
 
 /**
- * Bluetooth and notification permissions for the UI layer (decision 0016). iOS asks for Bluetooth
+ * Bluetooth and notification permissions for the UI layer (decision 0017). iOS asks for Bluetooth
  * when the central manager is first created, and each permission only once: after that, only the
  * Settings app can change it. States are re-read whenever the app becomes active.
  */

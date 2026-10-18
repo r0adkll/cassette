@@ -7,7 +7,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 
-/** Glass is iOS only (decision 0016): the solid circle, centred in the top bar's slot. */
+/** Glass is iOS only (decision 0017): the solid circle, centred in the top bar's slot. */
 @Composable
 actual fun GlassIconButton(
   icon: ImageVector,

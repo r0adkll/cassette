@@ -63,7 +63,7 @@ fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
       MonoLine("hub read", state.bike?.bike?.hubReadAt?.let { agoShort(state.now - it) } ?: "—")
       MonoLine("bluetooth", if (state.bluetoothReady) "ready" else "off or not allowed")
     }
-    // No Wear OS on iOS (decision 0016).
+    // No Wear OS on iOS (decision 0017).
     if (!ios) WearPanel(state.wear, state.now)
     SettingsSection("Tools") {
       SettingsRow(

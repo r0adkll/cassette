@@ -450,7 +450,7 @@ internal fun WidePermissions(
   )
 }
 
-/** Where Cassette shows the batteries; iOS has no widgets yet (decision 0016). */
+/** Where Cassette shows the batteries; iOS has no widgets yet (decision 0017). */
 @Composable
 private fun glanceText(): String =
   when (LocalAppPlatform.current) {

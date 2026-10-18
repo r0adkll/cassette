@@ -1,4 +1,4 @@
-# The iPhone app (decision 0016). Generate the Xcode project with
+# The iPhone app (decision 0017). Generate the Xcode project with
 # `xcodegen generate --spec app/ios/Cassette/project.yml`; the .xcodeproj isn't committed.
 name: Cassette
 options:

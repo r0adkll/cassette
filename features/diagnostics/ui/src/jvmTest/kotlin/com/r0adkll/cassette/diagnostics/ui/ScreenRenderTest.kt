@@ -39,7 +39,7 @@ class ScreenRenderTest {
             lastRequest = wearEvent(WearAction.RefreshRequested, "Pixel Watch 3", 1.hours.ago),
           ),
         "no-wear" to WearDiagnostics(WatchCheck.Unavailable, null, null),
-        // No Wear panel or scan profiles on iOS (decision 0016).
+        // No Wear panel or scan profiles on iOS (decision 0017).
         "ios" to WearDiagnostics(WatchCheck.Unavailable, null, null),
       )
     for (dark in listOf(true, false)) {

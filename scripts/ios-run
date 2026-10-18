@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the iOS app's debug build and runs it (decision 0016).
+# Builds the iOS app's debug build and runs it (decision 0017).
 #
 #   scripts/ios-run            $IOS_SIMULATOR (a UDID), else the booted Simulator, else boots
 #                              $SIMULATOR (default "iPhone 16 Pro")

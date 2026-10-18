@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
 /**
- * Core Bluetooth scans (decision 0016). iOS sets the background scan's cadence, so every
+ * Core Bluetooth scans (decision 0017). iOS sets the background scan's cadence, so every
  * [ScanProfile] arms the same `FE51` scan.
  */
 @ContributesBinding(AppScope::class)

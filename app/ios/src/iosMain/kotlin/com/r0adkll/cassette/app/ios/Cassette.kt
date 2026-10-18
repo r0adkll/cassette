@@ -33,7 +33,7 @@ import platform.UserNotifications.UNUserNotificationCenterDelegateProtocol
 import platform.darwin.NSObject
 
 /**
- * What the Swift app calls (decision 0016): `Cassette.shared` in Swift. iOS entry points reach the
+ * What the Swift app calls (decision 0017): `Cassette.shared` in Swift. iOS entry points reach the
  * graph through it, as Android's reach it through the Application (decision 0007).
  */
 object Cassette {

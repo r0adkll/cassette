@@ -326,7 +326,7 @@ private fun CapturePanel(state: SettingsUiState) {
 }
 
 /**
- * How iOS lets Cassette listen (iteration 14, decision 0016): iOS sets the cadence, and swiping the
+ * How iOS lets Cassette listen (iteration 14, decision 0017): iOS sets the cadence, and swiping the
  * app away stops background capture until it's opened again.
  */
 @Composable
@@ -427,7 +427,7 @@ private fun SettingsUiState.info(
         "Diagnostics",
         when (platform) {
           AppPlatform.Android -> "Raw adverts, hub tables, scan profile"
-          // iOS has no scan profiles to choose (decision 0016).
+          // iOS has no scan profiles to choose (decision 0017).
           AppPlatform.Ios -> "Raw adverts, hub tables, ride tests"
         },
       )

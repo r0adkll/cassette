@@ -2,7 +2,7 @@ import CassetteKit
 import SwiftUI
 import UIKit
 
-/// The Swift half stays thin (decision 0016): everything else is the CassetteKit framework.
+/// The Swift half stays thin (decision 0017): everything else is the CassetteKit framework.
 final class AppDelegate: NSObject, UIApplicationDelegate {
   func application(
     _ application: UIApplication,

@@ -151,7 +151,7 @@ class AxsAdvertParserTest {
 
   @Test
   fun decodesCoreBluetoothParts() {
-    // An iPhone's callback for our RD (decision 0016): Core Bluetooth merges both 0x0933
+    // An iPhone's callback for our RD (decision 0017): Core Bluetooth merges both 0x0933
     // structures into one blob; the identifier stands in for the address.
     val merged = bytes("00 00 01 02 00 04 05 8f 1e 03 80 48 01 01 09 0d 03 6e 7a c1 53 2a 04 81 01")
     val identifier = "6E4A45BD-DE3D-D303-8103-84FB3F77669A"

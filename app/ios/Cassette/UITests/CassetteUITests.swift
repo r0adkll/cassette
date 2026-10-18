@@ -12,7 +12,7 @@ final class CassetteUITests: XCTestCase {
   }
 
   func testFirstRunToSampleBike() {
-    // Welcome (decision 0016: no widgets or Quick Settings on iOS yet).
+    // Welcome (decision 0017: no widgets or Quick Settings on iOS yet).
     expect("The bike screen and notifications.")
     shot("01-welcome")
     tap("Get started")

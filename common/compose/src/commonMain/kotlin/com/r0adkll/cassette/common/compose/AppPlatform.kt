@@ -3,7 +3,7 @@ package com.r0adkll.cassette.common.compose
 import androidx.compose.runtime.staticCompositionLocalOf
 
 /**
- * The phone's OS, for the few words and rows that differ between the apps (decision 0016). Read it
+ * The phone's OS, for the few words and rows that differ between the apps (decision 0017). Read it
  * through [LocalAppPlatform] so previews and screen renders can pick one.
  */
 enum class AppPlatform {

@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.UIKitInteropProperties
 import androidx.compose.ui.viewinterop.UIKitView
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
+import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.cValue
@@ -200,7 +201,7 @@ private val isIos26: Boolean by lazy {
   )
 }
 
-@OptIn(ExperimentalForeignApi::class)
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 private fun ImageBitmap.toTemplateImage(scale: Double): UIImage {
   val png = Image.makeFromBitmap(asSkiaBitmap()).encodeToData(EncodedImageFormat.PNG)!!.bytes
   val data = png.usePinned { NSData.create(bytes = it.addressOf(0), length = png.size.toULong()) }

@@ -147,7 +147,7 @@ class ScreenRenderTest {
     }
   }
 
-  /** The iPhone app's wording (decision 0016), with notifications not yet allowed. */
+  /** The iPhone app's wording (decision 0017), with notifications not yet allowed. */
   @Test
   fun ios() {
     val askable =

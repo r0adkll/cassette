@@ -16,7 +16,7 @@ import platform.UserNotifications.UNNotificationRequest
 import platform.UserNotifications.UNUserNotificationCenter
 
 /**
- * Posts through `UNUserNotificationCenter` (decision 0016). Identifiers follow the Android ids in
+ * Posts through `UNUserNotificationCenter` (decision 0017). Identifiers follow the Android ids in
  * the CLAUDE.md ledger, so a newer alert replaces the older one; iOS has no channels, so each kind
  * is its own thread instead.
  */
