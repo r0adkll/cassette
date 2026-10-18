@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Builds the iOS app's debug build and runs it (decision 0016).
 #
-#   scripts/ios-run            the booted Simulator, or boots $SIMULATOR (default "iPhone 16 Pro")
+#   scripts/ios-run            $IOS_SIMULATOR (a UDID), else the booted Simulator, else boots
+#                              $SIMULATOR (default "iPhone 16 Pro")
 #   scripts/ios-run --device   the first connected iPhone, or $IOS_DEVICE (a devicectl identifier)
 #
 # Bluetooth only works on an iPhone; the Simulator shows the UI.
@@ -35,7 +36,13 @@ for d in devices:
     "$derived/Build/Products/Debug-iphoneos/Cassette.app"
   xcrun devicectl device process launch --terminate-existing --device "$IOS_DEVICE" "$bundle"
 else
-  booted=$(xcrun simctl list devices booted | grep -Eo '[0-9A-F-]{36}' | head -1 || true)
+  # Simulators are shared with other sessions: pass $IOS_SIMULATOR (a UDID) to use your own.
+  if [ -n "${IOS_SIMULATOR:-}" ]; then
+    booted=$IOS_SIMULATOR
+    xcrun simctl bootstatus "$booted" -b >/dev/null
+  else
+    booted=$(xcrun simctl list devices booted | grep -Eo '[0-9A-F-]{36}' | head -1 || true)
+  fi
   if [ -z "$booted" ]; then
     xcrun simctl boot "${SIMULATOR:-iPhone 16 Pro}"
     booted=$(xcrun simctl list devices booted | grep -Eo '[0-9A-F-]{36}' | head -1)

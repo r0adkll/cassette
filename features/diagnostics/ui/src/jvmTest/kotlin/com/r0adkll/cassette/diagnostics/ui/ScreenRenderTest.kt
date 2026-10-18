@@ -4,11 +4,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Density
 import com.r0adkll.cassette.capture.api.CaptureEvent
 import com.r0adkll.cassette.capture.api.WearAction
+import com.r0adkll.cassette.common.compose.AppPlatform
+import com.r0adkll.cassette.common.compose.LocalAppPlatform
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.data.ble.ScanProfile
 import com.r0adkll.cassette.settings.api.CaptureHealth
@@ -36,10 +39,13 @@ class ScreenRenderTest {
             lastRequest = wearEvent(WearAction.RefreshRequested, "Pixel Watch 3", 1.hours.ago),
           ),
         "no-wear" to WearDiagnostics(WatchCheck.Unavailable, null, null),
+        // No Wear panel or scan profiles on iOS (decision 0016).
+        "ios" to WearDiagnostics(WatchCheck.Unavailable, null, null),
       )
     for (dark in listOf(true, false)) {
       for ((name, panel) in wear) {
-        render("diagnostics-$name-${if (dark) "dark" else "light"}", dark) {
+        val platform = if (name == "ios") AppPlatform.Ios else AppPlatform.Android
+        render("diagnostics-$name-${if (dark) "dark" else "light"}", dark, platform) {
           DiagnosticsUi(
             DiagnosticsUiState(
               health =
@@ -65,11 +71,18 @@ class ScreenRenderTest {
   private fun wearEvent(action: WearAction, detail: String, at: Instant) =
     CaptureEvent.Wear(at.toEpochMilliseconds(), action, detail)
 
-  private fun render(name: String, dark: Boolean, content: @Composable () -> Unit) {
+  private fun render(
+    name: String,
+    dark: Boolean,
+    platform: AppPlatform,
+    content: @Composable () -> Unit,
+  ) {
     val scene =
       ImageComposeScene(width = 412 * 2, height = 892 * 2, density = Density(2f)) {
         CassetteTheme(darkTheme = dark) {
-          Box(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) { content() }
+          CompositionLocalProvider(LocalAppPlatform provides platform) {
+            Box(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) { content() }
+          }
         }
       }
     repeat(4) { scene.render(it * 16_000_000L) }
