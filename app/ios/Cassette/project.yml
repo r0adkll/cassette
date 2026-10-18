@@ -13,6 +13,8 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
     # The Gradle build phase reads and writes outside the sandbox.
     ENABLE_USER_SCRIPT_SANDBOXING: NO
+    # CassetteKit is built for arm64 Simulators only (iosSimulatorArm64).
+    EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
 targets:
   Cassette:
     type: application
