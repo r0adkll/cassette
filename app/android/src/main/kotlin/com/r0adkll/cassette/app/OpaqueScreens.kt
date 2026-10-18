@@ -3,7 +3,6 @@ package com.r0adkll.cassette.app
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -14,7 +13,8 @@ import com.slack.circuit.runtime.navigation.NavStackList
 
 /**
  * Gives every screen its own opaque background, edge to edge, so during a transition the outgoing
- * screen's content never shows through the incoming one. Content stays inside the system bars.
+ * screen's content never shows through the incoming one. Each screen pads its own content inside
+ * the system bars (decision 0016).
  */
 class OpaqueScreens(private val delegate: NavDecoration, private val background: Color) :
   NavDecoration {
@@ -26,7 +26,7 @@ class OpaqueScreens(private val delegate: NavDecoration, private val background:
     content: @Composable (T) -> Unit,
   ) {
     delegate.DecoratedContent(args, navigator, modifier) { arg ->
-      Box(Modifier.fillMaxSize().background(background).safeDrawingPadding()) { content(arg) }
+      Box(Modifier.fillMaxSize().background(background)) { content(arg) }
     }
   }
 }

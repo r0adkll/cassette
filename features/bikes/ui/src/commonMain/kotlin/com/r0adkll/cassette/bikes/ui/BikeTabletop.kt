@@ -21,13 +21,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -98,6 +103,7 @@ internal fun BikeTabletop(state: BikeUiState.Loaded, foldTop: Dp, foldBottom: Dp
       Row(
         Modifier.weight(1f)
           .fillMaxWidth()
+          .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
           .padding(start = 28.dp, end = 28.dp, top = 16.dp, bottom = 20.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
       ) {
@@ -115,7 +121,16 @@ internal fun BikeTabletop(state: BikeUiState.Loaded, foldTop: Dp, foldBottom: Dp
       }
     }
     Spacer(Modifier.height(foldBottom - foldTop))
-    RefreshHalf(state, Modifier.weight(1f).fillMaxWidth().background(colors.panel))
+    // Both halves run under the system bars (decision 0016) and pad their content inside them.
+    RefreshHalf(
+      state,
+      Modifier.weight(1f)
+        .fillMaxWidth()
+        .background(colors.panel)
+        .windowInsetsPadding(
+          WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
+        ),
+    )
   }
 }
 
@@ -138,6 +153,9 @@ private fun HalfStatus(state: BikeUiState.Loaded) {
     Modifier.fillMaxWidth()
       .background(container)
       .bottomLine(line)
+      .windowInsetsPadding(
+        WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+      )
       .padding(start = 28.dp, end = 28.dp, top = 20.dp, bottom = 16.dp),
     verticalAlignment = Alignment.Bottom,
     horizontalArrangement = Arrangement.spacedBy(24.dp),

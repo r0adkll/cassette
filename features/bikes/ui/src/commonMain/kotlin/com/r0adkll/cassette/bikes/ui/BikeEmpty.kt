@@ -1,14 +1,14 @@
 package com.r0adkll.cassette.bikes.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -18,11 +18,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
@@ -50,21 +46,12 @@ internal fun WideEmptyBike(
 ) {
   val colors = CassetteTheme.colors
   val type = CassetteTheme.type
-  val density = LocalDensity.current
-  val top = WindowInsets.safeDrawing.getTop(density).toFloat()
-  val bottom = WindowInsets.safeDrawing.getBottom(density).toFloat()
   SplitPanes(
     start = {
       Column(
         Modifier.fillMaxSize()
-          .drawBehind {
-            // The panel runs under the system bars.
-            drawRect(
-              colors.panel,
-              topLeft = Offset(0f, -top),
-              size = Size(size.width, size.height + top + bottom),
-            )
-          }
+          .background(colors.panel)
+          .safeDrawingPadding()
           .padding(start = 32.dp, end = 32.dp, top = 24.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
       ) {
@@ -85,7 +72,9 @@ internal fun WideEmptyBike(
     },
     end = {
       Column(
-        Modifier.fillMaxSize().padding(start = 32.dp, end = 32.dp, top = 24.dp, bottom = 32.dp),
+        Modifier.fillMaxSize()
+          .safeDrawingPadding()
+          .padding(start = 32.dp, end = 32.dp, top = 24.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
       ) {
         val update by LocalAppUpdates.current.status.collectAsState()

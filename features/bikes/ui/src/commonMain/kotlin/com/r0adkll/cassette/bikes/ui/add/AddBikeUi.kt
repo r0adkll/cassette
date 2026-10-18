@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -76,7 +77,10 @@ fun AddBikeUi(state: AddBikeUiState, modifier: Modifier = Modifier) {
   }
   Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
     Column(
-      Modifier.widthIn(max = 480.dp).fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp),
+      Modifier.widthIn(max = 480.dp)
+        .fillMaxSize()
+        .safeDrawingPadding()
+        .padding(horizontal = 20.dp, vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
       Header(state.step.number, onClose = { sink(AddBikeEvent.Close) })
@@ -523,7 +527,9 @@ internal fun WakeAndFound(
   SplitPanes(
     start = {
       Column(
-        Modifier.fillMaxSize().padding(start = 28.dp, end = 28.dp, top = 24.dp, bottom = 32.dp),
+        Modifier.fillMaxSize()
+          .safeDrawingPadding()
+          .padding(start = 28.dp, end = 28.dp, top = 24.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
       ) {
         Header(step.number, onClose = { sink(AddBikeEvent.Close) })
@@ -566,6 +572,7 @@ internal fun WakeAndFound(
       Column(
         Modifier.fillMaxSize()
           .background(colors.panel)
+          .safeDrawingPadding()
           .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
       ) {

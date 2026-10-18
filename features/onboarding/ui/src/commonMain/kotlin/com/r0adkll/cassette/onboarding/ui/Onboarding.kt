@@ -10,14 +10,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,14 +36,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
@@ -141,18 +141,14 @@ fun WelcomeUi(state: WelcomeUiState, modifier: Modifier = Modifier) {
     return
   }
   val colors = CassetteTheme.colors
-  // The app pads every screen inside the system bars; the poster's red runs up under the status
-  // bar.
-  val statusBar = WindowInsets.safeDrawing.getTop(LocalDensity.current).toFloat()
+  // The poster's red runs up under the status bar (decision 0016).
   Column(modifier.fillMaxSize()) {
     Box(
-      Modifier.fillMaxWidth().drawBehind {
-        drawRect(
-          CassetteRed,
-          topLeft = Offset(0f, -statusBar),
-          size = Size(size.width, size.height + statusBar),
-        )
-      },
+      Modifier.fillMaxWidth()
+        .background(CassetteRed)
+        .windowInsetsPadding(
+          WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+        ),
       contentAlignment = Alignment.TopCenter,
     ) {
       Column(
@@ -187,7 +183,14 @@ fun WelcomeUi(state: WelcomeUiState, modifier: Modifier = Modifier) {
         )
       }
     }
-    Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+    Box(
+      Modifier.weight(1f)
+        .fillMaxWidth()
+        .windowInsetsPadding(
+          WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
+        ),
+      contentAlignment = Alignment.TopCenter,
+    ) {
       Column(
         Modifier.widthIn(max = MaxContentWidth)
           .fillMaxSize()
@@ -241,20 +244,12 @@ internal fun WideWelcome(
   val colors = CassetteTheme.colors
   val type = CassetteTheme.type
   // The red runs up under the status bar and down under the navigation bar.
-  val density = LocalDensity.current
-  val top = WindowInsets.safeDrawing.getTop(density).toFloat()
-  val bottom = WindowInsets.safeDrawing.getBottom(density).toFloat()
   SplitPanes(
     start = {
       Column(
         Modifier.fillMaxSize()
-          .drawBehind {
-            drawRect(
-              CassetteRed,
-              topLeft = Offset(0f, -top),
-              size = Size(size.width, size.height + top + bottom),
-            )
-          }
+          .background(CassetteRed)
+          .safeDrawingPadding()
           .padding(start = 32.dp, end = 32.dp, top = 56.dp, bottom = 40.dp)
       ) {
         Text("CASSETTE", style = type.label.copy(letterSpacing = 0.24.em), color = Color.White)
@@ -278,7 +273,9 @@ internal fun WideWelcome(
     },
     end = {
       Column(
-        Modifier.fillMaxSize().padding(start = 32.dp, end = 32.dp, top = 56.dp, bottom = 32.dp)
+        Modifier.fillMaxSize()
+          .safeDrawingPadding()
+          .padding(start = 32.dp, end = 32.dp, top = 56.dp, bottom = 32.dp)
       ) {
         Column(
           Modifier.weight(1f).verticalScroll(rememberScrollState()),
@@ -361,6 +358,7 @@ fun PermissionsUi(state: PermissionsUiState, modifier: Modifier = Modifier) {
     Column(
       Modifier.widthIn(max = MaxContentWidth)
         .fillMaxSize()
+        .safeDrawingPadding()
         .padding(horizontal = 20.dp, vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -402,21 +400,13 @@ internal fun WidePermissions(
   hinge: Rect? = currentVerticalHinge(),
 ) {
   val colors = CassetteTheme.colors
-  val density = LocalDensity.current
-  val top = WindowInsets.safeDrawing.getTop(density).toFloat()
-  val bottom = WindowInsets.safeDrawing.getBottom(density).toFloat()
   SplitPanes(
     start = {
       Column(
+        // The panel runs under the system bars, as the welcome's red does.
         Modifier.fillMaxSize()
-          .drawBehind {
-            // The panel runs under the system bars, as the welcome's red does.
-            drawRect(
-              colors.panel,
-              topLeft = Offset(0f, -top),
-              size = Size(size.width, size.height + top + bottom),
-            )
-          }
+          .background(colors.panel)
+          .safeDrawingPadding()
           .padding(start = 32.dp, end = 32.dp, top = 24.dp, bottom = 40.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
       ) {
@@ -444,7 +434,9 @@ internal fun WidePermissions(
     },
     end = {
       Column(
-        Modifier.fillMaxSize().padding(start = 32.dp, end = 32.dp, top = 92.dp, bottom = 32.dp),
+        Modifier.fillMaxSize()
+          .safeDrawingPadding()
+          .padding(start = 32.dp, end = 32.dp, top = 92.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
       ) {
         Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) { PermissionCards() }

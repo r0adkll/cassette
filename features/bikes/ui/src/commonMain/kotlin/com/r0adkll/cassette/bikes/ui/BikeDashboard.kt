@@ -16,17 +16,19 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -41,12 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
@@ -67,7 +64,9 @@ import com.r0adkll.cassette.common.compose.components.StatusBlockButton
 import com.r0adkll.cassette.common.compose.components.StatusBlockMeta
 import com.r0adkll.cassette.common.compose.components.StatusBlockText
 import com.r0adkll.cassette.common.compose.components.WideStatusBlock
+import com.r0adkll.cassette.common.compose.endPane
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
+import com.r0adkll.cassette.common.compose.startPane
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.screens.ComponentScreen
 import com.slack.circuit.foundation.CircuitContent
@@ -102,15 +101,22 @@ private fun Dashboard(state: BikeUiState.Loaded, rail: Boolean) {
   val updateWaiting = update is UpdateStatus.Available
   val gutter = if (rail) 28.dp else 24.dp
   val sink = state.eventSink
+  // The rail, its divider and the scrolling content run under the system bars (decision 0016).
   Row(Modifier.fillMaxSize()) {
     if (rail) {
-      BikeRail(state, updateWaiting, Modifier.width(240.dp).fillMaxHeight())
+      BikeRail(
+        state,
+        updateWaiting,
+        Modifier.fillMaxHeight().startPane().safeDrawingPadding().width(240.dp),
+      )
       Box(Modifier.width(1.dp).fillMaxHeight().background(CassetteTheme.colors.line))
     }
     Column(
       Modifier.weight(1f)
         .fillMaxHeight()
+        .then(if (rail) Modifier.endPane() else Modifier)
         .verticalScroll(rememberScrollState())
+        .safeDrawingPadding()
         .padding(vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -172,22 +178,29 @@ private fun BikeRail(state: BikeUiState.Loaded, updateWaiting: Boolean, modifier
       Kicker("Cassette")
     }
     Kicker("Bikes", Modifier.padding(start = 8.dp, top = 10.dp, bottom = 4.dp))
-    Column(
-      Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
-      verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-      state.choices().forEach { bike ->
-        BikeRailItem(
-          bike.name,
-          bike.tone,
-          bike.seen,
-          selected = bike.id == state.bikeId,
-          onClick = { sink(BikeEvent.SelectBike(bike.id)) },
-        )
+    // The bikes and Add bike take the rest of the height, so Settings stays at the foot. A second
+    // weight beside the list would split the space with it and float Settings mid-rail.
+    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+      Column(
+        Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+      ) {
+        state.choices().forEach { bike ->
+          BikeRailItem(
+            bike.name,
+            bike.tone,
+            bike.seen,
+            selected = bike.id == state.bikeId,
+            onClick = { sink(BikeEvent.SelectBike(bike.id)) },
+          )
+        }
       }
+      RailAddButton(
+        "Add bike",
+        onClick = { sink(BikeEvent.AddBike) },
+        Modifier.padding(top = 6.dp),
+      )
     }
-    RailAddButton("Add bike", onClick = { sink(BikeEvent.AddBike) }, Modifier.padding(top = 6.dp))
-    Spacer(Modifier.weight(1f))
     RailLink(
       LucideIcons.Settings,
       if (updateWaiting) "Settings, app update available" else "Settings",
@@ -332,27 +345,10 @@ private fun BoxScope.ComponentSheet(
     onBackCompleted = { sink(BikeEvent.CloseSheet) },
   )
 
-  // The app pads every screen inside the system bars; the scrim and the sheet run out under them,
-  // and the sheet's content comes back inside. The screen's padding has consumed the insets, so the
-  // sheet pads by the measured sizes rather than with windowInsetsPadding (which would add
-  // nothing).
-  val bars = WindowInsets.safeDrawing
-  val density = LocalDensity.current
-  val direction = LocalLayoutDirection.current
-  val left = bars.getLeft(density, direction)
-  val top = bars.getTop(density)
-  val right = bars.getRight(density, direction)
-  val bottom = bars.getBottom(density)
-  val barPadding =
-    with(density) {
-      PaddingValues(
-        top = top.toDp(),
-        bottom = bottom.toDp(),
-        // The sheet sits at the end edge, so only that side's bar reaches it.
-        end = (if (direction == LayoutDirection.Ltr) right else left).toDp(),
-      )
-    }
-  Box(Modifier.matchParentSize().expandBy(left, top, right, bottom)) {
+  // The scrim and the sheet run under the system bars (decision 0016). The sheet pads its header
+  // below the top bar and clear of the end one; the component scrolls under the bottom bar and pads
+  // its own content above it.
+  Box(Modifier.matchParentSize()) {
     if (!rail) {
       AnimatedVisibility(
         open != null,
@@ -389,7 +385,10 @@ private fun BoxScope.ComponentSheet(
           .shadow(16.dp, SheetShape)
           .clip(SheetShape)
           .background(colors.panel)
-          .padding(barPadding)
+          .endPane()
+          .windowInsetsPadding(
+            WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.End)
+          )
           .padding(top = 24.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
       ) {
@@ -443,19 +442,6 @@ private fun ComponentInSheet(id: Long, sink: (BikeEvent) -> Unit) {
     },
   )
 }
-
-/** Lays the content out larger than its slot by these pixels on each side, centred on it. */
-private fun Modifier.expandBy(left: Int, top: Int, right: Int, bottom: Int): Modifier =
-  layout { measurable, constraints ->
-    val placeable =
-      measurable.measure(
-        Constraints.fixed(
-          constraints.maxWidth + left + right,
-          constraints.maxHeight + top + bottom,
-        )
-      )
-    layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(-left, -top) }
-  }
 
 /** A value kept across recompositions without causing them. */
 private class Held<T>(var value: T)

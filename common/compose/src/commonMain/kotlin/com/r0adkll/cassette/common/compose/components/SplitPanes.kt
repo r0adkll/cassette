@@ -1,5 +1,6 @@
 package com.r0adkll.cassette.common.compose.components
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -12,12 +13,15 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.unit.Constraints
 import com.r0adkll.cassette.common.compose.currentVerticalHinge
+import com.r0adkll.cassette.common.compose.endPane
+import com.r0adkll.cassette.common.compose.startPane
 import kotlin.math.roundToInt
 
 /**
  * Two panes side by side (decision 0014): split where an open foldable folds, so nothing sits on
  * the hinge, or down the middle where there's no hinge (a tablet). [hinge] is in window pixels;
- * renders pass their own.
+ * renders pass their own. Each pane runs under the top and bottom bars and sees only its own side's
+ * bar (decision 0016).
  */
 @Composable
 fun SplitPanes(
@@ -28,7 +32,11 @@ fun SplitPanes(
 ) {
   var left by remember { mutableFloatStateOf(0f) }
   Layout(
-    contents = listOf(start, end),
+    contents =
+      listOf(
+        { Box(Modifier.startPane(), propagateMinConstraints = true) { start() } },
+        { Box(Modifier.endPane(), propagateMinConstraints = true) { end() } },
+      ),
     modifier = modifier.onGloballyPositioned { left = it.positionInWindow().x },
   ) { (startPane, endPane), constraints ->
     val width = constraints.maxWidth

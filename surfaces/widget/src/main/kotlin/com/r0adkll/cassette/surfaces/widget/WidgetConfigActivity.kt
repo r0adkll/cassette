@@ -9,7 +9,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
@@ -67,7 +66,6 @@ class WidgetConfigActivity : ComponentActivity() {
               selected,
               onPick = { bikeId -> pick(glanceId, widgetId, bikeId) },
               onClose = ::finish,
-              modifier = Modifier.safeDrawingPadding(),
             )
           }
         }
