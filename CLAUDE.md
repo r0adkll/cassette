@@ -36,6 +36,7 @@ ported. Don't build new features on the POC.
 - iOS (decision 0016): `xcodegen generate --spec app/ios/Cassette/project.yml`, then build the `Cassette`
   scheme in Xcode or with `xcodebuild` (its build phase runs `:app:ios:embedAndSignAppleFrameworkForXcode`).
   Debug installs as `com.r0adkll.cassette.debug`. Bluetooth needs an iPhone; the Simulator shows the UI.
+  `scripts/ios-run` does all of it on the Simulator (`--device` for a connected iPhone).
   `./gradlew :app:ios:linkDebugFrameworkIosSimulatorArm64` checks the Kotlin half (and its Metro graph).
 - `scripts/ktfmt` checks formatting in under a second (`--format` fixes it), build-logic included. It is
   the only formatter: CI and the pre-push hook (`./gradlew bootstrap`) use it, and there is no Gradle
