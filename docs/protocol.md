@@ -85,7 +85,12 @@ Examples from our captures and tests:
 **Android pitfall:** an advert can carry **two** `0xFF` AD structures with the same company id.
 `ScanRecord.getManufacturerSpecificData()` keeps only the last one. Walk the raw `ScanRecord.bytes`, stop
 at the first zero length byte (Android pads with zeros) and join every 0x0933 payload before splitting the
-records. CoreBluetooth merges them; ESP32 stacks deliver them separately. [HW] [PA]
+records. CoreBluetooth merges them (confirmed on our RD: one blob holds `0000,0400,0101`); ESP32 stacks
+deliver them separately. [HW] [PA]
+
+**iOS:** callbacks that carry the scan response (name and `FE51` service data) hold only the `0000,0400`
+records. In the background, iOS delivers no scan response at all: the battery records arrive, but not
+the serial. [HW] (iOS spike, decision 0017)
 
 ### 3.2 Service data `0xFE51`: the SRAM service frame
 
@@ -281,7 +286,7 @@ What's readable without the session:
 | `d9050003`, `d9050004` (and `d9050002`) | [HW] read unauthenticated by Cassette |
 | `0x2A19` on the Quarq | [HW] |
 | `fe54`, `fe56`, `fe57` on the shifters | [HW] |
-| `fe58`, `0x2A19` on the RD, `d905000a` drivetrain config | Plaintext in the snoop, but read **after** the handshake started. Unauthenticated read untested [INF] |
+| `fe58`, `0x2A19` on the RD, `d905000a` drivetrain config | [HW] read unauthenticated from iOS (2026-10-18): `fe58` as in §5.3, `2a19` = 72, `d905000a` as below |
 | Device Information `0x180A` (`2a24`–`2a29`, `2a50`) | [APP] |
 
 `d905000a` (drivetrain config) holds varint fields: FD gears, RD gears, RD trim positions. Our bike reads
@@ -371,8 +376,7 @@ SRAM's app also gives remaining-time hints when low: months for coin-cell contro
    actuations is real.
 4. Is the BLE address stable across days, battery swaps and firmware updates? This matters for
    CompanionDeviceManager presence (decision 0009).
-5. Can `fe58`, `0x2A19` (RD) and `d905000a` be read without the session? (Seen plaintext only after it
-   started.)
+5. ~~Can `fe58`, `0x2A19` (RD) and `d905000a` be read without the session?~~ Yes (§5.4).
 6. Is `fe60` byte 3 percent or temperature? What's in `fe53`? What order are the `fe61` fields in?
 7. Do the shifters and FD send status frames (with battery) in any mode, or only beacons? Does anything
    other than the RD act as hub on other groupsets?

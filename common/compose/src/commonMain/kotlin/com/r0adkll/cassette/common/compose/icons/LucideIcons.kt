@@ -20,6 +20,18 @@ object LucideIcons {
     }
   }
 
+  /** Lucide `app-window`. */
+  val AppWindow: ImageVector by lazy {
+    lucide("AppWindow") {
+      stroke(
+        "M4.0 4.0h16.0a2.0 2.0 0 0 1 2.0 2.0v12.0a2.0 2.0 0 0 1 -2.0 2.0h-16.0a2.0 2.0 0 0 1 -2.0 -2.0v-12.0a2.0 2.0 0 0 1 2.0 -2.0Z"
+      )
+      stroke("M10 4v4")
+      stroke("M2 8h20")
+      stroke("M6 4v4")
+    }
+  }
+
   /** Lucide `arrow-left`. */
   val ArrowLeft: ImageVector by lazy {
     lucide("ArrowLeft") {
@@ -67,6 +79,16 @@ object LucideIcons {
     lucide("Bell") {
       stroke("M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9")
       stroke("M10.3 21a1.94 1.94 0 0 0 3.4 0")
+    }
+  }
+
+  /** Lucide `bell-off`. */
+  val BellOff: ImageVector by lazy {
+    lucide("BellOff") {
+      stroke("M8.7 3A6 6 0 0 1 18 8a21.3 21.3 0 0 0 .6 5")
+      stroke("M17 17H3s3-2 3-9a4.67 4.67 0 0 1 .3-1.7")
+      stroke("M10.3 21a1.94 1.94 0 0 0 3.4 0")
+      stroke("m2 2 20 20")
     }
   }
 

@@ -21,6 +21,10 @@ rootProject.name = "Cassette"
 
 include(":app:android")
 
+include(":app:ios")
+
+include(":app:shared")
+
 include(":app:wear")
 
 include(":common:compose")

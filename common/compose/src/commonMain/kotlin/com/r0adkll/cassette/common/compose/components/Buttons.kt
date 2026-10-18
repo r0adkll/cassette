@@ -109,7 +109,7 @@ fun IconCircleButton(
 }
 
 @Composable
-private fun CircleButton(icon: ImageVector, contentDescription: String, onClick: () -> Unit) {
+internal fun CircleButton(icon: ImageVector, contentDescription: String, onClick: () -> Unit) {
   val colors = CassetteTheme.colors
   Box(
     Modifier.size(44.dp)

@@ -27,17 +27,24 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.r0adkll.cassette.common.compose.AppPermission
+import com.r0adkll.cassette.common.compose.AppPlatform
+import com.r0adkll.cassette.common.compose.LocalAppPlatform
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
+import com.r0adkll.cassette.common.compose.LocalPermissionController
 import com.r0adkll.cassette.common.compose.LocalScreenLayout
+import com.r0adkll.cassette.common.compose.PermissionState
 import com.r0adkll.cassette.common.compose.ScreenLayout
 import com.r0adkll.cassette.common.compose.UpdateStatus
 import com.r0adkll.cassette.common.compose.components.CategoryItem
 import com.r0adkll.cassette.common.compose.components.Chevron
-import com.r0adkll.cassette.common.compose.components.IconCircleButton
+import com.r0adkll.cassette.common.compose.components.FloatingTopBar
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.SettingsRow
 import com.r0adkll.cassette.common.compose.components.SettingsSection
 import com.r0adkll.cassette.common.compose.components.SettingsSwitchRow
+import com.r0adkll.cassette.common.compose.components.TopBarButton
+import com.r0adkll.cassette.common.compose.components.TopBarButtonSize
 import com.r0adkll.cassette.common.compose.components.WaitingDot
 import com.r0adkll.cassette.common.compose.endPane
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
@@ -58,7 +65,10 @@ import com.slack.circuit.runtime.presenter.Presenter
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 
-/** A screen with a back button and a big title, content capped at phone width. */
+/**
+ * A screen with a back button and a big title, content capped at phone width. Back floats while the
+ * content scrolls under it (iteration 14).
+ */
 @Composable
 internal fun TitledScreen(
   title: String,
@@ -75,9 +85,16 @@ internal fun TitledScreen(
         .padding(horizontal = 20.dp, vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-      IconCircleButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
+      Spacer(Modifier.height(TopBarButtonSize))
       Text(title, style = CassetteTheme.type.title, color = CassetteTheme.colors.text)
       content()
+    }
+    FloatingTopBar(
+      Modifier.widthIn(max = 480.dp)
+        .safeDrawingPadding()
+        .padding(horizontal = 20.dp, vertical = 24.dp)
+    ) {
+      TopBarButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
     }
   }
 }
@@ -114,7 +131,7 @@ private fun CategoryList(state: SettingsUiState, modifier: Modifier) {
   TitledScreen("Settings.", onBack = { state.eventSink(SettingsEvent.Back) }, modifier) {
     Panel {
       categories.forEachIndexed { i, category ->
-        val info = state.info(category, update)
+        val info = state.info(category, update, LocalAppPlatform.current)
         SettingsRow(
           info.label,
           subtitle = info.summary,
@@ -157,39 +174,40 @@ internal fun WideSettings(
   val selected = state.selected.takeIf { it in categories } ?: categories.first()
   // Both panes and the divider run under the system bars (decision 0016).
   Row(modifier.fillMaxSize()) {
-    Column(
-      Modifier.fillMaxHeight()
-        .startPane()
-        .verticalScroll(rememberScrollState())
-        .safeDrawingPadding()
-        .width(320.dp)
-        .padding(horizontal = 16.dp, vertical = 24.dp),
-      verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-      IconCircleButton(
-        LucideIcons.ArrowLeft,
-        "Back",
-        onClick = { sink(SettingsEvent.Back) },
-        modifier = Modifier.padding(start = 4.dp),
-      )
-      Text(
-        "Settings.",
-        style = CassetteTheme.type.title,
-        color = colors.text,
-        modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 10.dp),
-      )
-      categories.forEach { category ->
-        val info = state.info(category, update)
-        CategoryItem(
-          info.icon,
-          info.label,
-          info.summary,
-          selected = category == selected,
-          onClick = { sink(SettingsEvent.SelectCategory(category)) },
-          badge = info.badge,
+    Box(Modifier.fillMaxHeight().startPane()) {
+      Column(
+        Modifier.fillMaxHeight()
+          .verticalScroll(rememberScrollState())
+          .safeDrawingPadding()
+          .width(320.dp)
+          .padding(horizontal = 16.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+      ) {
+        Spacer(Modifier.height(TopBarButtonSize))
+        Text(
+          "Settings.",
+          style = CassetteTheme.type.title,
+          color = colors.text,
+          modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 10.dp),
         )
+        categories.forEach { category ->
+          val info = state.info(category, update, LocalAppPlatform.current)
+          CategoryItem(
+            info.icon,
+            info.label,
+            info.summary,
+            selected = category == selected,
+            onClick = { sink(SettingsEvent.SelectCategory(category)) },
+            badge = info.badge,
+          )
+        }
+        Footnote(Modifier.padding(start = 12.dp, top = 16.dp))
       }
-      Footnote(Modifier.padding(start = 12.dp, top = 16.dp))
+      FloatingTopBar(
+        Modifier.safeDrawingPadding().width(320.dp).padding(start = 20.dp, top = 24.dp)
+      ) {
+        TopBarButton(LucideIcons.ArrowLeft, "Back", onClick = { sink(SettingsEvent.Back) })
+      }
     }
     Box(Modifier.width(1.dp).fillMaxHeight().background(colors.line))
     Box(Modifier.weight(1f).fillMaxHeight().endPane()) {
@@ -206,7 +224,7 @@ internal fun WideSettings(
           verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
           // Lines the title up with the list's, which sits under its back button.
-          Spacer(Modifier.height(44.dp))
+          Spacer(Modifier.height(TopBarButtonSize))
           Text(selected.title(), style = CassetteTheme.type.title, color = colors.text)
           CategoryBody(selected, state, wide = true, gutter = 32.dp)
         }
@@ -236,30 +254,18 @@ private fun ColumnScope.CategoryBody(
 ) {
   val sink = state.eventSink
   val colors = CassetteTheme.colors
-  category.blurb()?.let { Text(it, style = CassetteTheme.type.body, color = colors.muted) }
+  category.blurb(LocalAppPlatform.current)?.let {
+    Text(it, style = CassetteTheme.type.body, color = colors.muted)
+  }
   when (category) {
     SettingsCategory.Bikes -> Garage(state, columns = if (wide) 2 else 1)
     SettingsCategory.Updates -> UpdatesBody(wide, gutter)
-    SettingsCategory.Capture ->
-      Panel {
-        SettingsSwitchRow(
-          "Background capture",
-          subtitle =
-            if (state.backgroundCapture) "On · reads the bike when it wakes"
-            else "Off · only Refresh reads the bike",
-          icon = LucideIcons.Bluetooth,
-          checked = state.backgroundCapture,
-          onCheckedChange = { sink(SettingsEvent.SetBackgroundCapture(it)) },
-        )
-        SettingsRow(
-          "Refresh scan length",
-          subtitle = "60 seconds",
-          icon = LucideIcons.RefreshCw,
-          divider = false,
-          trailing = {},
-        )
-      }
-    SettingsCategory.Notifications ->
+    SettingsCategory.Capture -> {
+      CapturePanel(state)
+      if (LocalAppPlatform.current == AppPlatform.Ios) OnIphone(state)
+    }
+    SettingsCategory.Notifications -> {
+      NotificationPermission()
       Panel {
         val n = state.notifications
         SettingsSwitchRow(
@@ -287,11 +293,91 @@ private fun ColumnScope.CategoryBody(
           },
         )
       }
+    }
     SettingsCategory.Appearance ->
       ThemeChoices(state.themeMode, onSelect = { sink(SettingsEvent.SetThemeMode(it)) })
     SettingsCategory.Licences -> LicencesList()
     // Opens as its own screen on a phone, and in the pane on a wide window.
     SettingsCategory.Diagnostics -> Unit
+  }
+}
+
+@Composable
+private fun CapturePanel(state: SettingsUiState) {
+  val sink = state.eventSink
+  Panel {
+    SettingsSwitchRow(
+      "Background capture",
+      subtitle =
+        if (state.backgroundCapture) "On · reads the bike when it wakes"
+        else "Off · only Refresh reads the bike",
+      icon = LucideIcons.Bluetooth,
+      checked = state.backgroundCapture,
+      onCheckedChange = { sink(SettingsEvent.SetBackgroundCapture(it)) },
+    )
+    SettingsRow(
+      "Refresh scan length",
+      subtitle = "60 seconds",
+      icon = LucideIcons.RefreshCw,
+      divider = false,
+      trailing = {},
+    )
+  }
+}
+
+/**
+ * How iOS lets Cassette listen (iteration 14, decision 0017): iOS sets the cadence, and swiping the
+ * app away stops background capture until it's opened again.
+ */
+@Composable
+private fun OnIphone(state: SettingsUiState) {
+  SettingsSection("On iPhone") {
+    SettingsRow(
+      "iOS decides when Cassette listens",
+      subtitle =
+        "It hears the bike when it wakes nearby, but can miss a short stop. Refresh always reads it.",
+      icon = LucideIcons.Info,
+      trailing = {},
+    )
+    SettingsRow(
+      "Keep Cassette in the app switcher",
+      subtitle = "Swiping it away stops background capture until you open it again.",
+      icon = LucideIcons.AppWindow,
+      trailing = {},
+    )
+    SettingsRow(
+      state.lastHeard ?: "Not heard in the background yet",
+      subtitle = state.wakes,
+      icon = LucideIcons.History,
+      divider = false,
+      trailing = {},
+    )
+  }
+}
+
+/**
+ * Above the switches while Cassette can't post notifications: asks again, or opens the system
+ * settings once the phone won't ask (onboarding may have been skipped).
+ */
+@Composable
+private fun NotificationPermission() {
+  val controller = LocalPermissionController.current
+  val states by controller.states.collectAsState()
+  val state = states[AppPermission.Notifications] ?: return
+  if (state == PermissionState.Granted) return
+  Panel {
+    SettingsRow(
+      "Notifications are off",
+      subtitle =
+        if (state == PermissionState.Askable) "Allow them so these switches can work"
+        else "Turned off for Cassette in the phone's settings. Tap to open them",
+      icon = LucideIcons.BellOff,
+      onClick = {
+        if (state == PermissionState.Askable) controller.request(AppPermission.Notifications)
+        else controller.openSettings()
+      },
+      divider = false,
+    )
   }
 }
 
@@ -303,7 +389,11 @@ private data class CategoryInfo(
   val badge: Boolean = false,
 )
 
-private fun SettingsUiState.info(category: SettingsCategory, update: UpdateStatus): CategoryInfo =
+private fun SettingsUiState.info(
+  category: SettingsCategory,
+  update: UpdateStatus,
+  platform: AppPlatform,
+): CategoryInfo =
   when (category) {
     SettingsCategory.Bikes -> CategoryInfo(LucideIcons.Pin, "Bikes", opensFirstLabel)
     SettingsCategory.Capture ->
@@ -332,7 +422,15 @@ private fun SettingsUiState.info(category: SettingsCategory, update: UpdateStatu
         badge = update is UpdateStatus.Available,
       )
     SettingsCategory.Diagnostics ->
-      CategoryInfo(LucideIcons.Activity, "Diagnostics", "Raw adverts, hub tables, scan profile")
+      CategoryInfo(
+        LucideIcons.Activity,
+        "Diagnostics",
+        when (platform) {
+          AppPlatform.Android -> "Raw adverts, hub tables, scan profile"
+          // iOS has no scan profiles to choose (decision 0017).
+          AppPlatform.Ios -> "Raw adverts, hub tables, ride tests"
+        },
+      )
     SettingsCategory.Licences ->
       CategoryInfo(LucideIcons.FileText, "Licences", "Barlow, JetBrains Mono, Lucide")
   }
@@ -352,18 +450,27 @@ private fun SettingsCategory.title(): String =
     SettingsCategory.Licences -> "Licences."
   }
 
-private fun SettingsCategory.blurb(): String? =
+private fun SettingsCategory.blurb(platform: AppPlatform): String? =
   when (this) {
     SettingsCategory.Bikes -> null
     SettingsCategory.Capture ->
       "How Cassette hears your bike: in the background whenever it wakes, and for a while " +
         "after you tap Refresh."
     SettingsCategory.Notifications ->
-      "One switch for each kind of notification. Android's notification settings can still " +
-        "turn one off."
+      when (platform) {
+        AppPlatform.Android ->
+          "One switch for each kind of notification. Android's notification settings can " +
+            "still turn one off."
+        AppPlatform.Ios ->
+          "One switch for each kind of notification. The Settings app can still turn them off."
+      }
     SettingsCategory.Appearance ->
-      "Light, dark, or whichever the phone is set to. Widgets, the Quick Settings tile and the " +
-        "watch follow the phone."
+      when (platform) {
+        AppPlatform.Android ->
+          "Light, dark, or whichever the phone is set to. Widgets, the Quick Settings tile and " +
+            "the watch follow the phone."
+        AppPlatform.Ios -> "Light, dark, or whichever the phone is set to."
+      }
     // The update hero says it all.
     SettingsCategory.Updates -> null
     SettingsCategory.Licences -> "Third-party fonts and icons Cassette ships."

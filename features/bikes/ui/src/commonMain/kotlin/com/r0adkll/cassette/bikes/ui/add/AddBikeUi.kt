@@ -43,15 +43,16 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.r0adkll.cassette.common.compose.LocalAppPlatform
 import com.r0adkll.cassette.common.compose.LocalScreenLayout
 import com.r0adkll.cassette.common.compose.ScreenLayout
 import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.CodeBadge
-import com.r0adkll.cassette.common.compose.components.IconCircleButton
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.SplitPanes
 import com.r0adkll.cassette.common.compose.components.StatusLabel
+import com.r0adkll.cassette.common.compose.components.TopBarButton
 import com.r0adkll.cassette.common.compose.components.pulses
 import com.r0adkll.cassette.common.compose.components.rememberPulses
 import com.r0adkll.cassette.common.compose.currentVerticalHinge
@@ -105,7 +106,8 @@ fun AddBikeUi(state: AddBikeUiState, modifier: Modifier = Modifier) {
 private fun Header(step: Int, onClose: () -> Unit) {
   val colors = CassetteTheme.colors
   Row(verticalAlignment = Alignment.CenterVertically) {
-    IconCircleButton(LucideIcons.X, "Close", onClick = onClose)
+    // Already outside the scrolling steps; glass on iOS (iteration 14).
+    TopBarButton(LucideIcons.X, "Close", onClick = onClose)
     Spacer(Modifier.weight(1f))
     Kicker("Step $step of $ADD_BIKE_STEPS")
   }
@@ -398,7 +400,11 @@ private fun KeepFresh(step: AddBikeStep.KeepFresh) {
         )
       }
       Column(Modifier.weight(1f)) {
-        Text("Nearby devices", style = CassetteTheme.type.itemTitle, color = colors.text)
+        Text(
+          LocalAppPlatform.current.bluetoothPermission,
+          style = CassetteTheme.type.itemTitle,
+          color = colors.text,
+        )
         Text(
           "Hear the bike when it wakes",
           style = CassetteTheme.type.bodySmall,

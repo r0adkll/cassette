@@ -115,7 +115,7 @@ class DefaultCaptureController(
     val result = scanner.startBackground(profile)
     val description =
       when (result) {
-        ArmResult.Armed -> "Armed (${profile.name})"
+        ArmResult.Armed -> "Armed (${scanner.describe(profile)})"
         ArmResult.BluetoothOff -> "Not armed: Bluetooth is off"
         ArmResult.NoPermission -> "Not armed: Nearby devices not allowed"
         is ArmResult.Failed -> "Not armed: scan error ${result.code}"

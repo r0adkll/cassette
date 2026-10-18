@@ -405,7 +405,7 @@ private fun refreshWords(
       RefreshWords(
         "CAN'T SCAN",
         "Off",
-        "Turn on Bluetooth and allow Nearby devices, then tap the circle.",
+        "Turn on Bluetooth and allow it for Cassette, then tap the circle.",
       )
     is RefreshButton.Scanning ->
       if (heard == 0)

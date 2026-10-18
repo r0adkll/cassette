@@ -47,7 +47,21 @@ object AxsAdvertParser {
             serviceData = data.copyOfRange(2, data.size)
       }
     }
+    return parse(name, manufacturer, serviceData, rssi, address, timestampMillis)
+  }
 
+  /**
+   * An advert already split into its parts, as Core Bluetooth delivers it: [manufacturer] is every
+   * 0x0933 payload joined, without the company id; [serviceData] is the `0xFE51` service data.
+   */
+  fun parse(
+    name: String?,
+    manufacturer: ByteArray,
+    serviceData: ByteArray?,
+    rssi: Int,
+    address: String,
+    timestampMillis: Long,
+  ): AxsReading? {
     val records = manufacturerRecords(manufacturer)
     val battery =
       records[RECORD_BATTERY]

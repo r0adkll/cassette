@@ -25,9 +25,9 @@ import androidx.compose.ui.unit.sp
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
 import com.r0adkll.cassette.common.compose.UpdateStatus
 import com.r0adkll.cassette.common.compose.components.CassetteButton
-import com.r0adkll.cassette.common.compose.components.IconCircleButton
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.SplitPanes
+import com.r0adkll.cassette.common.compose.components.TopBarButton
 import com.r0adkll.cassette.common.compose.currentVerticalHinge
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteRed
@@ -78,7 +78,7 @@ internal fun WideEmptyBike(
         verticalArrangement = Arrangement.spacedBy(16.dp),
       ) {
         val update by LocalAppUpdates.current.status.collectAsState()
-        IconCircleButton(
+        TopBarButton(
           LucideIcons.Settings,
           if (update is UpdateStatus.Available) "Settings, app update available" else "Settings",
           onClick = { eventSink(BikeEvent.OpenSettings) },

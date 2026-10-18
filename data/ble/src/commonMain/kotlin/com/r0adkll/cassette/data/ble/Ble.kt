@@ -25,6 +25,9 @@ interface AdvertScanner {
   fun startBackground(profile: ScanProfile): ArmResult
 
   fun stopBackground()
+
+  /** How Diagnostics names the background scan [profile] arms. */
+  fun describe(profile: ScanProfile): String = profile.name
 }
 
 sealed interface ArmResult {

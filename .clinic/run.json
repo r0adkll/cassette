@@ -60,6 +60,18 @@
       "name" : "Wear Tile"
     },
     {
+      "command" : "scripts/ios-run",
+      "icon" : "iphone.gen3",
+      "id" : "ios-simulator",
+      "name" : "iOS (Simulator)"
+    },
+    {
+      "command" : "scripts/ios-run --device",
+      "icon" : "iphone.radiowaves.left.and.right",
+      "id" : "ios-device",
+      "name" : "iOS (iPhone)"
+    },
+    {
       "command" : "./gradlew jvmTest testDebugUnitTest",
       "icon" : "testtube.2",
       "id" : "tests",

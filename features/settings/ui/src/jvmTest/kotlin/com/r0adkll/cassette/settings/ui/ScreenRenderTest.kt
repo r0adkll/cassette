@@ -8,10 +8,17 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Density
+import com.r0adkll.cassette.common.compose.AppPermission
+import com.r0adkll.cassette.common.compose.AppPlatform
 import com.r0adkll.cassette.common.compose.AppUpdates
 import com.r0adkll.cassette.common.compose.AvailableBuild
+import com.r0adkll.cassette.common.compose.FixedPermissionController
+import com.r0adkll.cassette.common.compose.LocalAppPlatform
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
+import com.r0adkll.cassette.common.compose.LocalPermissionController
 import com.r0adkll.cassette.common.compose.LocalScreenLayout
+import com.r0adkll.cassette.common.compose.PermissionController
+import com.r0adkll.cassette.common.compose.PermissionState
 import com.r0adkll.cassette.common.compose.ReinstallReason
 import com.r0adkll.cassette.common.compose.UpdateStatus
 import com.r0adkll.cassette.common.compose.currentScreenLayout
@@ -140,6 +147,41 @@ class ScreenRenderTest {
     }
   }
 
+  /** The iPhone app's wording (decision 0017), with notifications not yet allowed. */
+  @Test
+  fun ios() {
+    val askable =
+      FixedPermissionController(
+        mapOf(
+          AppPermission.Nearby to PermissionState.Granted,
+          AppPermission.Notifications to PermissionState.Askable,
+        )
+      )
+    val off = UpdateStatus.Off
+    val screens =
+      listOf(
+        Shot("notifications", RenderSize.Phone, state.copy(category = Notifications), off, askable),
+        Shot("appearance", RenderSize.Phone, state.copy(category = Appearance), off),
+        Shot(
+          "capture",
+          RenderSize.Phone,
+          state.copy(
+            category = Capture,
+            lastHeard = "Last heard 5 min ago",
+            wakes = "42 background wakes",
+          ),
+          off,
+        ),
+        Shot("tablet-notifications", RenderSize.Tablet, state.copy(selected = Notifications), off),
+      )
+    for (dark in listOf(true, false)) {
+      for (shot in screens) {
+        val name = "settings-ios-${shot.name}-${if (dark) "dark" else "light"}"
+        render(name, dark, shot, AppPlatform.Ios) { SettingsUi(shot.state) }
+      }
+    }
+  }
+
   @Test
   fun bikePage() {
     val model =
@@ -171,7 +213,13 @@ class ScreenRenderTest {
     }
   }
 
-  private fun render(name: String, dark: Boolean, shot: Shot, content: @Composable () -> Unit) {
+  private fun render(
+    name: String,
+    dark: Boolean,
+    shot: Shot,
+    platform: AppPlatform = AppPlatform.Android,
+    content: @Composable () -> Unit,
+  ) {
     val size = shot.size
     val updates = FakeUpdates(shot.update)
     val scene =
@@ -181,6 +229,8 @@ class ScreenRenderTest {
           CompositionLocalProvider(
             LocalScreenLayout provides currentScreenLayout(),
             LocalAppUpdates provides updates,
+            LocalAppPlatform provides platform,
+            LocalPermissionController provides shot.permissions,
           ) {
             Box(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) { content() }
           }
@@ -197,6 +247,7 @@ class ScreenRenderTest {
     val size: RenderSize,
     val state: SettingsUiState,
     val update: UpdateStatus,
+    val permissions: PermissionController = FixedPermissionController(),
   )
 
   /** Updates in a fixed state, installed as build 40 and checked 5 minutes ago. */
@@ -224,5 +275,6 @@ class ScreenRenderTest {
     val Notifications = SettingsCategory.Notifications
     val Updates = SettingsCategory.Updates
     val Appearance = SettingsCategory.Appearance
+    val Capture = SettingsCategory.Capture
   }
 }

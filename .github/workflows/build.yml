@@ -218,6 +218,97 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
 
-      # iOS ships in milestone 3; until then, shared code must keep compiling for it.
+      # Both architectures; the iOS app job builds and tests the app itself.
       - name: Compile for iOS
         run: ./gradlew compileKotlinIosSimulatorArm64 compileKotlinIosArm64
+
+  # The iPhone app (decision 0017): builds it and walks it on a Simulator with the UI test.
+  ios-app:
+    name: iOS app
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: UI test
+        run: |
+          export IOS_SIMULATOR=$(xcrun simctl create "Cassette CI" "iPhone 16 Pro")
+          scripts/ios-uitest
+
+      - name: Upload the UI test screenshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-uitest-screens
+          path: app/ios/Cassette/build/uitest-screens/
+
+  # TestFlight (internal testers) from main. Needs the App Store Connect API key in
+  # APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID and APP_STORE_CONNECT_KEY_BASE64 (the
+  # .p8, base64); without them the job only says so. Signing is automatic (cloud-managed).
+  testflight:
+    name: TestFlight
+    needs: ios-app
+    if: ${{ github.event_name == 'push' }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Build numbers count first-parent commits, like Drop's version codes.
+          fetch-depth: 0
+
+      - name: App Store Connect key
+        id: key
+        env:
+          KEY_BASE64: ${{ secrets.APP_STORE_CONNECT_KEY_BASE64 }}
+        run: |
+          if [ -z "$KEY_BASE64" ]; then
+            echo "No App Store Connect key: nothing is uploaded to TestFlight."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "$KEY_BASE64" | base64 -d > "$RUNNER_TEMP/AuthKey.p8"
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+
+      - name: Set up JDK
+        if: steps.key.outputs.ready == 'true'
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: 21
+
+      - name: Set up Gradle
+        if: steps.key.outputs.ready == 'true'
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Archive and upload
+        if: steps.key.outputs.ready == 'true'
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          brew install xcodegen
+          xcodegen generate --quiet --spec app/ios/Cassette/project.yml
+          build="$(git rev-list --count --first-parent HEAD)"
+          auth=(-allowProvisioningUpdates
+            -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8"
+            -authenticationKeyID "$KEY_ID"
+            -authenticationKeyIssuerID "$ISSUER_ID")
+          xcodebuild -project app/ios/Cassette/Cassette.xcodeproj -scheme Cassette \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/Cassette.xcarchive" "${auth[@]}" \
+            CURRENT_PROJECT_VERSION="$build" archive
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Cassette.xcarchive" \
+            -exportOptionsPlist app/ios/Cassette/ExportOptions.plist \
+            -exportPath "$RUNNER_TEMP/export" "${auth[@]}"
+          echo "TestFlight: build $build uploaded" >> "$GITHUB_STEP_SUMMARY"

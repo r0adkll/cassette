@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.widthIn
@@ -18,7 +19,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.r0adkll.cassette.common.compose.components.IconCircleButton
+import com.r0adkll.cassette.common.compose.components.FloatingTopBar
+import com.r0adkll.cassette.common.compose.components.TopBarButton
+import com.r0adkll.cassette.common.compose.components.TopBarButtonSize
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.protocol.ComponentKind
@@ -37,6 +40,7 @@ internal fun DiagnosticsScaffold(
   action: @Composable () -> Unit = {},
   content: @Composable ColumnScope.() -> Unit,
 ) {
+  // The back row floats while the content scrolls under it (iteration 14; glass on iOS).
   Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
     Column(
       Modifier.widthIn(max = 480.dp)
@@ -46,15 +50,20 @@ internal fun DiagnosticsScaffold(
         .padding(horizontal = 20.dp, vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-      if (onBack != null)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          IconCircleButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
-          Spacer(Modifier.weight(1f))
-          action()
-        }
+      if (onBack != null) Spacer(Modifier.height(TopBarButtonSize))
       Text(title, style = CassetteTheme.type.title, color = CassetteTheme.colors.text)
       content()
     }
+    if (onBack != null)
+      FloatingTopBar(
+        Modifier.widthIn(max = 480.dp)
+          .safeDrawingPadding()
+          .padding(horizontal = 20.dp, vertical = 24.dp)
+      ) {
+        TopBarButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
+        Spacer(Modifier.weight(1f))
+        action()
+      }
   }
 }
 
