@@ -22,9 +22,9 @@ sealed interface BikeUiState : CircuitUiState {
     /** "1 OF 2"; null when there's only one bike. */
     val position: String?,
     val status: BikeStatus,
+    val components: List<ComponentRowModel>,
     /** The status block's title: the plain headline, or a playful one (decision 0015). */
     val title: String = status.headline,
-    val components: List<ComponentRowModel>,
     val refresh: RefreshButton = RefreshButton.Idle,
     /** At most one tip at a time, under the components. */
     val tip: Tip? = null,
