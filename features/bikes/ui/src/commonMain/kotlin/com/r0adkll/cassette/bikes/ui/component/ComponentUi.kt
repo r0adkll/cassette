@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,7 +41,11 @@ fun ComponentUi(state: ComponentUiState, modifier: Modifier = Modifier) {
   if (state.inSheet) {
     // The dashboard's sheet draws the header (close, previous, next) above this.
     Column(
-      modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
+      modifier
+        .fillMaxSize()
+        .verticalScroll(rememberScrollState())
+        .safeDrawingPadding()
+        .padding(bottom = 24.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
       if (model != null) Detail(model, state.eventSink, gutter = SheetGutter)
@@ -52,6 +57,7 @@ fun ComponentUi(state: ComponentUiState, modifier: Modifier = Modifier) {
       Modifier.widthIn(max = 480.dp)
         .fillMaxWidth()
         .verticalScroll(rememberScrollState())
+        .safeDrawingPadding()
         .padding(vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {

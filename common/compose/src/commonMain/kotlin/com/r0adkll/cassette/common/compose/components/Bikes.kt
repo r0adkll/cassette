@@ -248,8 +248,9 @@ fun RailAddButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifi
 }
 
 /**
- * A plain row at the foot of the tablet rail (Settings). [badge] adds a red dot for something
- * waiting behind it; [selected] outlines it while its screen is open.
+ * An outlined button at the foot of the tablet rail (Settings), the solid-lined partner of
+ * [RailAddButton]. [badge] adds a red dot for something waiting behind it; [selected] fills it and
+ * thickens the outline while its screen is open.
  */
 @Composable
 fun RailLink(
@@ -261,7 +262,7 @@ fun RailLink(
   selected: Boolean = false,
 ) {
   val colors = CassetteTheme.colors
-  val shape = RoundedCornerShape(14.dp)
+  val shape = RoundedCornerShape(22.dp)
   Row(
     modifier =
       modifier
@@ -270,17 +271,17 @@ fun RailLink(
         .clip(shape)
         .then(
           if (selected) Modifier.background(colors.panel).border(2.dp, colors.text, shape)
-          else Modifier
+          else Modifier.border(1.dp, colors.line, shape)
         )
         .clickable(role = Role.Button, onClick = onClick)
-        .padding(horizontal = 12.dp),
+        .padding(horizontal = 16.dp),
     verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(10.dp),
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
   ) {
-    Icon(icon, null, tint = colors.text, modifier = Modifier.size(18.dp))
+    Icon(icon, null, tint = colors.text, modifier = Modifier.size(16.dp))
     Text(
-      text,
-      style = CassetteTheme.type.itemTitle,
+      text.uppercase(),
+      style = CassetteTheme.type.button,
       color = colors.text,
       modifier = Modifier.weight(1f),
     )

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -38,7 +39,9 @@ import com.r0adkll.cassette.common.compose.components.SettingsRow
 import com.r0adkll.cassette.common.compose.components.SettingsSection
 import com.r0adkll.cassette.common.compose.components.SettingsSwitchRow
 import com.r0adkll.cassette.common.compose.components.WaitingDot
+import com.r0adkll.cassette.common.compose.endPane
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
+import com.r0adkll.cassette.common.compose.startPane
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.screens.DiagnosticsScreen
 import com.r0adkll.cassette.common.screens.LicencesScreen
@@ -68,6 +71,7 @@ internal fun TitledScreen(
       Modifier.widthIn(max = 480.dp)
         .fillMaxWidth()
         .verticalScroll(rememberScrollState())
+        .safeDrawingPadding()
         .padding(horizontal = 20.dp, vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
@@ -151,11 +155,14 @@ internal fun WideSettings(
   val categories = visibleCategories(update)
   // App updates can disappear (a build that doesn't update itself); fall back to the first.
   val selected = state.selected.takeIf { it in categories } ?: categories.first()
+  // Both panes and the divider run under the system bars (decision 0016).
   Row(modifier.fillMaxSize()) {
     Column(
-      Modifier.width(320.dp)
-        .fillMaxHeight()
+      Modifier.fillMaxHeight()
+        .startPane()
         .verticalScroll(rememberScrollState())
+        .safeDrawingPadding()
+        .width(320.dp)
         .padding(horizontal = 16.dp, vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
@@ -185,7 +192,7 @@ internal fun WideSettings(
       Footnote(Modifier.padding(start = 12.dp, top = 16.dp))
     }
     Box(Modifier.width(1.dp).fillMaxHeight().background(colors.line))
-    Box(Modifier.weight(1f).fillMaxHeight()) {
+    Box(Modifier.weight(1f).fillMaxHeight().endPane()) {
       if (selected == SettingsCategory.Diagnostics) {
         diagnostics()
       } else {
@@ -194,6 +201,7 @@ internal fun WideSettings(
           Modifier.widthIn(max = 640.dp)
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
+            .safeDrawingPadding()
             .padding(horizontal = 32.dp, vertical = 24.dp),
           verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {

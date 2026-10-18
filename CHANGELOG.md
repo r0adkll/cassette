@@ -9,9 +9,13 @@ All notable changes to Cassette are documented here. The format follows
 
 - In-app updates work again in the builds Drop ships: since the R8 `internal` build, they were switched
   off because that build isn't debuggable.
+- On a tablet, Settings sits at the foot of the bike rail again instead of floating halfway down it,
+  and is now an outlined button to match Add bike.
 
 ### Changed
 
+- Every screen draws edge to edge (decision 0016): backgrounds, panes, the tablet rail and dividers run
+  under the status and navigation bars, and content scrolls under both.
 - Settings are grouped by category (decision 0014): Bikes, Capture, Notifications, App updates,
   Diagnostics and Licences, each with a line on where it stands ("2 of 3 on", a red dot for a waiting
   build). On a phone each category opens its own screen; on an open foldable or a tablet the list sits
