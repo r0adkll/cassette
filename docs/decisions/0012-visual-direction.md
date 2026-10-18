@@ -103,3 +103,18 @@ SRAM-app quality, which must be our own (never SRAM's artwork).
 
 Defaults taken where nothing was decided: power-meter choice by signal strength; scan profile lives only in
 Diagnostics; no activity log on the bike screen yet.
+
+## Watch app updates (iteration 9, approved 2026-10-17)
+
+- **A · Offer it in the app** (chosen): an "Update ready" row under the bikes ("BUILD 37 · 4.1 MB", then
+  "DOWNLOADING 62%"); the update screen says the build, the installed build, the Channel and the size,
+  with Install as the edge button; then a progress ring while it downloads and installs, and "Updated to
+  build 37." under the bikes on the next run.
+- **Allow updates, once**: "Allow updates." with Open settings, then "On the next screen: 1 Advanced,
+  2 Install unknown apps" for a moment before App info opens, then "Updates allowed." when the app is back
+  in front. A Pixel Watch keeps the switch under App info, Advanced.
+- B · Automatic (installs on the charger, on Wi-Fi) comes later, once A has run on the watch. Rejected:
+  C · Send from the phone.
+- The progress ring is drawn by Cassette (6 dp, on the line colour), not Wear's indicator, which lags
+  behind a download's frequent updates.
+
