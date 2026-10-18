@@ -44,6 +44,7 @@ import com.r0adkll.cassette.common.screens.DiagnosticsScreen
 import com.r0adkll.cassette.common.screens.LicencesScreen
 import com.r0adkll.cassette.common.screens.SettingsCategory
 import com.r0adkll.cassette.common.screens.SettingsScreen
+import com.r0adkll.cassette.settings.api.ThemeMode
 import com.slack.circuit.backstack.rememberSaveableBackStack
 import com.slack.circuit.codegen.annotations.CircuitInject
 import com.slack.circuit.foundation.NavigableCircuitContent
@@ -278,6 +279,8 @@ private fun ColumnScope.CategoryBody(
           },
         )
       }
+    SettingsCategory.Appearance ->
+      ThemeChoices(state.themeMode, onSelect = { sink(SettingsEvent.SetThemeMode(it)) })
     SettingsCategory.Licences -> LicencesList()
     // Opens as its own screen on a phone, and in the pane on a wide window.
     SettingsCategory.Diagnostics -> Unit
@@ -307,6 +310,12 @@ private fun SettingsUiState.info(category: SettingsCategory, update: UpdateStatu
           .count { it }
       CategoryInfo(LucideIcons.Bell, "Notifications", "$on of 3 on")
     }
+    SettingsCategory.Appearance ->
+      CategoryInfo(
+        LucideIcons.SunMoon,
+        "Appearance",
+        if (themeMode == ThemeMode.System) "Follows the phone" else "${themeMode.label} theme",
+      )
     SettingsCategory.Updates ->
       CategoryInfo(
         LucideIcons.Download,
@@ -329,6 +338,7 @@ private fun SettingsCategory.title(): String =
     SettingsCategory.Bikes -> "Bikes."
     SettingsCategory.Capture -> "Capture."
     SettingsCategory.Notifications -> "Notifications."
+    SettingsCategory.Appearance -> "Appearance."
     SettingsCategory.Updates -> "App updates."
     SettingsCategory.Diagnostics -> "Diagnostics."
     SettingsCategory.Licences -> "Licences."
@@ -343,6 +353,9 @@ private fun SettingsCategory.blurb(): String? =
     SettingsCategory.Notifications ->
       "One switch for each kind of notification. Android's notification settings can still " +
         "turn one off."
+    SettingsCategory.Appearance ->
+      "Light, dark, or whichever the phone is set to. Widgets, the Quick Settings tile and the " +
+        "watch follow the phone."
     // The update hero says it all.
     SettingsCategory.Updates -> null
     SettingsCategory.Licences -> "Third-party fonts and icons Cassette ships."

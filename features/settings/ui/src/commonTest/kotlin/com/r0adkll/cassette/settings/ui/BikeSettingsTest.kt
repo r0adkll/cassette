@@ -13,6 +13,7 @@ import com.r0adkll.cassette.core.Bike
 import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.core.BikeType
 import com.r0adkll.cassette.core.ComponentId
+import com.r0adkll.cassette.settings.api.ThemeMode
 import com.r0adkll.cassette.settings.test.InMemorySettings
 import com.slack.circuit.test.FakeNavigator
 import com.slack.circuit.test.test
@@ -95,6 +96,26 @@ class BikeSettingsTest {
 
       pinned.eventSink(SettingsEvent.SetFollowLastSeen(true))
       awaitUntil { it.pinned == null }
+      cancelAndIgnoreRemainingEvents()
+    }
+  }
+
+  @Test
+  fun appearanceStoresTheThemeChoice() = runTest {
+    val presenter =
+      SettingsPresenter(
+        SettingsScreen(SettingsCategory.Appearance),
+        FakeNavigator(SettingsScreen()),
+        settings,
+        repository,
+        capture,
+        clock,
+      )
+    presenter.test {
+      val loaded = awaitUntil { it.themeMode == ThemeMode.System }
+      loaded.eventSink(SettingsEvent.SetThemeMode(ThemeMode.Dark))
+      awaitUntil { it.themeMode == ThemeMode.Dark }
+      assertEquals(ThemeMode.Dark, settings.themeMode.value)
       cancelAndIgnoreRemainingEvents()
     }
   }

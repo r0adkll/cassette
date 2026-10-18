@@ -21,6 +21,7 @@ import com.r0adkll.cassette.common.screens.SettingsCategory
 import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.core.BikeType
 import com.r0adkll.cassette.settings.api.NotificationSettings
+import com.r0adkll.cassette.settings.api.ThemeMode
 import java.io.File
 import kotlin.test.Test
 import kotlin.time.Clock
@@ -101,6 +102,13 @@ class ScreenRenderTest {
         Shot("fold-notifications", RenderSize.Fold, state.copy(selected = Notifications), ready),
         Shot("fold-bikes", RenderSize.Fold, state.copy(selected = Bikes), ready),
         Shot("tablet-bikes", RenderSize.Tablet, state.copy(selected = Bikes), ready),
+        Shot("phone-appearance", RenderSize.Phone, state.copy(category = Appearance), ready),
+        Shot(
+          "fold-appearance",
+          RenderSize.Fold,
+          state.copy(selected = Appearance, themeMode = ThemeMode.Dark),
+          ready,
+        ),
         Shot("phone-updates-ready", RenderSize.Phone, state.copy(category = Updates), ready),
         Shot("fold-updates-ready", RenderSize.Fold, state.copy(selected = Updates), ready),
         Shot(
@@ -214,5 +222,6 @@ class ScreenRenderTest {
     val Bikes = SettingsCategory.Bikes
     val Notifications = SettingsCategory.Notifications
     val Updates = SettingsCategory.Updates
+    val Appearance = SettingsCategory.Appearance
   }
 }

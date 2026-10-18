@@ -27,6 +27,7 @@ enum class SettingsCategory {
   Bikes,
   Capture,
   Notifications,
+  Appearance,
   Updates,
   Diagnostics,
   Licences,

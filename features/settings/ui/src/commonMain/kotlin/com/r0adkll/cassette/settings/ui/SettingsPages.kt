@@ -1,5 +1,6 @@
 package com.r0adkll.cassette.settings.ui
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,12 +11,17 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -23,6 +29,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
@@ -40,8 +51,13 @@ import com.r0adkll.cassette.common.compose.components.SettingsRow
 import com.r0adkll.cassette.common.compose.components.SettingsSection
 import com.r0adkll.cassette.common.compose.components.SettingsSwitchRow
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
+import com.r0adkll.cassette.common.compose.theme.CassetteColors
 import com.r0adkll.cassette.common.compose.theme.CassetteRed
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
+import com.r0adkll.cassette.common.compose.theme.DarkCassetteColors
+import com.r0adkll.cassette.common.compose.theme.LightCassetteColors
+import com.r0adkll.cassette.common.compose.theme.StatusTone
+import com.r0adkll.cassette.settings.api.ThemeMode
 import kotlin.time.Clock
 
 /**
@@ -302,3 +318,108 @@ private fun Modifier.bleed(amount: Dp): Modifier = layout { measurable, constrai
     )
   layout(constraints.maxWidth, placeable.height) { placeable.place(-extra / 2, 0) }
 }
+
+/**
+ * Appearance: the theme as three choices, each a small picture of the bike screen in it. System is
+ * half light, half dark.
+ */
+@Composable
+internal fun ThemeChoices(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
+  Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+    ThemeMode.entries.forEach { mode ->
+      ThemeChoice(
+        mode,
+        selected = mode == selected,
+        onClick = { onSelect(mode) },
+        modifier = Modifier.weight(1f),
+      )
+    }
+  }
+}
+
+@Composable
+private fun ThemeChoice(
+  mode: ThemeMode,
+  selected: Boolean,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  val colors = CassetteTheme.colors
+  val shape = RoundedCornerShape(16.dp)
+  Column(
+    modifier
+      .clip(RoundedCornerShape(18.dp))
+      .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+      .padding(4.dp),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    verticalArrangement = Arrangement.spacedBy(10.dp),
+  ) {
+    Canvas(
+      Modifier.fillMaxWidth()
+        .aspectRatio(0.8f)
+        .clip(shape)
+        .border(if (selected) 2.dp else 1.dp, if (selected) colors.text else colors.line, shape)
+    ) {
+      when (mode) {
+        ThemeMode.Light -> drawPreview(LightCassetteColors)
+        ThemeMode.Dark -> drawPreview(DarkCassetteColors)
+        ThemeMode.System -> {
+          clipRect(right = size.width / 2) { drawPreview(LightCassetteColors) }
+          clipRect(left = size.width / 2) { drawPreview(DarkCassetteColors) }
+        }
+      }
+    }
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+      if (selected)
+        Icon(LucideIcons.Check, null, tint = colors.text, modifier = Modifier.size(16.dp))
+      Text(
+        mode.label.uppercase(),
+        style =
+          CassetteTheme.type.button.copy(fontSize = CassetteTheme.type.button.fontSize * 0.85f),
+        color = if (selected) colors.text else colors.muted,
+      )
+    }
+  }
+}
+
+/** A tiny bike screen in [palette]: the green status block, then three component rows. */
+private fun DrawScope.drawPreview(palette: CassetteColors) {
+  drawRect(palette.background)
+  val inset = size.width * 0.1f
+  val width = size.width - inset * 2
+  val radius = CornerRadius(size.width * 0.05f)
+  drawRoundRect(
+    palette.block(StatusTone.Good).container,
+    topLeft = Offset(inset, inset),
+    size = Size(width, size.height * 0.24f),
+    cornerRadius = radius,
+  )
+  val row = size.height * 0.11f
+  repeat(3) { i ->
+    val top = inset + size.height * 0.24f + inset * 0.8f + i * (row + inset * 0.5f)
+    drawRoundRect(
+      palette.panel,
+      topLeft = Offset(inset, top),
+      size = Size(width, row),
+      cornerRadius = radius,
+    )
+    // Each row's battery bar.
+    drawRoundRect(
+      palette.good,
+      topLeft = Offset(inset * 1.6f, top + row * 0.4f),
+      size = Size(width * (0.7f - i * 0.12f), row * 0.2f),
+      cornerRadius = CornerRadius(row * 0.1f),
+    )
+  }
+}
+
+internal val ThemeMode.label: String
+  get() =
+    when (this) {
+      ThemeMode.System -> "System"
+      ThemeMode.Light -> "Light"
+      ThemeMode.Dark -> "Dark"
+    }

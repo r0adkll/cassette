@@ -5,6 +5,7 @@ import com.r0adkll.cassette.data.ble.ScanProfile
 import com.r0adkll.cassette.settings.api.CaptureHealth
 import com.r0adkll.cassette.settings.api.CassetteSettings
 import com.r0adkll.cassette.settings.api.NotificationSettings
+import com.r0adkll.cassette.settings.api.ThemeMode
 import com.r0adkll.cassette.settings.api.Tip
 import kotlin.time.Instant
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +20,11 @@ class InMemorySettings : CassetteSettings {
   override val captureHealth = MutableStateFlow(CaptureHealth(null, null, null, 0))
   override val onboarded = MutableStateFlow(false)
   override val dismissedTips = MutableStateFlow(emptySet<Tip>())
+  override val themeMode = MutableStateFlow(ThemeMode.System)
+
+  override suspend fun setThemeMode(mode: ThemeMode) {
+    themeMode.value = mode
+  }
 
   override suspend fun dismissTip(tip: Tip) {
     dismissedTips.update { it + tip }

@@ -21,6 +21,7 @@ import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.core.BikeType
 import com.r0adkll.cassette.settings.api.CassetteSettings
 import com.r0adkll.cassette.settings.api.NotificationSettings
+import com.r0adkll.cassette.settings.api.ThemeMode
 import com.slack.circuit.codegen.annotations.CircuitInject
 import com.slack.circuit.retained.collectAsRetainedState
 import com.slack.circuit.retained.rememberRetained
@@ -41,6 +42,7 @@ data class SettingsUiState(
   val pinned: BikeId?,
   val backgroundCapture: Boolean,
   val notifications: NotificationSettings,
+  val themeMode: ThemeMode = ThemeMode.System,
   /** The screen's category: on a phone, null is the list and a category is its own screen. */
   val category: SettingsCategory? = null,
   /** The category open beside the list on wide windows. */
@@ -82,6 +84,8 @@ sealed interface SettingsEvent : CircuitUiEvent {
 
   data class SetNotifications(val settings: NotificationSettings) : SettingsEvent
 
+  data class SetThemeMode(val mode: ThemeMode) : SettingsEvent
+
   /** On a phone: the category's screen (Diagnostics and Licences open their own). */
   data class OpenCategory(val category: SettingsCategory) : SettingsEvent
 
@@ -110,6 +114,7 @@ class SettingsPresenter(
       settings.notifications
     }
       .collectAsRetainedState(NotificationSettings())
+    val themeMode by remember { settings.themeMode }.collectAsRetainedState(ThemeMode.System)
     var selected by rememberRetained {
       mutableStateOf(screen.category ?: SettingsCategory.Bikes)
     }
@@ -120,6 +125,7 @@ class SettingsPresenter(
       pinned,
       background,
       notifications,
+      themeMode = themeMode,
       category = screen.category,
       selected = selected,
     ) { event ->
@@ -140,6 +146,7 @@ class SettingsPresenter(
           }
         is SettingsEvent.SetNotifications ->
           scope.launch { settings.setNotifications(event.settings) }
+        is SettingsEvent.SetThemeMode -> scope.launch { settings.setThemeMode(event.mode) }
         is SettingsEvent.OpenCategory ->
           navigator.goTo(
             when (event.category) {

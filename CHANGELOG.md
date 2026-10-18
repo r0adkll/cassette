@@ -37,6 +37,9 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Added
 
+- Settings → Appearance: System, Light or Dark, each shown as a small picture of the bike screen.
+  The app and its system bars follow the choice; widgets, the Quick Settings tile and the watch keep
+  following the phone.
 - Welcome and add bike unfolded (decision 0014): on an open foldable the welcome's red poster takes
   the half before the hinge (wordmark, tape mark, "Know before you ride.") and the three points and
   Get started the other; adding a bike shows waking and found on one screen, the listening pulse on

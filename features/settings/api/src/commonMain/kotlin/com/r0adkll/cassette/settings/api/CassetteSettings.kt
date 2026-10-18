@@ -26,6 +26,11 @@ interface CassetteSettings {
 
   suspend fun setNotifications(settings: NotificationSettings)
 
+  /** Light or dark, or the phone's choice (Settings → Appearance). Follows the phone by default. */
+  val themeMode: Flow<ThemeMode>
+
+  suspend fun setThemeMode(mode: ThemeMode)
+
   /** Whether first-run onboarding has been done (or skipped because a bike already exists). */
   val onboarded: Flow<Boolean>
 
@@ -42,6 +47,13 @@ interface CassetteSettings {
   suspend fun recordArm(result: String, at: Instant)
 
   suspend fun recordDelivery(readings: Int, at: Instant)
+}
+
+/** The app's theme. Widgets, the Quick Settings tile and the watch follow the phone regardless. */
+enum class ThemeMode {
+  System,
+  Light,
+  Dark,
 }
 
 /** The bike screen's tips, offered after onboarding (decision 0011). */

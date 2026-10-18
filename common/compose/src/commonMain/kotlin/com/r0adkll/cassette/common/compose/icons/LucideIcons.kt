@@ -347,6 +347,21 @@ object LucideIcons {
     }
   }
 
+  /** Lucide `sun-moon`. */
+  val SunMoon: ImageVector by lazy {
+    lucide("SunMoon") {
+      stroke("M12 8a2.83 2.83 0 0 0 4 4 4 4 0 1 1-4-4")
+      stroke("M12 2v2")
+      stroke("M12 20v2")
+      stroke("m4.9 4.9 1.4 1.4")
+      stroke("m17.7 17.7 1.4 1.4")
+      stroke("M2 12h2")
+      stroke("M20 12h2")
+      stroke("m6.3 17.7-1.4 1.4")
+      stroke("m19.1 4.9-1.4 1.4")
+    }
+  }
+
   /** Lucide `trash-2`. */
   val Trash: ImageVector by lazy {
     lucide("Trash") {

@@ -26,7 +26,8 @@ time it fills a large area is when something needs charging now. Colour is never
 status also has an icon and a word.
 
 Neutrals: dark `#0A0A0B` background, `#141416` panels, `#2A2A2F` lines; light `#EDEDEB` background, white
-panels, `#D6D6D2` lines. Light and dark follow the system; no dynamic colour.
+panels, `#D6D6D2` lines. Light and dark follow the system unless Settings → Appearance picks one (the
+app only; widgets, the tile and the watch follow the system); no dynamic colour.
 
 ## Type
 
