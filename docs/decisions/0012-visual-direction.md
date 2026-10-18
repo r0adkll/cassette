@@ -55,6 +55,9 @@ SRAM-app quality, which must be our own (never SRAM's artwork).
 - **Widgets**: small is the status block; medium is one vertical bar per component; large and all-bikes use
   thick bars with the name and value inside the bar (like Pixel's battery widget).
 
+Foldables and tablets (iteration 10): [0014](0014-large-screens.md). Settings there, and on phones, become
+categories.
+
 ## Remaining surfaces (iteration 5, approved)
 
 - **Add bike**: wake (listening pulse, timer, "not finding it?"), found (components read from the hub),

@@ -29,6 +29,21 @@ Wear app, tile and complications fed from the phone over the Data Layer
 Checked on a real watch paired to a phone, including an update from Drop (2026-10-17). Later: automatic
 updates on the charger (iteration 9, B).
 
+## M2.5: Foldables and tablets
+
+Layouts for open foldables and tablets, before iOS so the iPhone foldable starts from them
+([0014](decisions/0014-large-screens.md)):
+
+1. Window sizes in `:common:compose` (narrow, medium, expanded) and screen renders at fold and tablet
+   sizes beside the phone ones.
+2. The bike screen as a dashboard, the bike rail on expanded windows.
+3. The component sheet over the dashboard.
+4. Settings by category, on every size.
+5. Tabletop refresh on a half-open fold.
+6. Welcome and add bike split at the hinge.
+
+Check on the Pixel 10 Pro Fold (its dp size first) and a tablet emulator.
+
 ## M3: iOS
 
 iOS app with Core Bluetooth, if still wanted.
