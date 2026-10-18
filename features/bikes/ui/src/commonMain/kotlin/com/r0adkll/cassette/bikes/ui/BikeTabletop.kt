@@ -35,12 +35,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,6 +64,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.r0adkll.cassette.bikes.summary.ComponentRowModel
+import com.r0adkll.cassette.common.compose.components.pulses
+import com.r0adkll.cassette.common.compose.components.rememberPulses
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteRed
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
@@ -292,11 +291,21 @@ private fun RefreshHalf(state: BikeUiState.Loaded, modifier: Modifier) {
   val total = state.components.size
   val allAnswered = total > 0 && heard.size == total
   val doneRing = colors.block(doneTone(heard.size, total)).container
-  Box(modifier.topLine(colors.line).clipToBounds()) {
-    PulseRings(
-      scanning = refresh is RefreshButton.Scanning,
-      done = doneRing.takeIf { refresh is RefreshButton.Done && heard.isNotEmpty() },
+  // Rings leave the circle once it has turned into the ring, about 3.8 times its size at the end;
+  // the half clips them, so none crosses the fold. Done sends one in its colour as it lands.
+  val pulses =
+    rememberPulses(
+      emitting = refresh is RefreshButton.Scanning,
+      color = CassetteRed,
+      delayMillis = MorphMillis,
+      once = doneRing.takeIf { refresh is RefreshButton.Done && heard.isNotEmpty() },
     )
+  Box(
+    modifier.topLine(colors.line).clipToBounds().pulses(pulses, from = 100.dp, to = 380.dp) {
+      // The circle's centre: the right-hand 300 dp column, inside the half's padding.
+      Offset(size.width - 28.dp.toPx() - 150.dp.toPx(), size.height / 2)
+    }
+  ) {
     Row(
       Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 24.dp),
       horizontalArrangement = Arrangement.spacedBy(20.dp),
@@ -604,63 +613,6 @@ private fun RefreshCircle(
   }
 }
 
-/** A pulse ring: when it left the circle (frame time), its colour, and how long it flies. */
-private class Ring(val start: Long, val color: Color, val millis: Int)
-
-/**
- * Rings that leave the circle at the timer ring's thickness, thin and fade as they grow to about
- * 3.8 times its size. While [scanning], one leaves every 0.9 s, starting once the circle has turned
- * into the ring; when the scan stops, the ones in flight finish. [done] sends one ring of that
- * colour as the circle lands. The half clips them, so none crosses the fold.
- */
-@Composable
-private fun PulseRings(scanning: Boolean, done: Color?) {
-  val rings = remember { mutableStateListOf<Ring>() }
-  var now by remember { mutableLongStateOf(0L) }
-  LaunchedEffect(scanning, done) {
-    var started = -1L
-    var emitted = 0L
-    var doneSent = done == null
-    while (scanning || !doneSent || rings.isNotEmpty()) {
-      withFrameMillis { t ->
-        if (started < 0) started = t
-        if (scanning) {
-          // Every ring due by now, each at its own start, so a slow frame doesn't bunch them.
-          val due = (t - started - MorphMillis).let { if (it < 0) 0 else it / PulseEveryMillis + 1 }
-          while (emitted < due) {
-            rings +=
-              Ring(started + MorphMillis + emitted * PulseEveryMillis, CassetteRed, PulseMillis)
-            emitted++
-          }
-        }
-        if (!doneSent && done != null && t - started >= DoneRingDelayMillis) {
-          rings += Ring(t, done, PulseMillis * 2 / 5)
-          doneSent = true
-        }
-        rings.removeAll { t - it.start >= it.millis }
-        now = t
-      }
-    }
-  }
-  Box(
-    Modifier.fillMaxSize().drawBehind {
-      // The circle's centre: the right-hand 300 dp column, inside the half's padding.
-      val centre = Offset(size.width - 28.dp.toPx() - 150.dp.toPx(), size.height / 2)
-      rings.forEach { ring ->
-        val t = Pulse.transform(((now - ring.start).toFloat() / ring.millis).coerceIn(0f, 1f))
-        val diameter = mix(200.dp.toPx(), 760.dp.toPx(), t)
-        val width = mix(6.dp.toPx(), 1.dp.toPx(), t)
-        drawCircle(
-          ring.color.copy(alpha = mix(0.85f, 0f, t)),
-          radius = (diameter - width) / 2,
-          center = centre,
-          style = Stroke(width),
-        )
-      }
-    }
-  )
-}
-
 @Composable
 private fun PillButton(text: String, primary: Boolean, onClick: () -> Unit) {
   val colors = CassetteTheme.colors
@@ -707,11 +659,7 @@ private fun Modifier.bottomLine(color: Color): Modifier = drawBehind {
 /** Decelerating, as the sheet and the mockup's landings. */
 private val Settle = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 private val Breathe = CubicBezierEasing(0.42f, 0f, 0.58f, 1f)
-private val Pulse = CubicBezierEasing(0.2f, 0f, 0.4f, 1f)
-private const val PulseMillis = 3600
-private const val PulseEveryMillis = 900L
 /** How long the circle takes to turn from one state to the next; the pulses wait for it. */
 private const val MorphMillis = 450
-private const val DoneRingDelayMillis = 200
 
 private fun mix(from: Float, to: Float, t: Float) = from + (to - from) * t

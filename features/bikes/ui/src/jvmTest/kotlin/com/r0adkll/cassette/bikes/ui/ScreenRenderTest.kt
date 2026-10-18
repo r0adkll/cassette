@@ -264,6 +264,41 @@ class ScreenRenderTest {
     scene.close()
   }
 
+  /**
+   * The add-bike wake pulse as a filmstrip: rings leaving the Bluetooth circle as it beats, then
+   * the hub answering, when the last rings finish and the circle settles green.
+   */
+  @Test
+  fun wakePulseFilmstrip() {
+    var step by
+      mutableStateOf<AddBikeStep>(AddBikeStep.Wake(38, bluetoothReady = true, showTips = false))
+    val scene =
+      // Unfolded, where the pulse stays on screen once the hub answers.
+      ImageComposeScene(width = 852 * 2, height = 883 * 2, density = Density(2f)) {
+        CassetteTheme(darkTheme = true) {
+          Box(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) {
+            WakeAndFound(AddBikeUiState(step) {}, hinge = Rect(852f, 0f, 852f, 883f * 2))
+          }
+        }
+      }
+    var at = 0L
+    fun shoot(millis: Long, name: String) {
+      while (at < millis) {
+        at = minOf(millis, at + 16)
+        scene.render(at * 1_000_000L)
+      }
+      File(out, "add-bike-pulse-$name.png")
+        .writeBytes(scene.render(at * 1_000_000L).encodeToData(EncodedImageFormat.PNG)!!.bytes)
+    }
+    for (frame in listOf(60L, 150, 450, 900, 1_800, 3_000)) {
+      shoot(frame, "${frame.toString().padStart(4, '0')}ms")
+    }
+    step = AddBikeStep.Found(1405188718, reading = true, components = emptyList(), failed = false)
+    shoot(3_600, "found-0600ms")
+    shoot(6_500, "found-3500ms")
+    scene.close()
+  }
+
   /** Thirty days falling to [level], with a charge on day 8 (sample data). */
   private fun trendTo(level: Float): List<Float> =
     listOf(0.62f, 0.58f, 0.55f, 0.51f, 0.48f, 0.44f, 0.41f, 0.37f) +

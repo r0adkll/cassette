@@ -1,10 +1,6 @@
 package com.r0adkll.cassette.bikes.ui.add
 
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -42,6 +38,8 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.r0adkll.cassette.common.compose.LocalScreenLayout
@@ -53,6 +51,8 @@ import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.SplitPanes
 import com.r0adkll.cassette.common.compose.components.StatusLabel
+import com.r0adkll.cassette.common.compose.components.pulses
+import com.r0adkll.cassette.common.compose.components.rememberPulses
 import com.r0adkll.cassette.common.compose.currentVerticalHinge
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
@@ -157,45 +157,49 @@ private fun ColumnScope.Wake(step: AddBikeStep.Wake, sink: (AddBikeEvent) -> Uni
 }
 
 /**
- * Rings around the Bluetooth mark. While [listening] a red ring pulses out through them; once the
- * hub is heard they hold still.
+ * The Bluetooth mark in its circle. While [listening], rings leave the circle as on the tabletop
+ * refresh, and the circle swells and flushes red as each one goes; once the hub is heard the last
+ * rings finish and the circle settles with a green edge.
  */
 @Composable
 private fun ListeningPulse(listening: Boolean, modifier: Modifier = Modifier) {
   val colors = CassetteTheme.colors
-  val pulse by
-    rememberInfiniteTransition()
-      .animateFloat(
-        0f,
-        1f,
-        infiniteRepeatable(tween(1_600, easing = LinearEasing), RepeatMode.Restart),
-      )
-  Box(modifier.height(260.dp), contentAlignment = Alignment.Center) {
-    Canvas(Modifier.size(260.dp)) {
-      val max = size.minDimension / 2
-      drawCircle(colors.line, radius = max, style = Stroke(1.5.dp.toPx()))
-      drawCircle(colors.line, radius = max * 0.75f, style = Stroke(1.5.dp.toPx()))
-      if (listening)
+  val pulses = rememberPulses(emitting = listening, color = colors.brand)
+  val edge by animateColorAsState(if (listening) colors.line else colors.good, tween(450))
+  Box(
+    modifier.height(260.dp).pulses(pulses, from = CircleRadius, to = 130.dp),
+    contentAlignment = Alignment.Center,
+  ) {
+    Box(
+      Modifier.size(CircleRadius * 2).graphicsLayer {
+        val swell = 1f + 0.08f * pulses.beat
+        scaleX = swell
+        scaleY = swell
+      },
+      contentAlignment = Alignment.Center,
+    ) {
+      Canvas(Modifier.fillMaxSize()) {
+        val beat = pulses.beat
+        drawCircle(colors.panel)
         drawCircle(
-          colors.brand.copy(alpha = 1f - pulse),
-          radius = max * (0.3f + 0.7f * pulse),
-          style = Stroke(2.5.dp.toPx()),
+          lerp(edge, colors.brand, beat),
+          style = Stroke(mix(if (listening) 1.dp.toPx() else 2.dp.toPx(), 3.dp.toPx(), beat)),
         )
-      drawCircle(colors.panel, radius = max * 0.3f)
-      drawCircle(
-        if (listening) colors.line else colors.good,
-        radius = max * 0.3f,
-        style = Stroke(if (listening) 1.dp.toPx() else 2.dp.toPx()),
+      }
+      Icon(
+        if (listening) LucideIcons.BluetoothSearching else LucideIcons.Bluetooth,
+        null,
+        tint = colors.text,
+        modifier = Modifier.size(34.dp),
       )
     }
-    Icon(
-      if (listening) LucideIcons.BluetoothSearching else LucideIcons.Bluetooth,
-      null,
-      tint = colors.text,
-      modifier = Modifier.size(34.dp),
-    )
   }
 }
+
+/** The Bluetooth circle's radius; the pulses leave from its edge. */
+private val CircleRadius = 39.dp
+
+private fun mix(from: Float, to: Float, t: Float) = from + (to - from) * t
 
 /** "Listening · 0:38", with the red dot. */
 @Composable
