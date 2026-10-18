@@ -27,9 +27,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
-import com.r0adkll.cassette.common.compose.LocalWindowSize
+import com.r0adkll.cassette.common.compose.LocalScreenLayout
+import com.r0adkll.cassette.common.compose.ScreenLayout
 import com.r0adkll.cassette.common.compose.UpdateStatus
-import com.r0adkll.cassette.common.compose.WindowSize
 import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.ComponentRow
 import com.r0adkll.cassette.common.compose.components.IconCircleButton
@@ -51,9 +51,9 @@ private val MaxContentWidth = 480.dp
 @CircuitInject(BikeScreen::class, AppScope::class)
 @Composable
 fun BikeUi(state: BikeUiState, modifier: Modifier = Modifier) {
-  val size = LocalWindowSize.current
-  if (state is BikeUiState.Loaded && size != WindowSize.Narrow) {
-    BikeDashboard(state, size, modifier)
+  val layout = LocalScreenLayout.current
+  if (state is BikeUiState.Loaded && layout != ScreenLayout.Column) {
+    BikeDashboard(state, rail = layout == ScreenLayout.DashboardWithRail, modifier)
     return
   }
   Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {

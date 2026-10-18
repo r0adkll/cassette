@@ -28,7 +28,6 @@ import com.r0adkll.cassette.bikes.summary.ComponentRowModel
 import com.r0adkll.cassette.bikes.summary.weakest
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
 import com.r0adkll.cassette.common.compose.UpdateStatus
-import com.r0adkll.cassette.common.compose.WindowSize
 import com.r0adkll.cassette.common.compose.components.BikeChip
 import com.r0adkll.cassette.common.compose.components.BikeRailItem
 import com.r0adkll.cassette.common.compose.components.ComponentTile
@@ -45,22 +44,21 @@ import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 
 /**
  * The bike screen on an open foldable or a tablet (decision 0014): the status block with Refresh
- * inside it, then the components as tiles, the one to charge next on a wide tile. Expanded windows
- * add the bike rail on the left; medium ones put the bikes in the top bar as chips.
+ * inside it, then the components as tiles, the one to charge next on a wide tile. With [rail]
+ * (large windows) the bikes are listed on the left; otherwise they are chips in the top bar.
  */
 @Composable
 internal fun BikeDashboard(
   state: BikeUiState.Loaded,
-  size: WindowSize,
+  rail: Boolean,
   modifier: Modifier = Modifier,
 ) {
   val update by LocalAppUpdates.current.status.collectAsState()
   val updateWaiting = update is UpdateStatus.Available
-  val expanded = size == WindowSize.Expanded
-  val gutter = if (expanded) 28.dp else 24.dp
+  val gutter = if (rail) 28.dp else 24.dp
   val sink = state.eventSink
   Row(modifier.fillMaxSize()) {
-    if (expanded) {
+    if (rail) {
       BikeRail(state, updateWaiting, Modifier.width(240.dp).fillMaxHeight())
       Box(Modifier.width(1.dp).fillMaxHeight().background(CassetteTheme.colors.line))
     }
@@ -71,7 +69,7 @@ internal fun BikeDashboard(
         .padding(vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-      if (expanded) {
+      if (rail) {
         Text(
           state.name,
           style = CassetteTheme.type.display,
@@ -84,9 +82,9 @@ internal fun BikeDashboard(
       WideStatusBlock(
         state.status.headline,
         state.status.tone,
-        kicker = state.name.takeUnless { expanded },
+        kicker = state.name.takeUnless { rail },
         horizontalPadding = gutter,
-        asideWidth = if (expanded) 260.dp else 220.dp,
+        asideWidth = if (rail) 260.dp else 220.dp,
         content = { StatusBlockText(state.status.summary) },
         aside = {
           StatusBlockMeta(state.status.meta)
@@ -95,8 +93,8 @@ internal fun BikeDashboard(
       )
       ComponentGrid(
         state,
-        columns = if (expanded) 3 else 2,
-        gap = if (expanded) 12.dp else 10.dp,
+        columns = if (rail) 3 else 2,
+        gap = if (rail) 12.dp else 10.dp,
         modifier = Modifier.padding(horizontal = gutter),
       )
       state.tip?.let { tip ->

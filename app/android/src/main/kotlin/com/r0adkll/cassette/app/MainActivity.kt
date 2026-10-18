@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -16,7 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
 import com.r0adkll.cassette.common.compose.LocalPermissionController
-import com.r0adkll.cassette.common.compose.ProvideWindowSize
+import com.r0adkll.cassette.common.compose.LocalScreenLayout
+import com.r0adkll.cassette.common.compose.currentScreenLayout
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.screens.BikeScreen
 import com.r0adkll.cassette.common.screens.DeepLinks
@@ -54,12 +56,13 @@ class MainActivity : ComponentActivity() {
     setContent {
       CassetteTheme {
         // The background runs under the system bars; content stays inside them.
-        ProvideWindowSize(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) {
+        Box(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) {
           val initial by produceState<List<Screen>?>(null) { value = firstScreens(launchLink) }
           initial?.let { start ->
             CompositionLocalProvider(
               LocalPermissionController provides permissions,
               LocalAppUpdates provides updates,
+              LocalScreenLayout provides currentScreenLayout(),
             ) {
               CircuitCompositionLocals(circuit) {
                 val backStack = rememberSaveableBackStack(start)

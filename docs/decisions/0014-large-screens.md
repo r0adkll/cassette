@@ -11,29 +11,31 @@ these are layouts of the same components.
 
 ## Sizes
 
-Layouts follow the window, not the device, so split screen and resizing work.
+Layouts follow the window, not the device, so split screen and resizing work. They come from Material's
+window size classes (`currentWindowAdaptiveInfoV2()` in JetBrains' build of the Material 3 adaptive
+library, so iOS gets the same), never from our own dp figures. `ScreenLayout` in `:common:compose` maps
+them:
 
-| Window | Example | Layout |
+| Window size class | Example | Layout |
 |---|---|---|
-| Narrow (under 600 dp wide, or under 480 dp tall) | Phones, the Fold closed, phones in landscape | The phone layout, as today |
-| Medium (600 to 999 dp wide) | The Pixel 10 Pro Fold open (about 850 dp wide, either way up), tablets in portrait | Dashboard, bikes as chips in the top bar; the component sheet covers most of the screen |
-| Expanded (1000 dp and wider) | Tablets in landscape | A bike rail on the left, then the dashboard; a narrower sheet |
+| Compact width, or compact height | Phones, the Fold closed, phones in landscape | `Column`: the phone layout, as today |
+| Medium or expanded width | The Pixel 10 Pro Fold open (expanded, either way up), tablets in portrait | `Dashboard`: bikes as chips in the top bar; the component sheet covers most of the screen |
+| Large or extra-large width | Tablets in landscape | `DashboardWithRail`: a bike rail on the left; a narrower sheet |
 
 Phones in landscape keep the phone layout: they are wide but too short for the dashboard.
 
-Expanded starts at 1000 dp rather than Material's 840. The first build put the open Fold on the tablet
-layout: it reports just over 840 dp wide (its 2076 × 2152 px panel at its default density, not the 790 dp
-first estimated), and the 240 dp rail would leave its dashboard about 610 dp. Read the exact figure with
-`adb shell wm size` and `wm density` before tuning further. The iPhone foldable (rumoured 4:3, about iPad
-mini size) falls on whichever side its point size lands; M3 checks it.
+The rail waits for large width rather than starting at expanded. The first build guessed the Fold at
+790 dp and drew the line at expanded; the open Fold is in fact expanded width, so it got the tablet
+layout, and the 240 dp rail left its dashboard too little room. The iPhone foldable (rumoured 4:3, about
+iPad mini size) gets whichever class its window is; M3 checks it.
 
 ## Bike screen: dashboard (iteration 10, C)
 
 - The status block runs full width with Refresh inside it (on the right), then the components as tiles:
   the component to charge next gets a wide tile with its 30-day trend, the rest share a two-column grid
-  (three on expanded) with a small trend line each.
-- On expanded windows a rail lists the bikes (name, status icon and word, when seen), with Add bike and,
-  at its foot, Settings. The rail replaces the bike switcher.
+  (three with the rail) with a small trend line each.
+- On large windows a rail lists the bikes (name, status icon and word, when seen), with Add bike and,
+  at its foot, Settings. Otherwise the bikes are chips in the top bar. Both replace the bike switcher.
 - Rejected: A · wide column (wastes the screen, runs across the hinge) and B · list–detail as the main
   layout.
 
@@ -44,16 +46,17 @@ Tapping a tile slides the component screen in from the right as a sheet over the
 (to reach tiles it covers), then the component screen's content: status block with the value, stats,
 history chart and the link to raw data.
 
-- **Medium:** about three quarters of the width (iteration 10c drew 600 of 790 dp), crossing the hinge.
+- **Dashboard:** about three quarters of the width (iteration 10c drew 600 of 790 dp), crossing the hinge.
   The strip of dashboard left showing is dimmed; tapping it closes the sheet.
-- **Expanded:** 480 dp, over the dashboard's right side, with the rail still in reach. No dimming: tapping
-  another visible tile switches the sheet.
-- Narrow windows keep navigating to the component screen.
+- **Dashboard with rail:** 480 dp, over the dashboard's right side, with the rail still in reach. No
+  dimming: tapping another visible tile switches the sheet.
+- The phone layout keeps navigating to the component screen.
 
 ## Tabletop: refresh on a half-open fold (10b to 10d)
 
 When the Fold is half open with the hinge horizontal (tabletop) on the bike screen, the screen splits at
-the hinge: readings on the top half, the scan on the bottom half.
+the hinge: readings on the top half, the scan on the bottom half. The posture and the hinge's position
+come from the same adaptive library (`windowPosture`: `isTabletop` and the hinge list).
 
 - **Top:** the status block, then one tall column per component filled to its level. During a scan,
   components not heard from yet are grey and marked waiting; each one rises into colour as it answers.
@@ -80,7 +83,7 @@ the hinge: readings on the top half, the scan on the bottom half.
 - **Settings, every size (10c, S3):** settings become categories: Bikes, Capture, Notifications, App
   updates, Diagnostics, Licences, each with a live summary ("2 of 3 on", a red dot when a build is
   waiting). On a phone the category list opens one category screen at a time, with a sentence on what it
-  covers; wide windows show the list and the open category side by side, and on expanded windows Settings
+  covers; wide windows show the list and the open category side by side, and with the rail Settings
   opens beside the bike rail. Rows keep the approved anatomy: icon, title, subtitle, switches in the text
   colour. Diagnostics' tools open in the category's pane. Rejected: S1 (the approved list with a detail
   pane) and S2 (two columns).

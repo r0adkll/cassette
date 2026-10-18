@@ -1,8 +1,10 @@
 package com.r0adkll.cassette.bikes.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Density
@@ -19,7 +21,8 @@ import com.r0adkll.cassette.bikes.ui.component.ComponentUiState
 import com.r0adkll.cassette.bikes.ui.component.HistoryRange
 import com.r0adkll.cassette.bikes.ui.picker.BikeOption
 import com.r0adkll.cassette.bikes.ui.picker.BikePicker
-import com.r0adkll.cassette.common.compose.ProvideWindowSize
+import com.r0adkll.cassette.common.compose.LocalScreenLayout
+import com.r0adkll.cassette.common.compose.currentScreenLayout
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.compose.theme.StatusTone
 import com.r0adkll.cassette.core.BikeType
@@ -209,8 +212,9 @@ class ScreenRenderTest {
     val scene =
       ImageComposeScene(width = size.width * 2, height = size.height * 2, density = Density(2f)) {
         CassetteTheme(darkTheme = dark) {
-          ProvideWindowSize(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) {
-            content()
+          // The scene is the window, so its size class picks the layout as on a device.
+          CompositionLocalProvider(LocalScreenLayout provides currentScreenLayout()) {
+            Box(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) { content() }
           }
         }
       }
@@ -220,7 +224,10 @@ class ScreenRenderTest {
     scene.close()
   }
 
-  /** Window sizes in dp. The fold's is computed from its panel, not yet read off the device. */
+  /**
+   * Window sizes in dp. The fold's is its panel at the density it seems to use (the first build put
+   * it over 840 dp); not yet read off the device.
+   */
   private enum class RenderSize(val width: Int, val height: Int) {
     Phone(412, 892),
     Fold(852, 883),
