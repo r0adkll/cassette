@@ -8,7 +8,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -17,13 +16,16 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -39,7 +41,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
 import androidx.navigationevent.compose.NavigationBackHandler
@@ -323,46 +330,70 @@ private fun BoxScope.ComponentSheet(
     onBackCompleted = { sink(BikeEvent.CloseSheet) },
   )
 
-  if (!rail) {
-    AnimatedVisibility(
-      open != null,
-      enter = fadeIn(tween(SheetInMillis)),
-      exit = fadeOut(tween(SheetOutMillis)),
-    ) {
-      Box(
-        Modifier.fillMaxSize()
-          .background(Color.Black.copy(alpha = if (colors.isDark) 0.45f else 0.22f))
-          .clickable(
-            interactionSource = null,
-            indication = null,
-            onClickLabel = "Close component",
-            onClick = { sink(BikeEvent.CloseSheet) },
-          )
+  // The app pads every screen inside the system bars; the scrim and the sheet run out under them,
+  // and the sheet's content comes back inside. The screen's padding has consumed the insets, so the
+  // sheet pads by the measured sizes rather than with windowInsetsPadding (which would add
+  // nothing).
+  val bars = WindowInsets.safeDrawing
+  val density = LocalDensity.current
+  val direction = LocalLayoutDirection.current
+  val left = bars.getLeft(density, direction)
+  val top = bars.getTop(density)
+  val right = bars.getRight(density, direction)
+  val bottom = bars.getBottom(density)
+  val barPadding =
+    with(density) {
+      PaddingValues(
+        top = top.toDp(),
+        bottom = bottom.toDp(),
+        // The sheet sits at the end edge, so only that side's bar reaches it.
+        end = (if (direction == LayoutDirection.Ltr) right else left).toDp(),
       )
     }
-  }
+  Box(Modifier.matchParentSize().expandBy(left, top, right, bottom)) {
+    if (!rail) {
+      AnimatedVisibility(
+        open != null,
+        enter = fadeIn(tween(SheetInMillis)),
+        exit = fadeOut(tween(SheetOutMillis)),
+      ) {
+        Box(
+          Modifier.fillMaxSize()
+            .background(Color.Black.copy(alpha = if (colors.isDark) 0.45f else 0.22f))
+            .clickable(
+              interactionSource = null,
+              indication = null,
+              onClickLabel = "Close component",
+              onClick = { sink(BikeEvent.CloseSheet) },
+            )
+        )
+      }
+    }
 
-  AnimatedVisibility(
-    open != null,
-    modifier =
-      Modifier.align(Alignment.CenterEnd)
-        .fillMaxHeight()
-        .then(if (rail) Modifier.width(480.dp) else Modifier.fillMaxWidth(0.76f)),
-    enter = slideInHorizontally(tween(SheetInMillis, easing = EmphasizedDecelerate)) { it },
-    exit = slideOutHorizontally(tween(SheetOutMillis, easing = EmphasizedAccelerate)) { it },
-  ) {
-    val id = shown.value ?: return@AnimatedVisibility
-    Column(
-      Modifier.fillMaxSize()
-        .shadow(16.dp, SheetShape)
-        .clip(SheetShape)
-        .background(colors.panel)
-        .border(1.dp, colors.line, SheetShape)
-        .padding(top = 24.dp),
-      verticalArrangement = Arrangement.spacedBy(14.dp),
+    AnimatedVisibility(
+      open != null,
+      modifier =
+        Modifier.align(Alignment.CenterEnd)
+          .fillMaxHeight()
+          .then(if (rail) Modifier.width(480.dp) else Modifier.fillMaxWidth(0.76f)),
+      enter = slideInHorizontally(tween(SheetInMillis, easing = EmphasizedDecelerate)) { it },
+      exit = slideOutHorizontally(tween(SheetOutMillis, easing = EmphasizedAccelerate)) { it },
     ) {
-      SheetHeader(state, id, Modifier.padding(horizontal = SheetGutter))
-      key(id) { Box(Modifier.weight(1f)) { content(id) } }
+      val id = shown.value ?: return@AnimatedVisibility
+      // No border: it would frame the status block, which runs to the sheet's edges. The shadow
+      // and the panel colour set the sheet apart.
+      Column(
+        Modifier.fillMaxSize()
+          .shadow(16.dp, SheetShape)
+          .clip(SheetShape)
+          .background(colors.panel)
+          .padding(barPadding)
+          .padding(top = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+      ) {
+        SheetHeader(state, id, Modifier.padding(horizontal = SheetGutter))
+        key(id) { Box(Modifier.weight(1f)) { content(id) } }
+      }
     }
   }
 }
@@ -410,6 +441,19 @@ private fun ComponentInSheet(id: Long, sink: (BikeEvent) -> Unit) {
     },
   )
 }
+
+/** Lays the content out larger than its slot by these pixels on each side, centred on it. */
+private fun Modifier.expandBy(left: Int, top: Int, right: Int, bottom: Int): Modifier =
+  layout { measurable, constraints ->
+    val placeable =
+      measurable.measure(
+        Constraints.fixed(
+          constraints.maxWidth + left + right,
+          constraints.maxHeight + top + bottom,
+        )
+      )
+    layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(-left, -top) }
+  }
 
 /** A value kept across recompositions without causing them. */
 private class Held<T>(var value: T)
