@@ -167,6 +167,23 @@ class ScreenRenderTest {
     }
   }
 
+  /** No bike yet: the phone's column, then split at the fold's hinge and on a tablet. */
+  @Test
+  fun emptyBike() {
+    val fold = RenderSize.Fold
+    for (dark in listOf(true, false)) {
+      val theme = if (dark) "dark" else "light"
+      render("bike-empty-$theme", dark) { BikeUi(BikeUiState.Empty {}) }
+      render("bike-empty-fold-$theme", dark, fold) {
+        WideEmptyBike(
+          {},
+          hinge = Rect(fold.width.toFloat(), 0f, fold.width.toFloat(), fold.height * 2f),
+        )
+      }
+      render("bike-empty-tablet-$theme", dark, RenderSize.Tablet) { BikeUi(BikeUiState.Empty {}) }
+    }
+  }
+
   /** The tabletop refresh (iteration 10d): each state, with the fold across the middle. */
   @Test
   fun tabletop() {

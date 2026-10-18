@@ -47,7 +47,7 @@ import com.r0adkll.cassette.settings.api.Tip
 import com.slack.circuit.codegen.annotations.CircuitInject
 import dev.zacsweers.metro.AppScope
 
-/** The phone layout's width; large screens use it only for the empty state (decision 0014). */
+/** The phone layout's width (decision 0014). */
 private val MaxContentWidth = 480.dp
 
 @CircuitInject(BikeScreen::class, AppScope::class)
@@ -66,6 +66,10 @@ fun BikeUi(state: BikeUiState, modifier: Modifier = Modifier) {
   val hinge = currentTabletopHinge()
   if (state is BikeUiState.Loaded && hinge != null) {
     TabletopBike(state, hinge, modifier)
+    return
+  }
+  if (state is BikeUiState.Empty && layout != ScreenLayout.Column) {
+    WideEmptyBike(state.eventSink, modifier)
     return
   }
   if (state is BikeUiState.Loaded && layout != ScreenLayout.Column) {
