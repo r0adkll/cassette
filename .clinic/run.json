@@ -1,0 +1,101 @@
+{
+  "configurations" : [
+    {
+      "command" : "./gradlew :app:android:installDebug && adb shell monkey -p com.r0adkll.cassette.debug -c android.intent.category.LAUNCHER 1",
+      "device" : "android",
+      "icon" : "iphone",
+      "id" : "android",
+      "name" : "Android (debug)"
+    },
+    {
+      "command" : "./gradlew :app:android:installInternal && adb shell monkey -p com.r0adkll.cassette.debug -c android.intent.category.LAUNCHER 1",
+      "device" : "android",
+      "icon" : "bolt",
+      "id" : "android-internal",
+      "name" : "Android (internal, R8)"
+    },
+    {
+      "command" : "./gradlew :app:android:installDebug && adb shell appwidget grantbind --package com.r0adkll.cassette.debug && adb shell am start -n com.r0adkll.cassette.debug/com.r0adkll.cassette.app.debug.WidgetPreviewActivity",
+      "device" : "android",
+      "icon" : "square.grid.2x2",
+      "id" : "widgets",
+      "name" : "Widget Preview"
+    },
+    {
+      "command" : "./gradlew :app:android:installDebug && adb shell cmd statusbar add-tile com.r0adkll.cassette.debug/com.r0adkll.cassette.surfaces.tile.BikeTileService && adb shell cmd statusbar expand-settings",
+      "device" : "android",
+      "icon" : "switch.2",
+      "id" : "quick-tile",
+      "name" : "Quick Settings Tile"
+    },
+    {
+      "command" : "./gradlew :app:wear:installDebug && adb shell monkey -p com.r0adkll.cassette.debug -c android.intent.category.LAUNCHER 1",
+      "device" : "android",
+      "icon" : "applewatch",
+      "id" : "wear",
+      "name" : "Wear OS (debug)"
+    },
+    {
+      "command" : "./gradlew :app:wear:installInternal && adb shell monkey -p com.r0adkll.cassette.debug -c android.intent.category.LAUNCHER 1",
+      "device" : "android",
+      "icon" : "applewatch.radiowaves.left.and.right",
+      "id" : "wear-internal",
+      "name" : "Wear OS (internal, R8)"
+    },
+    {
+      "command" : "adb shell am broadcast -n com.r0adkll.cassette.debug/com.r0adkll.cassette.wear.debug.SampleDataReceiver --es state $STATE",
+      "device" : "android",
+      "env" : {
+        "STATE" : "good"
+      },
+      "icon" : "tray.and.arrow.down",
+      "id" : "wear-sample",
+      "name" : "Wear Sample Data"
+    },
+    {
+      "command" : "./gradlew :app:wear:installDebug && adb shell am broadcast -a com.google.android.wearable.app.DEBUG_SURFACE --es operation add-tile --ecn component com.r0adkll.cassette.debug/com.r0adkll.cassette.wear.tile.BikeTileService && adb shell am broadcast -a com.google.android.wearable.app.DEBUG_SYSUI --es operation show-tile --ei index 0",
+      "device" : "android",
+      "icon" : "rectangle.stack",
+      "id" : "wear-tile",
+      "name" : "Wear Tile"
+    },
+    {
+      "command" : "./gradlew jvmTest testDebugUnitTest",
+      "icon" : "testtube.2",
+      "id" : "tests",
+      "name" : "All Tests"
+    },
+    {
+      "command" : "./gradlew :app:android:lint :app:wear:lint",
+      "icon" : "ladybug",
+      "id" : "lint",
+      "name" : "Lint"
+    },
+    {
+      "command" : "scripts/ktfmt --format || scripts/ktfmt --format",
+      "icon" : "text.alignleft",
+      "id" : "ktfmt",
+      "name" : "Format (ktfmt)"
+    },
+    {
+      "command" : "./gradlew :data:db:generateCommonMainCassetteDatabaseSchema",
+      "icon" : "cylinder",
+      "id" : "db-schema",
+      "name" : "Generate DB Schema"
+    },
+    {
+      "command" : "./gradlew verifySqlDelightMigration",
+      "icon" : "checkmark.seal",
+      "id" : "db-verify",
+      "name" : "Verify DB Migrations"
+    },
+    {
+      "command" : "./gradlew bootstrap",
+      "icon" : "hammer",
+      "id" : "bootstrap",
+      "name" : "Install Pre-push Hook"
+    }
+  ],
+  "default" : "android",
+  "version" : 1
+}
