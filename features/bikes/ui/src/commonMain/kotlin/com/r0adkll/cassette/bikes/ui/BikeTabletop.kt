@@ -438,8 +438,8 @@ private enum class CircleFace {
 
 /**
  * The bottom half's one action, a single circle that changes with the refresh rather than three
- * that swap. Ready, it's the Refresh button, breathing. When the scan starts it eases into the
- * panel colour as the red countdown ring and its beating dot come in; the ring drains smoothly
+ * that swap. Ready, it's the Refresh button, its disc breathing. When the scan starts it eases into
+ * the panel colour as the red countdown ring and its beating dot come in; the ring drains smoothly
  * between the once-a-second updates. Done fills it in the result's colour with a small landing.
  */
 @Composable
@@ -536,7 +536,7 @@ private fun RefreshCircle(
 
   Box(
     Modifier.size(220.dp)
-      .scale(land.value * (1f + 0.035f * breath * breathing))
+      .scale(land.value)
       .clip(CircleShape)
       .clickable(
         enabled = !scanning,
@@ -555,7 +555,8 @@ private fun RefreshCircle(
     contentAlignment = Alignment.Center,
   ) {
     Canvas(Modifier.fillMaxSize()) {
-      val r = radius.dp.toPx()
+      // Breathing grows the disc alone; the icon and words stay still on it.
+      val r = radius.dp.toPx() * (1f + 0.035f * breath * breathing)
       val stroke = 6.dp.toPx()
       drawCircle(fill, r)
       if (outline.alpha > 0f) drawCircle(outline, r, style = Stroke(1.dp.toPx()))
