@@ -23,6 +23,10 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Added
 
+- The bike screen on open foldables and tablets (decision 0014): the status block with Refresh inside
+  it, then a tile per component with its 30-day trend, the one to charge next on a wide tile. Tablets
+  list the bikes on the left, with Add bike and Settings; an open foldable puts them in the top bar as
+  chips. Either switches bikes in place. Phones keep the column.
 - Watch app updates from Drop: an "Update ready" row under the bikes, an update screen with Install and a
   progress ring, "Updated to build N." after, and a one-time step to allow updates that shows where the
   switch is (App info, Advanced, Install unknown apps). With Drop 0.5.0 the update installs without

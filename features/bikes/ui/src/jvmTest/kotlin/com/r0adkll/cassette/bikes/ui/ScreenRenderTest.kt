@@ -96,17 +96,47 @@ class ScreenRenderTest {
             "Seen 2 min ago",
           ),
         components = sampleRows,
+        bikes =
+          listOf(
+            BikeChoice(1, "Road bike", StatusTone.Good, "2 min ago"),
+            BikeChoice(2, "Gravel bike", StatusTone.Good, "3 days ago"),
+          ),
+        trends = sampleRows.associate { it.id to trendTo(it.level) },
       ) {}
+    // Charge soon: the front derailleur is low, so it takes the wide tile.
+    val low =
+      bike.copy(
+        status =
+          BikeStatus(
+            StatusTone.Low,
+            "Charge soon.",
+            "Front derailleur at 18%, about 5 days left (est.)",
+            "Seen 2 min ago",
+          ),
+        components =
+          sampleRows.map {
+            if (it.code == "FD") it.copy(value = "18%", level = 0.18f, tone = StatusTone.Low)
+            else it
+          },
+        trends =
+          sampleRows.associate { it.id to trendTo(if (it.code == "FD") 0.18f else it.level) },
+      )
     for (size in listOf(RenderSize.Fold, RenderSize.Tablet)) {
       for (dark in listOf(true, false)) {
         val suffix = "${size.name.lowercase()}-${if (dark) "dark" else "light"}"
         render("bike-$suffix", dark, size) { BikeUi(bike) }
+        render("bike-low-$suffix", dark, size) { BikeUi(low) }
         render("component-$suffix", dark, size) {
           ComponentUi(ComponentUiState(sampleComponent) {})
         }
       }
     }
   }
+
+  /** Thirty days falling to [level], with a charge on day 8 (sample data). */
+  private fun trendTo(level: Float): List<Float> =
+    listOf(0.62f, 0.58f, 0.55f, 0.51f, 0.48f, 0.44f, 0.41f, 0.37f) +
+      (0..12).map { 0.99f + (level - 0.99f) * it / 12 }
 
   @Test
   fun bikeWithTip() {

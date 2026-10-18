@@ -21,16 +21,23 @@ import com.r0adkll.cassette.settings.api.CassetteSettings
 import com.r0adkll.cassette.settings.api.Tip
 import com.slack.circuit.codegen.annotations.CircuitInject
 import com.slack.circuit.retained.collectAsRetainedState
+import com.slack.circuit.retained.rememberRetained
 import com.slack.circuit.runtime.Navigator
 import com.slack.circuit.runtime.presenter.Presenter
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @CircuitInject(BikeScreen::class, AppScope::class)
 @Inject
 class BikePresenter(
@@ -46,11 +53,38 @@ class BikePresenter(
   @Composable
   override fun present(): BikeUiState {
     val scope = rememberCoroutineScope()
+    // The rail and the chips switch bikes in place; the screen's bike is only where it starts.
+    var selected by rememberRetained { mutableStateOf(screen.bikeId) }
     val overview by
-      remember(screen.bikeId) {
-          repository.observeOverview(screen.bikeId?.let(::BikeId)).map { Result(it) }
-        }
+      remember(selected) { repository.observeOverview(selected?.let(::BikeId)).map { Result(it) } }
         .collectAsRetainedState(initial = null)
+
+    // Every bike with its status, for the rail and the chips on large screens (decision 0014).
+    val bikes by remember {
+      repository.observeBikes().flatMapLatest { list ->
+        if (list.isEmpty()) flowOf(emptyList())
+        else combine(list.map { repository.observeOverview(it.id) }) { it.filterNotNull() }
+      }
+    }
+      .collectAsRetainedState(initial = emptyList())
+
+    // The tiles' 30-day trends, by component id.
+    val componentIds = overview?.overview?.components?.map { it.component.id }.orEmpty()
+    val trends by
+      remember(componentIds) {
+          if (componentIds.isEmpty()) flowOf(emptyMap())
+          else
+            combine(
+              componentIds.map { id ->
+                repository.observeComponent(id, clock.now() - TrendDays.days).map { detail ->
+                  id.value to detail?.trend().orEmpty()
+                }
+              }
+            ) {
+              it.toMap()
+            }
+        }
+        .collectAsRetainedState(initial = emptyMap())
 
     // "Seen 2 min ago" keeps itself current.
     var now by remember { mutableStateOf(clock.now()) }
@@ -77,6 +111,7 @@ class BikePresenter(
     val eventSink: (BikeEvent) -> Unit = { event ->
       when (event) {
         is BikeEvent.OpenComponent -> navigator.goTo(ComponentScreen(event.id))
+        is BikeEvent.SelectBike -> selected = event.id
         BikeEvent.OpenSettings -> navigator.goTo(SettingsScreen)
         BikeEvent.AddBike -> navigator.goTo(AddBikeScreen)
         is BikeEvent.AcceptTip -> {
@@ -105,9 +140,15 @@ class BikePresenter(
 
     val loaded = overview ?: return BikeUiState.Loading(eventSink)
     val bike = loaded.overview ?: return BikeUiState.Empty(eventSink)
-    return bike.toLoaded(now, eventSink).copy(refresh = refresh, tip = tip)
+    return bike
+      .toLoaded(now, eventSink)
+      .copy(refresh = refresh, tip = tip, bikes = bikes.toChoices(now), trends = trends)
   }
 
   /** Wraps the nullable overview so "loading" and "no bike" are different states. */
   private data class Result(val overview: BikeOverview?)
+
+  private companion object {
+    const val TrendDays = 30
+  }
 }

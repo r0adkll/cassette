@@ -2,6 +2,7 @@ package com.r0adkll.cassette.common.compose.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
@@ -23,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -99,6 +102,110 @@ fun StatusBlock(
       }
       content()
     }
+  }
+}
+
+/** Container colour inside a status block, for a [StatusBlockButton] drawn in reverse. */
+private val LocalBlockContainer = staticCompositionLocalOf { Color.Unspecified }
+
+/**
+ * The dashboard's status block (decision 0014): [kicker], [title] with its icon and [content] on
+ * the left, and [aside] (the meta line and Refresh) in a fixed column on the right. Like
+ * [StatusBlock], callers make it bleed to the edges of its pane.
+ */
+@Composable
+fun WideStatusBlock(
+  title: String,
+  tone: StatusTone,
+  modifier: Modifier = Modifier,
+  kicker: String? = null,
+  horizontalPadding: Dp = 24.dp,
+  asideWidth: Dp = 240.dp,
+  content: @Composable ColumnScope.() -> Unit = {},
+  aside: @Composable ColumnScope.() -> Unit = {},
+) {
+  val colors = CassetteTheme.colors.block(tone)
+  val outline = colors.outline
+  val type = CassetteTheme.type
+  Row(
+    modifier =
+      modifier
+        .fillMaxWidth()
+        .background(colors.container)
+        .then(if (outline != null) Modifier.border(1.dp, outline) else Modifier)
+        .padding(horizontal = horizontalPadding, vertical = 20.dp),
+    verticalAlignment = Alignment.Bottom,
+    horizontalArrangement = Arrangement.spacedBy(24.dp),
+  ) {
+    CompositionLocalProvider(
+      LocalBlockContent provides colors.content,
+      LocalBlockContainer provides colors.container,
+    ) {
+      Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        if (kicker != null)
+          Text(kicker.uppercase(), style = type.label, color = colors.content.copy(alpha = 0.85f))
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+          Text(
+            title,
+            style = type.display.copy(fontSize = type.display.fontSize * 1.07f),
+            color = colors.content,
+            modifier = Modifier.weight(1f, fill = false),
+          )
+          Icon(
+            tone.icon,
+            contentDescription = tone.word,
+            tint = colors.content,
+            modifier = Modifier.size(38.dp),
+          )
+        }
+        content()
+      }
+      Column(Modifier.width(asideWidth), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        aside()
+      }
+    }
+  }
+}
+
+/**
+ * A button inside a status block, in reverse: the block's content colour with its container's text.
+ */
+@Composable
+fun StatusBlockButton(
+  text: String,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier,
+  icon: ImageVector? = null,
+  trailing: String? = null,
+) {
+  val background = LocalBlockContent.current
+  val content = LocalBlockContainer.current
+  val shape = RoundedCornerShape(24.dp)
+  Row(
+    modifier =
+      modifier
+        .fillMaxWidth()
+        .height(48.dp)
+        .clip(shape)
+        .background(background)
+        .clickable(role = Role.Button, onClick = onClick)
+        .padding(horizontal = 18.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+  ) {
+    if (icon != null)
+      Icon(icon, contentDescription = null, tint = content, modifier = Modifier.size(18.dp))
+    Text(
+      text.uppercase(),
+      style = CassetteTheme.type.button,
+      color = content,
+      modifier = Modifier.weight(1f),
+    )
+    if (trailing != null)
+      Text(trailing.uppercase(), style = CassetteTheme.type.button, color = content)
   }
 }
 

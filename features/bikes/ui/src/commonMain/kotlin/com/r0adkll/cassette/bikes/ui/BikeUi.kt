@@ -27,7 +27,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
+import com.r0adkll.cassette.common.compose.LocalWindowSize
 import com.r0adkll.cassette.common.compose.UpdateStatus
+import com.r0adkll.cassette.common.compose.WindowSize
 import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.ComponentRow
 import com.r0adkll.cassette.common.compose.components.IconCircleButton
@@ -43,12 +45,17 @@ import com.r0adkll.cassette.settings.api.Tip
 import com.slack.circuit.codegen.annotations.CircuitInject
 import dev.zacsweers.metro.AppScope
 
-/** Content is capped at phone width and centred, so large screens don't stretch it (layout TBD). */
+/** The phone layout's width; large screens use it only for the empty state (decision 0014). */
 private val MaxContentWidth = 480.dp
 
 @CircuitInject(BikeScreen::class, AppScope::class)
 @Composable
 fun BikeUi(state: BikeUiState, modifier: Modifier = Modifier) {
+  val size = LocalWindowSize.current
+  if (state is BikeUiState.Loaded && size != WindowSize.Narrow) {
+    BikeDashboard(state, size, modifier)
+    return
+  }
   Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
     Column(
       Modifier.widthIn(max = MaxContentWidth)
@@ -144,7 +151,7 @@ private fun LoadedBike(state: BikeUiState.Loaded) {
 
 /** One quiet suggestion: what it is, why, and a way to say no. */
 @Composable
-private fun TipPanel(tip: Tip, onAccept: () -> Unit, onDismiss: () -> Unit) {
+internal fun TipPanel(tip: Tip, onAccept: () -> Unit, onDismiss: () -> Unit) {
   val colors = CassetteTheme.colors
   val (icon, title, body, action) =
     when (tip) {
