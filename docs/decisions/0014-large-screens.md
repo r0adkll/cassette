@@ -85,7 +85,11 @@ come from the same adaptive library (`windowPosture`: `isTabletop` and the hinge
   the title, anchored left; the three points, Get started and the unofficial notice are on the other
   half (10b).
 - **Add bike:** waking and found are one screen when wide: the listening pulse and timer on the left, the
-  components appearing on the right as they answer (iteration 10).
+  components appearing on the right as they answer (iteration 10). Name, power meter and keep-fresh
+  stay one column.
+- Both split with `SplitPanes`: at the open Fold's hinge (the posture's vertical hinge, which it
+  reports even when flat), so nothing sits on the fold, or down the middle on a tablet. Built in M2.5
+  step 6; the welcome keeps the phone's wording for the three points.
 - **Settings, every size (10c, S3):** settings become categories: Bikes, Capture, Notifications, App
   updates, Diagnostics, Licences, each with a live summary ("2 of 3 on", a red dot when a build is
   waiting). On a phone the category list opens one category screen at a time, with a sentence on what it

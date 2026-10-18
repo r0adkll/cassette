@@ -10,6 +10,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import com.r0adkll.cassette.bikes.summary.BikeStatus
@@ -19,6 +20,7 @@ import com.r0adkll.cassette.bikes.ui.add.AddBikeUi
 import com.r0adkll.cassette.bikes.ui.add.AddBikeUiState
 import com.r0adkll.cassette.bikes.ui.add.FoundRow
 import com.r0adkll.cassette.bikes.ui.add.MeterRow
+import com.r0adkll.cassette.bikes.ui.add.WakeAndFound
 import com.r0adkll.cassette.bikes.ui.component.ComponentDetailModel
 import com.r0adkll.cassette.bikes.ui.component.ComponentUi
 import com.r0adkll.cassette.bikes.ui.component.ComponentUiState
@@ -73,6 +75,21 @@ class ScreenRenderTest {
       for ((name, step) in steps) {
         render("add-bike-$name-${if (dark) "dark" else "light"}", dark) {
           AddBikeUi(AddBikeUiState(step) {})
+        }
+      }
+      // Unfolded, waking and found share a screen split at the hinge (decision 0014).
+      val fold = RenderSize.Fold
+      val hinge = Rect(fold.width.toFloat(), 0f, fold.width.toFloat(), fold.height * 2f)
+      val wide =
+        listOf(
+          "1-wake" to AddBikeStep.Wake(38, bluetoothReady = true, showTips = false),
+          "1-wake-tips" to AddBikeStep.Wake(38, bluetoothReady = true, showTips = true),
+          "2-reading" to AddBikeStep.Found(1405188718, true, rows.take(2), failed = false),
+          "2-found" to AddBikeStep.Found(1405188718, false, rows, failed = false),
+        )
+      for ((name, step) in wide) {
+        render("add-bike-fold-$name-${if (dark) "dark" else "light"}", dark, fold) {
+          WakeAndFound(AddBikeUiState(step) {}, hinge = hinge)
         }
       }
     }

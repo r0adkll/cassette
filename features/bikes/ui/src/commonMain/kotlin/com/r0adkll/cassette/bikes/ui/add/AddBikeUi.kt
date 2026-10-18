@@ -36,16 +36,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import com.r0adkll.cassette.common.compose.LocalScreenLayout
+import com.r0adkll.cassette.common.compose.ScreenLayout
 import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.CodeBadge
 import com.r0adkll.cassette.common.compose.components.IconCircleButton
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
+import com.r0adkll.cassette.common.compose.components.SplitPanes
 import com.r0adkll.cassette.common.compose.components.StatusLabel
+import com.r0adkll.cassette.common.compose.currentVerticalHinge
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.screens.AddBikeScreen
@@ -57,6 +65,15 @@ import dev.zacsweers.metro.AppScope
 @Composable
 fun AddBikeUi(state: AddBikeUiState, modifier: Modifier = Modifier) {
   val sink = state.eventSink
+  val step = state.step
+  // Wide windows put waking and found on one screen (decision 0014).
+  if (
+    LocalScreenLayout.current != ScreenLayout.Column &&
+      (step is AddBikeStep.Wake || step is AddBikeStep.Found)
+  ) {
+    WakeAndFound(state, modifier)
+    return
+  }
   Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
     Column(
       Modifier.widthIn(max = 480.dp).fillMaxSize().padding(horizontal = 20.dp, vertical = 24.dp),
@@ -130,11 +147,22 @@ private fun Note(text: String, icon: ImageVector = LucideIcons.Info) {
 
 @Composable
 private fun ColumnScope.Wake(step: AddBikeStep.Wake, sink: (AddBikeEvent) -> Unit) {
-  val colors = CassetteTheme.colors
   Title("Wake your bike.")
   Body(
     "Shake the bike or press the AXS button on a shifter. Cassette listens for the rear derailleur, which reports for the whole bike."
   )
+  ListeningPulse(listening = true, Modifier.fillMaxWidth())
+  ListeningLabel(step, Modifier.align(Alignment.CenterHorizontally))
+  if (step.showTips) Tips()
+}
+
+/**
+ * Rings around the Bluetooth mark. While [listening] a red ring pulses out through them; once the
+ * hub is heard they hold still.
+ */
+@Composable
+private fun ListeningPulse(listening: Boolean, modifier: Modifier = Modifier) {
+  val colors = CassetteTheme.colors
   val pulse by
     rememberInfiniteTransition()
       .animateFloat(
@@ -142,44 +170,58 @@ private fun ColumnScope.Wake(step: AddBikeStep.Wake, sink: (AddBikeEvent) -> Uni
         1f,
         infiniteRepeatable(tween(1_600, easing = LinearEasing), RepeatMode.Restart),
       )
-  Box(Modifier.fillMaxWidth().height(260.dp), contentAlignment = Alignment.Center) {
+  Box(modifier.height(260.dp), contentAlignment = Alignment.Center) {
     Canvas(Modifier.size(260.dp)) {
       val max = size.minDimension / 2
       drawCircle(colors.line, radius = max, style = Stroke(1.5.dp.toPx()))
       drawCircle(colors.line, radius = max * 0.75f, style = Stroke(1.5.dp.toPx()))
-      drawCircle(
-        colors.brand.copy(alpha = 1f - pulse),
-        radius = max * (0.3f + 0.7f * pulse),
-        style = Stroke(2.5.dp.toPx()),
-      )
+      if (listening)
+        drawCircle(
+          colors.brand.copy(alpha = 1f - pulse),
+          radius = max * (0.3f + 0.7f * pulse),
+          style = Stroke(2.5.dp.toPx()),
+        )
       drawCircle(colors.panel, radius = max * 0.3f)
-      drawCircle(colors.line, radius = max * 0.3f, style = Stroke(1.dp.toPx()))
+      drawCircle(
+        if (listening) colors.line else colors.good,
+        radius = max * 0.3f,
+        style = Stroke(if (listening) 1.dp.toPx() else 2.dp.toPx()),
+      )
     }
     Icon(
-      LucideIcons.BluetoothSearching,
+      if (listening) LucideIcons.BluetoothSearching else LucideIcons.Bluetooth,
       null,
       tint = colors.text,
       modifier = Modifier.size(34.dp),
     )
   }
-  Row(
-    Modifier.align(Alignment.CenterHorizontally),
-    verticalAlignment = Alignment.CenterVertically,
-  ) {
+}
+
+/** "Listening · 0:38", with the red dot. */
+@Composable
+private fun ListeningLabel(step: AddBikeStep.Wake, modifier: Modifier = Modifier) {
+  val colors = CassetteTheme.colors
+  Row(modifier, verticalAlignment = Alignment.CenterVertically) {
     Box(Modifier.size(8.dp).clip(CircleShape).background(colors.brand))
     Spacer(Modifier.width(8.dp))
     val m = step.seconds / 60
     val s = (step.seconds % 60).toString().padStart(2, '0')
     Kicker(if (step.bluetoothReady) "Listening · $m:$s" else "Bluetooth is off or not allowed")
   }
-  if (step.showTips) {
-    Panel {
-      Text("Not finding it?", style = CassetteTheme.type.itemTitle, color = colors.text)
-      Body(
-        "Wake it again: AXS components sleep after a minute or so. Keep the phone near the rear derailleur. " +
-          "If the official app is connected to the bike, close it; a connected bike may stop advertising."
-      )
-    }
+}
+
+@Composable
+private fun Tips() {
+  Panel {
+    Text(
+      "Not finding it?",
+      style = CassetteTheme.type.itemTitle,
+      color = CassetteTheme.colors.text,
+    )
+    Body(
+      "Wake it again: AXS components sleep after a minute or so. Keep the phone near the rear derailleur. " +
+        "If the official app is connected to the bike, close it; a connected bike may stop advertising."
+    )
   }
 }
 
@@ -376,7 +418,12 @@ private fun KeepFresh(step: AddBikeStep.KeepFresh) {
 }
 
 @Composable
-private fun Footer(step: AddBikeStep, sink: (AddBikeEvent) -> Unit) {
+private fun Footer(
+  step: AddBikeStep,
+  sink: (AddBikeEvent) -> Unit,
+  /** The found step's way on; the wide screen says "This is my bike", as in iteration 10. */
+  foundLabel: String = "Continue",
+) {
   when (step) {
     is AddBikeStep.Wake ->
       CassetteButton(
@@ -393,7 +440,7 @@ private fun Footer(step: AddBikeStep, sink: (AddBikeEvent) -> Unit) {
             icon = LucideIcons.RefreshCw,
           )
         step.reading -> CassetteButton("Reading…", onClick = {}, primary = false)
-        else -> CassetteButton("Continue", onClick = { sink(AddBikeEvent.Continue) })
+        else -> CassetteButton(foundLabel, onClick = { sink(AddBikeEvent.Continue) })
       }
     is AddBikeStep.Name -> CassetteButton("Continue", onClick = { sink(AddBikeEvent.Continue) })
     is AddBikeStep.PowerMeter ->
@@ -452,3 +499,150 @@ private val BikeType.icon: ImageVector
       BikeType.Mtb -> LucideIcons.Mountain
       BikeType.Other -> LucideIcons.CircleHelp
     }
+
+/**
+ * Waking and found as one screen on wide windows (decision 0014, iteration 10), split at the hinge:
+ * the listening pulse and timer on the left, the hub's components arriving on the right, with the
+ * button that moves on beneath them.
+ */
+@Composable
+internal fun WakeAndFound(
+  state: AddBikeUiState,
+  modifier: Modifier = Modifier,
+  hinge: Rect? = currentVerticalHinge(),
+) {
+  val colors = CassetteTheme.colors
+  val sink = state.eventSink
+  val step = state.step
+  val found = step as? AddBikeStep.Found
+  SplitPanes(
+    start = {
+      Column(
+        Modifier.fillMaxSize().padding(start = 28.dp, end = 28.dp, top = 24.dp, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
+      ) {
+        Header(step.number, onClose = { sink(AddBikeEvent.Close) })
+        Title(
+          when {
+            found == null -> "Wake your bike."
+            found.failed -> "Couldn't read it."
+            else -> "Found a bike."
+          }
+        )
+        Body(
+          when {
+            found == null ->
+              "Shake the bike or press the AXS button on a shifter. Keep the phone close."
+            found.failed -> "The hub stopped answering. Wake the bike again and retry."
+            found.reading -> "The rear derailleur is the hub. Reading its list of components…"
+            else -> "The rear derailleur is the hub. More components can join later."
+          }
+        )
+        Spacer(Modifier.weight(1f))
+        ListeningPulse(listening = found == null, Modifier.fillMaxWidth())
+        if (step is AddBikeStep.Wake) {
+          ListeningLabel(step, Modifier.align(Alignment.CenterHorizontally))
+          Text(
+            if (step.showTips) "Hide tips" else "Not finding it?",
+            style = CassetteTheme.type.itemTitle,
+            color = colors.muted,
+            modifier =
+              Modifier.align(Alignment.CenterHorizontally)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(onClick = { sink(AddBikeEvent.ToggleTips) })
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+          )
+        } else if (found != null) {
+          Kicker("Hub · SRAM ${found.hubSerial}", Modifier.align(Alignment.CenterHorizontally))
+        }
+      }
+    },
+    end = {
+      Column(
+        Modifier.fillMaxSize()
+          .background(colors.panel)
+          .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+      ) {
+        Box(Modifier.height(44.dp), contentAlignment = Alignment.CenterStart) {
+          Kicker(
+            if (found == null || found.components.isEmpty()) "Found"
+            else "Found · ${found.components.size}"
+          )
+        }
+        Column(
+          Modifier.weight(1f).verticalScroll(rememberScrollState()),
+          verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+          found?.components?.forEach { FoundCard(it) }
+          when {
+            step is AddBikeStep.Wake && step.showTips -> Tips()
+            found == null -> WaitingCard("The bike's components appear here as the hub answers.")
+            found.reading -> WaitingCard("Reading the hub…")
+          }
+          Note("Power meters aren't in the hub's tables; you pick one on the next step.")
+        }
+        when {
+          found == null -> CassetteButton("Waiting for the bike…", onClick = {}, primary = false)
+          else -> Footer(found, sink, foundLabel = "This is my bike")
+        }
+      }
+    },
+    modifier = modifier.fillMaxSize(),
+    hinge = hinge,
+  )
+}
+
+/** A component the hub listed: code, name, where its reading comes from, and its value. */
+@Composable
+private fun FoundCard(row: FoundRow) {
+  val colors = CassetteTheme.colors
+  Row(
+    Modifier.fillMaxWidth()
+      .clip(RoundedCornerShape(16.dp))
+      .background(colors.background)
+      .border(1.dp, colors.line, RoundedCornerShape(16.dp))
+      .padding(horizontal = 14.dp, vertical = 12.dp),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(12.dp),
+  ) {
+    CodeBadge(row.code)
+    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(1.dp)) {
+      Text(row.name, style = CassetteTheme.type.itemTitle, color = colors.text)
+      Text(row.source, style = CassetteTheme.type.bodySmall, color = colors.muted)
+    }
+    Column(horizontalAlignment = Alignment.End) {
+      Text(
+        row.value,
+        style =
+          CassetteTheme.type.numeral.copy(fontSize = CassetteTheme.type.numeral.fontSize * 0.85f),
+        color = colors.text,
+      )
+      StatusLabel(row.tone)
+    }
+  }
+}
+
+/** A dashed placeholder for what hasn't answered yet. */
+@Composable
+private fun WaitingCard(text: String) {
+  val colors = CassetteTheme.colors
+  Box(
+    Modifier.fillMaxWidth()
+      .drawBehind {
+        val radius = 16.dp.toPx()
+        drawRoundRect(
+          colors.line,
+          cornerRadius = CornerRadius(radius, radius),
+          style =
+            Stroke(
+              1.dp.toPx(),
+              pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 5.dp.toPx())),
+            ),
+        )
+      }
+      .padding(horizontal = 16.dp, vertical = 18.dp)
+  ) {
+    Text(text, style = CassetteTheme.type.bodySmall, color = colors.muted)
+  }
+}

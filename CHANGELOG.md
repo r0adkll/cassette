@@ -37,6 +37,10 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Added
 
+- Welcome and add bike unfolded (decision 0014): on an open foldable the welcome's red poster takes
+  the half before the hinge (wordmark, tape mark, "Know before you ride.") and the three points and
+  Get started the other; adding a bike shows waking and found on one screen, the listening pulse on
+  the left and the components arriving on the right. Tablets split down the middle.
 - Tabletop refresh (decision 0014): on a foldable standing half open, the bike screen splits at the
   fold. Above, the status and a tall column per component filled to its level; during a scan the
   ones not heard yet are grey and each rises into colour as it answers. Below, a circle that is the

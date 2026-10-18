@@ -64,3 +64,11 @@ fun currentTabletopHinge(): Rect? {
   if (!posture.isTabletop) return null
   return posture.hingeList.firstOrNull { !it.isVertical }?.bounds
 }
+
+/**
+ * Where an open foldable folds when the hinge runs top to bottom (the Fold held open as a book), in
+ * window pixels; null on devices without one. Two-pane screens split there (decision 0014).
+ */
+@Composable
+fun currentVerticalHinge(): Rect? =
+  currentWindowAdaptiveInfoV2().windowPosture.hingeList.firstOrNull { it.isVertical }?.bounds
