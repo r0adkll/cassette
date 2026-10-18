@@ -167,7 +167,8 @@ private fun ListeningPulse(listening: Boolean, modifier: Modifier = Modifier) {
   val pulses = rememberPulses(emitting = listening, color = colors.brand)
   val edge by animateColorAsState(if (listening) colors.line else colors.good, tween(450))
   Box(
-    modifier.height(260.dp).pulses(pulses, from = CircleRadius, to = 130.dp),
+    // The rings spread past the box, about 4.5 times the circle's size, fading out as they go.
+    modifier.height(260.dp).pulses(pulses, from = CircleRadius, to = 175.dp),
     contentAlignment = Alignment.Center,
   ) {
     Box(
