@@ -12,6 +12,7 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Changed
 
+- The app icon (phone and watch, release and dev) drops its four small screw dots.
 - The watch app's internal build goes to Drop as a Wear Build in the same run as the phone's (Drop
   0.4.0), with the phone's commit-count version code, so it installs from its Build page instead of a
   CI artifact.

@@ -89,8 +89,9 @@ SRAM-app quality, which must be our own (never SRAM's artwork).
 
 - **Launcher icon (iteration 8, A2 · Red shell)**: a cassette tape filling the icon. The red background is
   the shell; a white label (its top shade follows the rounded corners) holds a dark window with two white
-  cog reels (U-shaped valleys, plain round hubs); a rounded tape head in darker red sits just below, with
-  four screw dots. Adaptive icon with a monochrome layer (the tape in outline, solid reels) for themed icons.
+  cog reels (U-shaped valleys, plain round hubs); a rounded tape head in darker red sits just below. Its four
+  screw dots were dropped on 2026-10-17. Adaptive icon with a monochrome layer (the tape in outline, solid
+  reels) for themed icons.
 - **Small surfaces (iteration 7, D · Battery cassette)**: a battery outline whose fill is a cassette seen
   side-on. Used as the notification small icon, as a white silhouette.
 - The debug build inverts it, to tell it apart from a release install: a black shell, a red label, white reels

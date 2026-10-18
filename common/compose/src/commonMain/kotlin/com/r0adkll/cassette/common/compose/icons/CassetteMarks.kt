@@ -79,15 +79,6 @@ object CassetteMarks {
             fill = SolidColor(Color(0xFFFFFFFF)),
             pathFillType = PathFillType.EvenOdd,
           )
-          addPath(
-            pathData =
-              PathParser()
-                .parsePathString(
-                  "M30.860000000000003,32.06 A1.2,1.2 0 1 0 33.260000000000005,32.06 A1.2,1.2 0 1 0 30.860000000000003,32.06 Z M74.74,32.06 A1.2,1.2 0 1 0 77.14,32.06 A1.2,1.2 0 1 0 74.74,32.06 Z M27.990000000000002,73.09 A1.2,1.2 0 1 0 30.39,73.09 A1.2,1.2 0 1 0 27.990000000000002,73.09 Z M77.61,73.09 A1.2,1.2 0 1 0 80.01,73.09 A1.2,1.2 0 1 0 77.61,73.09 Z"
-                )
-                .toNodes(),
-            fill = SolidColor(Color(0xFFB80023)),
-          )
         }
       }
       .build()
