@@ -17,6 +17,7 @@ kotlin {
       implementation(project(":common:screens"))
       implementation(libs.androidx.work.runtime)
     }
+    iosMain.dependencies { implementation(project(":common:screens")) }
     commonTest.dependencies {
       implementation(libs.kotlin.test)
       implementation(libs.kotlinx.coroutines.test)

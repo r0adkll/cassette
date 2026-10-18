@@ -69,6 +69,7 @@ drop {
 }
 
 dependencies {
+  implementation(project(":app:shared"))
   implementation(project(":common:compose"))
   implementation(project(":common:screens"))
   implementation(project(":data:ble"))

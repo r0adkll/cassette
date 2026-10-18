@@ -1,4 +1,4 @@
-package com.r0adkll.cassette.app
+package com.r0adkll.cassette.app.shared
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

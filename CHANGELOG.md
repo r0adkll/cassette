@@ -5,6 +5,12 @@ All notable changes to Cassette are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- An iPhone app (decision 0016), in progress: the shared screens on iOS, Core Bluetooth scanning and
+  unpaired GATT reads (a peripheral's identifier stands in for its Bluetooth address), the background
+  scan with state restoration, and the three notifications with "Snooze until tomorrow".
+
 ### Fixed
 
 - In-app updates work again in the builds Drop ships: since the R8 `internal` build, they were switched

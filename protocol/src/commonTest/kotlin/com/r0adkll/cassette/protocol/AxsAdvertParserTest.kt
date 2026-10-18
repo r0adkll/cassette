@@ -149,6 +149,42 @@ class AxsAdvertParserTest {
     assertNull(parse(bytes("1f ff 33 09"))) // length byte overruns the buffer
   }
 
+  @Test
+  fun decodesCoreBluetoothParts() {
+    // An iPhone's callback for our RD (decision 0016): Core Bluetooth merges both 0x0933
+    // structures into one blob; the identifier stands in for the address.
+    val merged = bytes("00 00 01 02 00 04 05 8f 1e 03 80 48 01 01 09 0d 03 6e 7a c1 53 2a 04 81 01")
+    val identifier = "6E4A45BD-DE3D-D303-8103-84FB3F77669A"
+
+    val reading =
+      AxsAdvertParser.parse(
+        name = "SRAM 1405188718",
+        manufacturer = merged,
+        serviceData = null,
+        rssi = -60,
+        address = identifier,
+        timestampMillis = 0L,
+      )!!
+
+    assertEquals(1405188718L, reading.serial)
+    assertEquals(7823, reading.battery?.millivolts)
+    assertEquals(72, reading.battery?.percent)
+    assertTrue(reading.bridge)
+
+    // In the background there's no scan response: battery only, so the identifier is the key.
+    val background =
+      AxsAdvertParser.parse(
+        name = null,
+        manufacturer = bytes("00 00 01 02 00 04 05 8f 1e 03 80 48"),
+        serviceData = null,
+        rssi = -60,
+        address = identifier,
+        timestampMillis = 0L,
+      )!!
+    assertEquals(identifier, background.key)
+    assertNull(background.serial)
+  }
+
   private fun parse(raw: ByteArray) =
     AxsAdvertParser.parse(raw, rssi = -60, address = ADDRESS, timestampMillis = 0L)
 

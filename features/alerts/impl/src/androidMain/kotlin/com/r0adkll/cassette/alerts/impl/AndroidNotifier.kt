@@ -8,7 +8,6 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.r0adkll.cassette.alerts.api.AlertLevel
 import com.r0adkll.cassette.alerts.api.BatteryAlert
 import com.r0adkll.cassette.alerts.api.NotSeenReminder
 import com.r0adkll.cassette.alerts.api.Notifier
@@ -29,29 +28,16 @@ import dev.zacsweers.metro.Inject
 class AndroidNotifier(private val application: Application) : Notifier {
 
   override fun batteryAlert(alert: BatteryAlert) {
-    val title =
-      when (alert.level) {
-        AlertLevel.Low -> "${alert.componentName} is low"
-        AlertLevel.ChargeNow -> "${alert.componentName}: charge now"
-      }
-    val text =
-      when (alert.level) {
-        AlertLevel.Low -> "${alert.value} left on ${alert.bikeName}. Charge it soon."
-        AlertLevel.ChargeNow ->
-          "${alert.value} left on ${alert.bikeName}. It may stop working on your next ride."
-      }
     post(
       BATTERY_ALERTS,
       BATTERY_ALERT_ID + alert.component.value.toInt(),
       DeepLinks.component(alert.bike.value, alert.component.value),
-      title,
-      text,
+      AlertText.title(alert),
+      AlertText.text(alert),
     ) {}
   }
 
   override fun preRide(nudge: PreRideNudge) {
-    val first = nudge.low.first()
-    val more = if (nudge.low.size > 1) " and ${nudge.low.size - 1} more" else ""
     val id = PRE_RIDE_ID + nudge.bike.value.toInt()
     val snooze =
       PendingIntent.getBroadcast(
@@ -66,10 +52,10 @@ class AndroidNotifier(private val application: Application) : Notifier {
       PRE_RIDE,
       id,
       DeepLinks.bike(nudge.bike.value),
-      "${nudge.bikeName} is awake",
-      "${first.name} is ${if (first.level == AlertLevel.ChargeNow) "nearly empty" else "low"} (${first.value})$more. Charge it before you ride.",
+      AlertText.title(nudge),
+      AlertText.text(nudge),
     ) {
-      addAction(0, "Snooze until tomorrow", snooze)
+      addAction(0, AlertText.SNOOZE, snooze)
     }
   }
 
@@ -78,8 +64,8 @@ class AndroidNotifier(private val application: Application) : Notifier {
       REMINDERS,
       REMINDER_ID + reminder.bike.value.toInt(),
       DeepLinks.bike(reminder.bike.value),
-      "Haven't seen ${reminder.bikeName} in ${reminder.days} days",
-      "Wake it so Cassette can check the batteries.",
+      AlertText.title(reminder),
+      AlertText.NOT_SEEN_TEXT,
     ) {}
   }
 

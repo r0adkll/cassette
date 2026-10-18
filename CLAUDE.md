@@ -33,6 +33,10 @@ ported. Don't build new features on the POC.
   -a com.google.android.wearable.app.DEBUG_SURFACE --es operation add-tile --ecn component
   com.r0adkll.cassette.debug/com.r0adkll.cassette.wear.tile.BikeTileService`, then `-a
   com.google.android.wearable.app.DEBUG_SYSUI --es operation show-tile --ei index 0`.
+- iOS (decision 0016): `xcodegen generate --spec app/ios/Cassette/project.yml`, then build the `Cassette`
+  scheme in Xcode or with `xcodebuild` (its build phase runs `:app:ios:embedAndSignAppleFrameworkForXcode`).
+  Debug installs as `com.r0adkll.cassette.debug`. Bluetooth needs an iPhone; the Simulator shows the UI.
+  `./gradlew :app:ios:linkDebugFrameworkIosSimulatorArm64` checks the Kotlin half (and its Metro graph).
 - `scripts/ktfmt` checks formatting in under a second (`--format` fixes it), build-logic included. It is
   the only formatter: CI and the pre-push hook (`./gradlew bootstrap`) use it, and there is no Gradle
   ktfmt task. In the IDE, use the ktfmt plugin set to Google style.
@@ -81,6 +85,9 @@ Channels from decision 0011 (`AndroidNotifier` in `:features:alerts:impl`):
 | 2,000,000 + bike id | `pre_ride` (high, heads-up) | The bike woke and something is low; at most every 12 h |
 | 3,000,000 + bike id | `reminders` (low) | Bike not seen for 14, then 30 days |
 | (not yet) | `capture` (min) | Only while a foreground read runs, if one is ever needed |
+
+On iOS (`IosNotifier`), identifiers are `battery-<component id>`, `pre-ride-<bike id>` (category
+`pre-ride`, with the `snooze` action) and `not-seen-<bike id>`.
 
 ## PendingIntent request codes
 
