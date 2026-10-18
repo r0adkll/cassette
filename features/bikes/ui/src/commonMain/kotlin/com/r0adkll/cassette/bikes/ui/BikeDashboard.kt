@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -56,13 +57,15 @@ import com.r0adkll.cassette.common.compose.UpdateStatus
 import com.r0adkll.cassette.common.compose.components.BikeChip
 import com.r0adkll.cassette.common.compose.components.BikeRailItem
 import com.r0adkll.cassette.common.compose.components.ComponentTile
-import com.r0adkll.cassette.common.compose.components.IconCircleButton
+import com.r0adkll.cassette.common.compose.components.FloatingTopBar
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.RailAddButton
 import com.r0adkll.cassette.common.compose.components.RailLink
 import com.r0adkll.cassette.common.compose.components.StatusBlockButton
 import com.r0adkll.cassette.common.compose.components.StatusBlockMeta
 import com.r0adkll.cassette.common.compose.components.StatusBlockText
+import com.r0adkll.cassette.common.compose.components.TopBarButton
+import com.r0adkll.cassette.common.compose.components.TopBarButtonSize
 import com.r0adkll.cassette.common.compose.components.WideStatusBlock
 import com.r0adkll.cassette.common.compose.endPane
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
@@ -111,54 +114,68 @@ private fun Dashboard(state: BikeUiState.Loaded, rail: Boolean) {
       )
       Box(Modifier.width(1.dp).fillMaxHeight().background(CassetteTheme.colors.line))
     }
-    Column(
-      Modifier.weight(1f)
-        .fillMaxHeight()
-        .then(if (rail) Modifier.endPane() else Modifier)
-        .verticalScroll(rememberScrollState())
-        .safeDrawingPadding()
-        .padding(vertical = 24.dp),
-      verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-      if (rail) {
-        Text(
-          state.name,
-          style = CassetteTheme.type.display,
-          color = CassetteTheme.colors.text,
+    Box(Modifier.weight(1f).fillMaxHeight().then(if (rail) Modifier.endPane() else Modifier)) {
+      Column(
+        Modifier.fillMaxSize()
+          .verticalScroll(rememberScrollState())
+          .safeDrawingPadding()
+          .padding(vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+      ) {
+        if (rail) {
+          Text(
+            state.name,
+            style = CassetteTheme.type.display,
+            color = CassetteTheme.colors.text,
+            modifier = Modifier.padding(horizontal = gutter),
+          )
+        } else {
+          ChipBar(state, Modifier.padding(horizontal = gutter))
+        }
+        // Screen readers get the plain title (decision 0015).
+        WideStatusBlock(
+          state.title,
+          state.status.tone,
+          kicker = state.name.takeUnless { rail },
+          titleDescription = state.status.headline,
+          horizontalPadding = gutter,
+          asideWidth = if (rail) 260.dp else 220.dp,
+          content = { StatusBlockText(state.status.summary) },
+          aside = {
+            StatusBlockMeta(state.status.meta)
+            BlockRefresh(state.refresh, onClick = { sink(BikeEvent.Refresh) })
+          },
+        )
+        ComponentGrid(
+          state,
+          columns = if (rail) 3 else 2,
+          gap = if (rail) 12.dp else 10.dp,
           modifier = Modifier.padding(horizontal = gutter),
         )
-      } else {
-        ChipBar(state, updateWaiting, Modifier.padding(horizontal = gutter))
-      }
-      // Screen readers get the plain title (decision 0015).
-      WideStatusBlock(
-        state.title,
-        state.status.tone,
-        kicker = state.name.takeUnless { rail },
-        titleDescription = state.status.headline,
-        horizontalPadding = gutter,
-        asideWidth = if (rail) 260.dp else 220.dp,
-        content = { StatusBlockText(state.status.summary) },
-        aside = {
-          StatusBlockMeta(state.status.meta)
-          BlockRefresh(state.refresh, onClick = { sink(BikeEvent.Refresh) })
-        },
-      )
-      ComponentGrid(
-        state,
-        columns = if (rail) 3 else 2,
-        gap = if (rail) 12.dp else 10.dp,
-        modifier = Modifier.padding(horizontal = gutter),
-      )
-      state.tip?.let { tip ->
-        Box(Modifier.padding(horizontal = gutter)) {
-          TipPanel(
-            tip,
-            onAccept = { sink(BikeEvent.AcceptTip(tip)) },
-            onDismiss = { sink(BikeEvent.DismissTip(tip)) },
-          )
+        state.tip?.let { tip ->
+          Box(Modifier.padding(horizontal = gutter)) {
+            TipPanel(
+              tip,
+              onAccept = { sink(BikeEvent.AcceptTip(tip)) },
+              onDismiss = { sink(BikeEvent.DismissTip(tip)) },
+            )
+          }
         }
       }
+      // Add bike and Settings float over the chip bar's end (iteration 14; the rail has its own).
+      if (!rail)
+        FloatingTopBar(
+          Modifier.safeDrawingPadding().padding(horizontal = gutter, vertical = 24.dp)
+        ) {
+          Spacer(Modifier.weight(1f))
+          TopBarButton(LucideIcons.BikePlus, "Add bike", onClick = { sink(BikeEvent.AddBike) })
+          TopBarButton(
+            LucideIcons.Settings,
+            if (updateWaiting) "Settings, app update available" else "Settings",
+            onClick = { sink(BikeEvent.OpenSettings) },
+            badge = updateWaiting,
+          )
+        }
     }
   }
 }
@@ -210,12 +227,15 @@ private fun BikeRail(state: BikeUiState.Loaded, updateWaiting: Boolean, modifier
   }
 }
 
-/** The open foldable's top bar: the wordmark, a chip per bike, Add bike and Settings. */
+/**
+ * The open foldable's top bar: the wordmark and a chip per bike. Add bike and Settings float over
+ * its end, so they stay when it scrolls away.
+ */
 @Composable
-private fun ChipBar(state: BikeUiState.Loaded, updateWaiting: Boolean, modifier: Modifier) {
+private fun ChipBar(state: BikeUiState.Loaded, modifier: Modifier) {
   val sink = state.eventSink
   Row(
-    modifier,
+    modifier.height(TopBarButtonSize),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(8.dp),
   ) {
@@ -234,13 +254,8 @@ private fun ChipBar(state: BikeUiState.Loaded, updateWaiting: Boolean, modifier:
         )
       }
     }
-    IconCircleButton(LucideIcons.BikePlus, "Add bike", onClick = { sink(BikeEvent.AddBike) })
-    IconCircleButton(
-      LucideIcons.Settings,
-      if (updateWaiting) "Settings, app update available" else "Settings",
-      onClick = { sink(BikeEvent.OpenSettings) },
-      badge = updateWaiting,
-    )
+    // Room for Add bike and Settings, which float over this end.
+    Spacer(Modifier.width(TopBarButtonSize * 2 + 8.dp))
   }
 }
 
@@ -411,18 +426,18 @@ private fun SheetHeader(state: BikeUiState.Loaded, id: Long, modifier: Modifier)
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(8.dp),
   ) {
-    IconCircleButton(LucideIcons.X, "Close", onClick = { sink(BikeEvent.CloseSheet) })
+    TopBarButton(LucideIcons.X, "Close", onClick = { sink(BikeEvent.CloseSheet) })
     Kicker(
       "${components.getOrNull(index)?.code.orEmpty()} · ${index + 1} of $count",
       Modifier.weight(1f).padding(start = 4.dp),
     )
     if (count > 1) {
-      IconCircleButton(
+      TopBarButton(
         LucideIcons.ChevronLeft,
         "Previous component",
         onClick = { sink(BikeEvent.ShowComponent(components[(index + count - 1) % count].id)) },
       )
-      IconCircleButton(
+      TopBarButton(
         LucideIcons.ChevronRight,
         "Next component",
         onClick = { sink(BikeEvent.ShowComponent(components[(index + 1) % count].id)) },

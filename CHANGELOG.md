@@ -13,6 +13,8 @@ All notable changes to Cassette are documented here. The format follows
   Settings → Capture says how iOS lets Cassette listen and when the bike was last heard, and a
   permission turned off points to its place in the Settings app.
 - Settings → Notifications asks again, or opens the system settings, while notifications are off.
+- Back, close, settings and add-bike buttons float over the screen, so scrolling no longer takes them
+  off screen. On iOS they're Liquid Glass (a frosted material before iOS 26).
 
 ### Fixed
 

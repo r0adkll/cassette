@@ -34,12 +34,14 @@ import com.r0adkll.cassette.common.compose.ScreenLayout
 import com.r0adkll.cassette.common.compose.UpdateStatus
 import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.ComponentRow
-import com.r0adkll.cassette.common.compose.components.IconCircleButton
+import com.r0adkll.cassette.common.compose.components.FloatingTopBar
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.StatusBlock
 import com.r0adkll.cassette.common.compose.components.StatusBlockMeta
 import com.r0adkll.cassette.common.compose.components.StatusBlockText
+import com.r0adkll.cassette.common.compose.components.TopBarButton
+import com.r0adkll.cassette.common.compose.components.TopBarButtonSize
 import com.r0adkll.cassette.common.compose.currentTabletopHinge
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
@@ -86,31 +88,36 @@ fun BikeUi(state: BikeUiState, modifier: Modifier = Modifier) {
         .padding(vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-      TopBar(
-        onAddBike = { state.eventSink(BikeEvent.AddBike) }.takeIf { state is BikeUiState.Loaded },
-        onSettings = { state.eventSink(BikeEvent.OpenSettings) },
-      )
+      // The wordmark scrolls; the buttons float over it (iteration 14).
+      Row(
+        Modifier.padding(horizontal = 20.dp).height(TopBarButtonSize),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Kicker("Cassette")
+      }
       when (state) {
         is BikeUiState.Loading -> Unit
         is BikeUiState.Empty -> EmptyBike(state.eventSink)
         is BikeUiState.Loaded -> LoadedBike(state)
       }
     }
+    TopBar(
+      onAddBike = { state.eventSink(BikeEvent.AddBike) }.takeIf { state is BikeUiState.Loaded },
+      onSettings = { state.eventSink(BikeEvent.OpenSettings) },
+      modifier =
+        Modifier.widthIn(max = MaxContentWidth).safeDrawingPadding().padding(vertical = 24.dp),
+    )
   }
 }
 
 @Composable
-private fun TopBar(onAddBike: (() -> Unit)?, onSettings: () -> Unit) {
-  Row(
-    Modifier.padding(horizontal = 20.dp),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(8.dp),
-  ) {
-    Kicker("Cassette", Modifier.weight(1f))
+private fun TopBar(onAddBike: (() -> Unit)?, onSettings: () -> Unit, modifier: Modifier) {
+  FloatingTopBar(modifier.padding(horizontal = 20.dp)) {
+    Spacer(Modifier.weight(1f))
     // The empty state has its own Add bike button.
-    if (onAddBike != null) IconCircleButton(LucideIcons.BikePlus, "Add bike", onClick = onAddBike)
+    if (onAddBike != null) TopBarButton(LucideIcons.BikePlus, "Add bike", onClick = onAddBike)
     val update by LocalAppUpdates.current.status.collectAsState()
-    IconCircleButton(
+    TopBarButton(
       LucideIcons.Settings,
       if (update is UpdateStatus.Available) "Settings, app update available" else "Settings",
       onClick = onSettings,

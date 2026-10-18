@@ -38,11 +38,13 @@ import com.r0adkll.cassette.common.compose.ScreenLayout
 import com.r0adkll.cassette.common.compose.UpdateStatus
 import com.r0adkll.cassette.common.compose.components.CategoryItem
 import com.r0adkll.cassette.common.compose.components.Chevron
-import com.r0adkll.cassette.common.compose.components.IconCircleButton
+import com.r0adkll.cassette.common.compose.components.FloatingTopBar
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.SettingsRow
 import com.r0adkll.cassette.common.compose.components.SettingsSection
 import com.r0adkll.cassette.common.compose.components.SettingsSwitchRow
+import com.r0adkll.cassette.common.compose.components.TopBarButton
+import com.r0adkll.cassette.common.compose.components.TopBarButtonSize
 import com.r0adkll.cassette.common.compose.components.WaitingDot
 import com.r0adkll.cassette.common.compose.endPane
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
@@ -63,7 +65,10 @@ import com.slack.circuit.runtime.presenter.Presenter
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 
-/** A screen with a back button and a big title, content capped at phone width. */
+/**
+ * A screen with a back button and a big title, content capped at phone width. Back floats while the
+ * content scrolls under it (iteration 14).
+ */
 @Composable
 internal fun TitledScreen(
   title: String,
@@ -80,9 +85,16 @@ internal fun TitledScreen(
         .padding(horizontal = 20.dp, vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-      IconCircleButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
+      Spacer(Modifier.height(TopBarButtonSize))
       Text(title, style = CassetteTheme.type.title, color = CassetteTheme.colors.text)
       content()
+    }
+    FloatingTopBar(
+      Modifier.widthIn(max = 480.dp)
+        .safeDrawingPadding()
+        .padding(horizontal = 20.dp, vertical = 24.dp)
+    ) {
+      TopBarButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
     }
   }
 }
@@ -162,39 +174,40 @@ internal fun WideSettings(
   val selected = state.selected.takeIf { it in categories } ?: categories.first()
   // Both panes and the divider run under the system bars (decision 0016).
   Row(modifier.fillMaxSize()) {
-    Column(
-      Modifier.fillMaxHeight()
-        .startPane()
-        .verticalScroll(rememberScrollState())
-        .safeDrawingPadding()
-        .width(320.dp)
-        .padding(horizontal = 16.dp, vertical = 24.dp),
-      verticalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-      IconCircleButton(
-        LucideIcons.ArrowLeft,
-        "Back",
-        onClick = { sink(SettingsEvent.Back) },
-        modifier = Modifier.padding(start = 4.dp),
-      )
-      Text(
-        "Settings.",
-        style = CassetteTheme.type.title,
-        color = colors.text,
-        modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 10.dp),
-      )
-      categories.forEach { category ->
-        val info = state.info(category, update, LocalAppPlatform.current)
-        CategoryItem(
-          info.icon,
-          info.label,
-          info.summary,
-          selected = category == selected,
-          onClick = { sink(SettingsEvent.SelectCategory(category)) },
-          badge = info.badge,
+    Box(Modifier.fillMaxHeight().startPane()) {
+      Column(
+        Modifier.fillMaxHeight()
+          .verticalScroll(rememberScrollState())
+          .safeDrawingPadding()
+          .width(320.dp)
+          .padding(horizontal = 16.dp, vertical = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+      ) {
+        Spacer(Modifier.height(TopBarButtonSize))
+        Text(
+          "Settings.",
+          style = CassetteTheme.type.title,
+          color = colors.text,
+          modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 10.dp),
         )
+        categories.forEach { category ->
+          val info = state.info(category, update, LocalAppPlatform.current)
+          CategoryItem(
+            info.icon,
+            info.label,
+            info.summary,
+            selected = category == selected,
+            onClick = { sink(SettingsEvent.SelectCategory(category)) },
+            badge = info.badge,
+          )
+        }
+        Footnote(Modifier.padding(start = 12.dp, top = 16.dp))
       }
-      Footnote(Modifier.padding(start = 12.dp, top = 16.dp))
+      FloatingTopBar(
+        Modifier.safeDrawingPadding().width(320.dp).padding(start = 20.dp, top = 24.dp)
+      ) {
+        TopBarButton(LucideIcons.ArrowLeft, "Back", onClick = { sink(SettingsEvent.Back) })
+      }
     }
     Box(Modifier.width(1.dp).fillMaxHeight().background(colors.line))
     Box(Modifier.weight(1f).fillMaxHeight().endPane()) {
@@ -211,7 +224,7 @@ internal fun WideSettings(
           verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
           // Lines the title up with the list's, which sits under its back button.
-          Spacer(Modifier.height(44.dp))
+          Spacer(Modifier.height(TopBarButtonSize))
           Text(selected.title(), style = CassetteTheme.type.title, color = colors.text)
           CategoryBody(selected, state, wide = true, gutter = 32.dp)
         }

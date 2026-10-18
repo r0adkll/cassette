@@ -53,10 +53,10 @@ import com.r0adkll.cassette.common.compose.LocalScreenLayout
 import com.r0adkll.cassette.common.compose.PermissionState
 import com.r0adkll.cassette.common.compose.ScreenLayout
 import com.r0adkll.cassette.common.compose.components.CassetteButton
-import com.r0adkll.cassette.common.compose.components.IconCircleButton
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.SplitPanes
+import com.r0adkll.cassette.common.compose.components.TopBarButton
 import com.r0adkll.cassette.common.compose.currentVerticalHinge
 import com.r0adkll.cassette.common.compose.icons.CassetteMarks
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
@@ -365,7 +365,7 @@ fun PermissionsUi(state: PermissionsUiState, modifier: Modifier = Modifier) {
       verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
       Row(verticalAlignment = Alignment.CenterVertically) {
-        IconCircleButton(
+        TopBarButton(
           LucideIcons.ArrowLeft,
           "Back",
           onClick = { state.eventSink(PermissionsEvent.Back) },
@@ -413,7 +413,7 @@ internal fun WidePermissions(
         verticalArrangement = Arrangement.spacedBy(16.dp),
       ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          IconCircleButton(
+          TopBarButton(
             LucideIcons.ArrowLeft,
             "Back",
             onClick = { state.eventSink(PermissionsEvent.Back) },

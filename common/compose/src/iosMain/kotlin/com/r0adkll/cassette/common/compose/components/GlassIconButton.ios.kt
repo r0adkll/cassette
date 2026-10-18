@@ -93,6 +93,7 @@ actual fun GlassIconButton(
   // label, and a press shrinks the glass a little, as iOS's own glass buttons do.
   val interactions = remember { MutableInteractionSource() }
   val pressed by interactions.collectIsPressedAsState()
+  val shown = LocalTopBarShown.current
   Box(
     modifier
       .size(ButtonSize)
@@ -101,7 +102,8 @@ actual fun GlassIconButton(
       .semantics { this.contentDescription = contentDescription }
   ) {
     UIKitView(
-      factory = { glassButton(image, dark) },
+      // Starts hidden: it fades in once its screen has slid in (below).
+      factory = { glassButton(image, dark).apply { alpha = 0.0 } },
       modifier = Modifier.matchParentSize(),
       update = { view ->
         val button = view.button
@@ -113,6 +115,17 @@ actual fun GlassIconButton(
         }
         val scale = if (pressed) 0.92 else 1.0
         view.transform = CGAffineTransformMakeScale(scale, scale)
+        // Native views ignore Compose's transitions: hide at once on the way out, and fade in
+        // as an incoming screen's slide ends.
+        val target = if (shown) 1.0 else 0.0
+        if (view.alpha != target)
+          UIView.animateWithDuration(
+            if (shown) FADE_IN else FADE_OUT,
+            delay = if (shown) FADE_IN_DELAY else 0.0,
+            options = 0uL,
+            animations = { view.alpha = target },
+            completion = null,
+          )
       },
       properties =
         UIKitInteropProperties(
@@ -124,7 +137,12 @@ actual fun GlassIconButton(
   }
 }
 
-private val ButtonSize = 46.dp
+private val ButtonSize = TopBarButtonSize
+
+/** Seconds. The delay roughly matches a push or pop; a fresh screen's glass lands as it settles. */
+private const val FADE_IN = 0.18
+private const val FADE_IN_DELAY = 0.28
+private const val FADE_OUT = 0.08
 private val IconSize = 20.dp
 
 /** The view holding the button: the button itself on iOS 26, its frosted backing before. */

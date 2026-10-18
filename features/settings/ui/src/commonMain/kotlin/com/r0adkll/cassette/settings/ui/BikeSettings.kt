@@ -7,8 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.widthIn
@@ -41,10 +43,12 @@ import com.r0adkll.cassette.common.compose.ScreenLayout
 import com.r0adkll.cassette.common.compose.components.ChoiceChips
 import com.r0adkll.cassette.common.compose.components.CodeBadge
 import com.r0adkll.cassette.common.compose.components.DestructiveButton
-import com.r0adkll.cassette.common.compose.components.IconCircleButton
+import com.r0adkll.cassette.common.compose.components.FloatingTopBar
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.SettingsSection
 import com.r0adkll.cassette.common.compose.components.SettingsSwitchRow
+import com.r0adkll.cassette.common.compose.components.TopBarButton
+import com.r0adkll.cassette.common.compose.components.TopBarButtonSize
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.screens.BikeSettingsScreen
@@ -222,13 +226,20 @@ private fun TwoColumnScreen(
         .padding(horizontal = 32.dp, vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-      IconCircleButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
+      Spacer(Modifier.height(TopBarButtonSize))
       Text(title, style = CassetteTheme.type.title, color = CassetteTheme.colors.text)
       Row(horizontalArrangement = Arrangement.spacedBy(32.dp)) {
         val column = Arrangement.spacedBy(14.dp)
         Column(Modifier.weight(1f), verticalArrangement = column, content = start)
         Column(Modifier.weight(1f), verticalArrangement = column, content = end)
       }
+    }
+    FloatingTopBar(
+      Modifier.widthIn(max = 1040.dp)
+        .safeDrawingPadding()
+        .padding(horizontal = 32.dp, vertical = 24.dp)
+    ) {
+      TopBarButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
     }
   }
 }
