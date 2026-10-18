@@ -14,7 +14,7 @@ KMP scaffold and convention plugins, design system, onboarding, add bike, bike a
 history and charge detection, alerts and notifications, Glance widgets, Quick Settings tile, diagnostics
 (including export), background capture, CI with ktfmt, Danger and Drop uploads.
 
-## M2: Wear (now)
+## M2: Wear (done)
 
 Wear app, tile and complications fed from the phone over the Data Layer
 ([0013](decisions/0013-wear.md)):
@@ -23,12 +23,11 @@ Wear app, tile and complications fed from the phone over the Data Layer
 2. The Wear app: bikes and bike screens.
 3. The Wear tile.
 4. Complications.
-
 5. The Wear APK on Drop, as a Wear Build beside the phone's.
 6. Updates on the watch, from Drop (iteration 9, A).
 
-Checked on a real watch paired to a phone (2026-10-17). Later: automatic updates on the charger (iteration
-9, B).
+Checked on a real watch paired to a phone, including an update from Drop (2026-10-17). Later: automatic
+updates on the charger (iteration 9, B).
 
 ## M3: iOS
 

@@ -25,7 +25,8 @@ ported. Don't build new features on the POC.
   (then `click-tile`, and `remove-tile` when done); read its state from
   `adb shell dumpsys activity service com.android.systemui/.SystemUIService`.
 - Wear (decision 0013): `./gradlew :app:wear:assembleDebug`, installed with adb on a watch or a Wear OS
-  emulator. It shares the phone app's id and key, which the Data Layer needs. Without a paired phone, the
+  emulator. Drop's builds install from the Wear Build page (its adb command) and then update themselves; a
+  local build has the debug key, so it can't take a Drop update (uninstall it first). It shares the phone app's id and key, which the Data Layer needs. Without a paired phone, the
   debug build loads sample data: `adb shell am broadcast -n
   com.r0adkll.cassette.debug/com.r0adkll.cassette.wear.debug.SampleDataReceiver --es state good` (or `low`,
   `critical`, `stale`, `one`, `empty`, `scanning`, `notready`, `clear`). The Wear tile: `adb shell am broadcast
