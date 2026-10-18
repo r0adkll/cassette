@@ -46,6 +46,8 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.common.compose.AppPermission
+import com.r0adkll.cassette.common.compose.AppPlatform
+import com.r0adkll.cassette.common.compose.LocalAppPlatform
 import com.r0adkll.cassette.common.compose.LocalPermissionController
 import com.r0adkll.cassette.common.compose.LocalScreenLayout
 import com.r0adkll.cassette.common.compose.PermissionState
@@ -203,7 +205,7 @@ fun WelcomeUi(state: WelcomeUiState, modifier: Modifier = Modifier) {
             "Hears the bike when it wakes",
             "No pairing, no app open: a shake or a shift is enough.",
           )
-          Point("02", "Shows it at a glance", "Widgets, Quick Settings and notifications.")
+          Point("02", "Shows it at a glance", glanceText())
           Point(
             "03",
             "Warns you before a ride",
@@ -286,7 +288,7 @@ internal fun WideWelcome(
             "Hears the bike when it wakes.",
             "No pairing, no app open: a shake or a shift is enough.",
           )
-          WidePoint("2", "Shows it at a glance.", "Widgets, Quick Settings and notifications.")
+          WidePoint("2", "Shows it at a glance.", glanceText())
           WidePoint(
             "3",
             "Warns you before a ride.",
@@ -448,6 +450,14 @@ internal fun WidePermissions(
   )
 }
 
+/** Where Cassette shows the batteries; iOS has no widgets yet (decision 0016). */
+@Composable
+private fun glanceText(): String =
+  when (LocalAppPlatform.current) {
+    AppPlatform.Android -> "Widgets, Quick Settings and notifications."
+    AppPlatform.Ios -> "The bike screen and notifications."
+  }
+
 @Composable
 private fun PermissionCards() {
   val controller = LocalPermissionController.current
@@ -455,7 +465,7 @@ private fun PermissionCards() {
   Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
     PermissionCard(
       icon = LucideIcons.BluetoothSearching,
-      title = "Nearby devices",
+      title = LocalAppPlatform.current.bluetoothPermission,
       text =
         "Hears your bike's AXS radio when it wakes, even with the app closed. It never uses your location.",
       state = states[AppPermission.Nearby] ?: PermissionState.Askable,

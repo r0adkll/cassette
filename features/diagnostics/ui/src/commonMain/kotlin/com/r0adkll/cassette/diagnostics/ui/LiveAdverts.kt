@@ -177,7 +177,7 @@ fun LiveAdvertsUi(state: LiveAdvertsUiState, modifier: Modifier = Modifier) {
     )
     if (state.failed) {
       Text(
-        "Bluetooth is off or Nearby devices isn't allowed.",
+        "Bluetooth is off or not allowed for Cassette.",
         style = CassetteTheme.type.body,
         color = colors.low,
       )

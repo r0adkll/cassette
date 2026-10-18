@@ -12,6 +12,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import com.r0adkll.cassette.capture.api.CaptureEvent
+import com.r0adkll.cassette.common.compose.AppPlatform
+import com.r0adkll.cassette.common.compose.LocalAppPlatform
 import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.ChoiceChips
 import com.r0adkll.cassette.common.compose.components.Kicker
@@ -31,6 +33,7 @@ import kotlin.time.Instant
 fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
   val sink = state.eventSink
   val colors = CassetteTheme.colors
+  val ios = LocalAppPlatform.current == AppPlatform.Ios
   DiagnosticsScaffold(
     "Diagnostics.",
     onBack = { sink(DiagnosticsEvent.Back) }.takeUnless { state.inPane },
@@ -49,7 +52,7 @@ fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
           color = if (healthy) colors.good else colors.low,
         )
       }
-      MonoLine("mode", "scan (PendingIntent)")
+      MonoLine("mode", if (ios) "scan (Core Bluetooth, FE51)" else "scan (PendingIntent)")
       MonoLine("background", state.health.armResult ?: "never armed")
       MonoLine("armed", state.health.armedAt?.let { agoShort(state.now - it) } ?: "—")
       MonoLine(
@@ -60,7 +63,8 @@ fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
       MonoLine("hub read", state.bike?.bike?.hubReadAt?.let { agoShort(state.now - it) } ?: "—")
       MonoLine("bluetooth", if (state.bluetoothReady) "ready" else "off or not allowed")
     }
-    WearPanel(state.wear, state.now)
+    // No Wear OS on iOS (decision 0016).
+    if (!ios) WearPanel(state.wear, state.now)
     SettingsSection("Tools") {
       SettingsRow(
         "Live adverts",
@@ -84,19 +88,21 @@ fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
         divider = false,
       )
     }
-    SettingsSection("Scan profile") {
-      Text(
-        "How the background scan listens; ride tests compare them (decision 0009).",
-        style = CassetteTheme.type.bodySmall,
-        color = colors.muted,
-      )
-      ChoiceChips(
-        options = ScanProfile.entries,
-        selected = state.profile,
-        label = { it.label },
-        onSelect = { sink(DiagnosticsEvent.SetProfile(it)) },
-      )
-    }
+    // iOS sets the background scan's cadence itself, so there is nothing to choose.
+    if (!ios)
+      SettingsSection("Scan profile") {
+        Text(
+          "How the background scan listens; ride tests compare them (decision 0009).",
+          style = CassetteTheme.type.bodySmall,
+          color = colors.muted,
+        )
+        ChoiceChips(
+          options = ScanProfile.entries,
+          selected = state.profile,
+          label = { it.label },
+          onSelect = { sink(DiagnosticsEvent.SetProfile(it)) },
+        )
+      }
     SettingsSection("Developer") {
       SettingsRow(
         "Load sample bike",
@@ -124,8 +130,12 @@ fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
       icon = LucideIcons.Share,
     )
     Text(
-      "A zip through the share sheet: the capture log, a copy of the database and device info. " +
-        "Nothing is uploaded.",
+      if (ios)
+        "Three files through the share sheet: the capture log, a copy of the database and " +
+          "device info. Nothing is uploaded."
+      else
+        "A zip through the share sheet: the capture log, a copy of the database and device " +
+          "info. Nothing is uploaded.",
       style = CassetteTheme.type.bodySmall,
       color = colors.muted,
     )

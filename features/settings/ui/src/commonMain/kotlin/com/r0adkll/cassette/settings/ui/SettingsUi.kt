@@ -27,8 +27,13 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.r0adkll.cassette.common.compose.AppPermission
+import com.r0adkll.cassette.common.compose.AppPlatform
+import com.r0adkll.cassette.common.compose.LocalAppPlatform
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
+import com.r0adkll.cassette.common.compose.LocalPermissionController
 import com.r0adkll.cassette.common.compose.LocalScreenLayout
+import com.r0adkll.cassette.common.compose.PermissionState
 import com.r0adkll.cassette.common.compose.ScreenLayout
 import com.r0adkll.cassette.common.compose.UpdateStatus
 import com.r0adkll.cassette.common.compose.components.CategoryItem
@@ -114,7 +119,7 @@ private fun CategoryList(state: SettingsUiState, modifier: Modifier) {
   TitledScreen("Settings.", onBack = { state.eventSink(SettingsEvent.Back) }, modifier) {
     Panel {
       categories.forEachIndexed { i, category ->
-        val info = state.info(category, update)
+        val info = state.info(category, update, LocalAppPlatform.current)
         SettingsRow(
           info.label,
           subtitle = info.summary,
@@ -179,7 +184,7 @@ internal fun WideSettings(
         modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 10.dp),
       )
       categories.forEach { category ->
-        val info = state.info(category, update)
+        val info = state.info(category, update, LocalAppPlatform.current)
         CategoryItem(
           info.icon,
           info.label,
@@ -236,7 +241,9 @@ private fun ColumnScope.CategoryBody(
 ) {
   val sink = state.eventSink
   val colors = CassetteTheme.colors
-  category.blurb()?.let { Text(it, style = CassetteTheme.type.body, color = colors.muted) }
+  category.blurb(LocalAppPlatform.current)?.let {
+    Text(it, style = CassetteTheme.type.body, color = colors.muted)
+  }
   when (category) {
     SettingsCategory.Bikes -> Garage(state, columns = if (wide) 2 else 1)
     SettingsCategory.Updates -> UpdatesBody(wide, gutter)
@@ -259,7 +266,8 @@ private fun ColumnScope.CategoryBody(
           trailing = {},
         )
       }
-    SettingsCategory.Notifications ->
+    SettingsCategory.Notifications -> {
+      NotificationPermission()
       Panel {
         val n = state.notifications
         SettingsSwitchRow(
@@ -287,11 +295,38 @@ private fun ColumnScope.CategoryBody(
           },
         )
       }
+    }
     SettingsCategory.Appearance ->
       ThemeChoices(state.themeMode, onSelect = { sink(SettingsEvent.SetThemeMode(it)) })
     SettingsCategory.Licences -> LicencesList()
     // Opens as its own screen on a phone, and in the pane on a wide window.
     SettingsCategory.Diagnostics -> Unit
+  }
+}
+
+/**
+ * Above the switches while Cassette can't post notifications: asks again, or opens the system
+ * settings once the phone won't ask (onboarding may have been skipped).
+ */
+@Composable
+private fun NotificationPermission() {
+  val controller = LocalPermissionController.current
+  val states by controller.states.collectAsState()
+  val state = states[AppPermission.Notifications] ?: return
+  if (state == PermissionState.Granted) return
+  Panel {
+    SettingsRow(
+      "Notifications are off",
+      subtitle =
+        if (state == PermissionState.Askable) "Allow them so these switches can work"
+        else "Turned off for Cassette in the phone's settings. Tap to open them",
+      icon = LucideIcons.BellOff,
+      onClick = {
+        if (state == PermissionState.Askable) controller.request(AppPermission.Notifications)
+        else controller.openSettings()
+      },
+      divider = false,
+    )
   }
 }
 
@@ -303,7 +338,11 @@ private data class CategoryInfo(
   val badge: Boolean = false,
 )
 
-private fun SettingsUiState.info(category: SettingsCategory, update: UpdateStatus): CategoryInfo =
+private fun SettingsUiState.info(
+  category: SettingsCategory,
+  update: UpdateStatus,
+  platform: AppPlatform,
+): CategoryInfo =
   when (category) {
     SettingsCategory.Bikes -> CategoryInfo(LucideIcons.Pin, "Bikes", opensFirstLabel)
     SettingsCategory.Capture ->
@@ -332,7 +371,15 @@ private fun SettingsUiState.info(category: SettingsCategory, update: UpdateStatu
         badge = update is UpdateStatus.Available,
       )
     SettingsCategory.Diagnostics ->
-      CategoryInfo(LucideIcons.Activity, "Diagnostics", "Raw adverts, hub tables, scan profile")
+      CategoryInfo(
+        LucideIcons.Activity,
+        "Diagnostics",
+        when (platform) {
+          AppPlatform.Android -> "Raw adverts, hub tables, scan profile"
+          // iOS has no scan profiles to choose (decision 0016).
+          AppPlatform.Ios -> "Raw adverts, hub tables, ride tests"
+        },
+      )
     SettingsCategory.Licences ->
       CategoryInfo(LucideIcons.FileText, "Licences", "Barlow, JetBrains Mono, Lucide")
   }
@@ -352,18 +399,27 @@ private fun SettingsCategory.title(): String =
     SettingsCategory.Licences -> "Licences."
   }
 
-private fun SettingsCategory.blurb(): String? =
+private fun SettingsCategory.blurb(platform: AppPlatform): String? =
   when (this) {
     SettingsCategory.Bikes -> null
     SettingsCategory.Capture ->
       "How Cassette hears your bike: in the background whenever it wakes, and for a while " +
         "after you tap Refresh."
     SettingsCategory.Notifications ->
-      "One switch for each kind of notification. Android's notification settings can still " +
-        "turn one off."
+      when (platform) {
+        AppPlatform.Android ->
+          "One switch for each kind of notification. Android's notification settings can " +
+            "still turn one off."
+        AppPlatform.Ios ->
+          "One switch for each kind of notification. The Settings app can still turn them off."
+      }
     SettingsCategory.Appearance ->
-      "Light, dark, or whichever the phone is set to. Widgets, the Quick Settings tile and the " +
-        "watch follow the phone."
+      when (platform) {
+        AppPlatform.Android ->
+          "Light, dark, or whichever the phone is set to. Widgets, the Quick Settings tile and " +
+            "the watch follow the phone."
+        AppPlatform.Ios -> "Light, dark, or whichever the phone is set to."
+      }
     // The update hero says it all.
     SettingsCategory.Updates -> null
     SettingsCategory.Licences -> "Third-party fonts and icons Cassette ships."
