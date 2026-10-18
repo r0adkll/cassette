@@ -3,10 +3,15 @@ package com.r0adkll.cassette.bikes.api
 import com.r0adkll.cassette.core.BatteryReading
 import com.r0adkll.cassette.core.Bike
 import com.r0adkll.cassette.core.BikeId
+import com.r0adkll.cassette.core.BikeType
 import com.r0adkll.cassette.core.Component
 import com.r0adkll.cassette.core.ComponentId
 import kotlin.time.Instant
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 
 interface BikeRepository {
   /** Most recently seen first. */
@@ -20,6 +25,17 @@ interface BikeRepository {
 
   /** A component with its bike, latest reading and history since [since]; null if it's gone. */
   fun observeComponent(id: ComponentId, since: Instant): Flow<ComponentDetail?>
+
+  /** Every bike's overview, most recently seen first (the rail, the chips, Settings' garage). */
+  @OptIn(ExperimentalCoroutinesApi::class)
+  fun observeOverviews(): Flow<List<BikeOverview>> =
+    observeBikes().flatMapLatest { bikes ->
+      if (bikes.isEmpty()) flowOf(emptyList())
+      else combine(bikes.map { observeOverview(it.id) }) { it.filterNotNull() }
+    }
+
+  /** Renames the bike and sets its type; its photo stays. Nothing happens if it's gone. */
+  suspend fun updateBike(id: BikeId, name: String, type: BikeType)
 
   /** Deletes the bike with its components and history. */
   suspend fun deleteBike(id: BikeId)

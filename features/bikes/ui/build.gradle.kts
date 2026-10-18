@@ -7,6 +7,7 @@ kotlin {
       api(project(":features:bikes:summary"))
       implementation(project(":features:capture:api"))
       api(project(":features:settings:api"))
+      implementation(libs.navigationevent.compose)
     }
     commonTest.dependencies { implementation(project(":features:settings:test")) }
     // Renders screens to PNG for review without a device (build/screens/).

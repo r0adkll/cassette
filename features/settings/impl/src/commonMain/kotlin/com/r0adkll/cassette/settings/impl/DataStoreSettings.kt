@@ -13,6 +13,7 @@ import com.r0adkll.cassette.data.ble.ScanProfile
 import com.r0adkll.cassette.settings.api.CaptureHealth
 import com.r0adkll.cassette.settings.api.CassetteSettings
 import com.r0adkll.cassette.settings.api.NotificationSettings
+import com.r0adkll.cassette.settings.api.ThemeMode
 import com.r0adkll.cassette.settings.api.Tip
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
@@ -72,6 +73,15 @@ class DataStoreSettings(file: SettingsFile) : CassetteSettings {
     }
   }
 
+  override val themeMode: Flow<ThemeMode> =
+    store.data.map { prefs ->
+      ThemeMode.entries.firstOrNull { it.name == prefs[THEME] } ?: ThemeMode.System
+    }
+
+  override suspend fun setThemeMode(mode: ThemeMode) {
+    store.edit { it[THEME] = mode.name }
+  }
+
   override val onboarded: Flow<Boolean> = store.data.map { it[ONBOARDED] ?: false }
 
   override suspend fun setOnboarded() {
@@ -117,6 +127,7 @@ class DataStoreSettings(file: SettingsFile) : CassetteSettings {
   private companion object {
     val BACKGROUND = booleanPreferencesKey("background_capture")
     val PROFILE = stringPreferencesKey("scan_profile")
+    val THEME = stringPreferencesKey("theme_mode")
     val PINNED_BIKE = longPreferencesKey("pinned_bike")
     val ONBOARDED = booleanPreferencesKey("onboarded")
     val DISMISSED_TIPS = stringSetPreferencesKey("dismissed_tips")

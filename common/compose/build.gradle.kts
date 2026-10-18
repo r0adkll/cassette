@@ -11,6 +11,7 @@ kotlin {
       api(libs.compose.foundation)
       api(libs.compose.ui)
       api(libs.compose.material3)
+      implementation(libs.compose.material3.adaptive)
       implementation(libs.compose.components.resources)
       implementation(libs.compose.ui.tooling.preview)
     }

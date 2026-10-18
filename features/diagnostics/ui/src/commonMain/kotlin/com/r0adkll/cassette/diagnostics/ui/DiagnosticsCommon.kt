@@ -24,10 +24,14 @@ import com.r0adkll.cassette.protocol.ComponentKind
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
+/**
+ * A diagnostics screen: back button and [action] in a row, then the title. A null [onBack] (the
+ * screen's root inside Settings' pane) leaves the row out, with its [action].
+ */
 @Composable
 internal fun DiagnosticsScaffold(
   title: String,
-  onBack: () -> Unit,
+  onBack: (() -> Unit)?,
   modifier: Modifier = Modifier,
   action: @Composable () -> Unit = {},
   content: @Composable ColumnScope.() -> Unit,
@@ -40,11 +44,12 @@ internal fun DiagnosticsScaffold(
         .padding(horizontal = 20.dp, vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-      Row(verticalAlignment = Alignment.CenterVertically) {
-        IconCircleButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
-        Spacer(Modifier.weight(1f))
-        action()
-      }
+      if (onBack != null)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          IconCircleButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
+          Spacer(Modifier.weight(1f))
+          action()
+        }
       Text(title, style = CassetteTheme.type.title, color = CassetteTheme.colors.text)
       content()
     }

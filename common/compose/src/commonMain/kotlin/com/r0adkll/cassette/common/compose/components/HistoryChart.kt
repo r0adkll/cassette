@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
@@ -70,5 +71,45 @@ fun HistoryChart(
       }
     }
     drawCircle(colors.text, radius = 5.5.dp.toPx(), center = point(levels.lastIndex))
+  }
+}
+
+/**
+ * A component's trend on a dashboard tile: a 3dp line over a filled area, no markers. [levels] are
+ * 0 to 1, oldest first; fewer than two draw nothing. The caller sizes it.
+ */
+@Composable
+fun Sparkline(
+  levels: List<Float>,
+  modifier: Modifier = Modifier,
+  color: Color = CassetteTheme.colors.text,
+) {
+  val colors = CassetteTheme.colors
+  Canvas(modifier) {
+    if (levels.size < 2) return@Canvas
+    val inset = 3.dp.toPx()
+    val w = size.width - inset * 2
+    val h = size.height - inset * 2
+    fun point(i: Int) =
+      Offset(inset + w * i / (levels.size - 1), inset + h * (1f - levels[i].coerceIn(0f, 1f)))
+
+    val line =
+      Path().apply {
+        moveTo(point(0).x, point(0).y)
+        for (i in 1 until levels.size) lineTo(point(i).x, point(i).y)
+      }
+    val area =
+      Path().apply {
+        addPath(line)
+        lineTo(point(levels.lastIndex).x, size.height)
+        lineTo(point(0).x, size.height)
+        close()
+      }
+    drawPath(area, colors.text.copy(alpha = if (colors.isDark) 0.10f else 0.08f))
+    drawPath(
+      line,
+      color,
+      style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
+    )
   }
 }

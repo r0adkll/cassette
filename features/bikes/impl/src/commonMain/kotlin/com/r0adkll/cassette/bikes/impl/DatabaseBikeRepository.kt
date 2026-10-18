@@ -9,6 +9,7 @@ import com.r0adkll.cassette.bikes.api.ComponentDetail
 import com.r0adkll.cassette.bikes.api.ComponentWithReading
 import com.r0adkll.cassette.core.Bike
 import com.r0adkll.cassette.core.BikeId
+import com.r0adkll.cassette.core.BikeType
 import com.r0adkll.cassette.core.CassetteDispatchers
 import com.r0adkll.cassette.core.ComponentId
 import com.r0adkll.cassette.data.db.CassetteDatabase
@@ -102,6 +103,18 @@ class DatabaseBikeRepository(
           }
         }
       }
+
+  override suspend fun updateBike(id: BikeId, name: String, type: BikeType) {
+    withContext(dispatchers.io) {
+      val row = db.bikeQueries.selectById(id.value).executeAsOneOrNull() ?: return@withContext
+      db.bikeQueries.updateDetails(
+        name = name,
+        type = type.name,
+        photoPath = row.photo_path,
+        id = id.value,
+      )
+    }
+  }
 
   override suspend fun deleteBike(id: BikeId) {
     withContext(dispatchers.io) { db.bikeQueries.delete(id.value) }

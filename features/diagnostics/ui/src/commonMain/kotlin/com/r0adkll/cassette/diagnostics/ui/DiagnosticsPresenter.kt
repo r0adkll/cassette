@@ -47,6 +47,8 @@ data class DiagnosticsUiState(
   val logEvents: Int,
   val sharing: Boolean,
   val wear: WearDiagnostics,
+  /** Inside Settings' pane on a wide window: no back button. */
+  val inPane: Boolean = false,
   val eventSink: (DiagnosticsEvent) -> Unit,
 ) : CircuitUiState
 
@@ -90,6 +92,7 @@ sealed interface DiagnosticsEvent : CircuitUiEvent {
 @CircuitInject(DiagnosticsScreen::class, AppScope::class)
 @Inject
 class DiagnosticsPresenter(
+  private val screen: DiagnosticsScreen,
   private val navigator: Navigator,
   private val settings: CassetteSettings,
   private val bikes: BikeRepository,
@@ -134,6 +137,7 @@ class DiagnosticsPresenter(
         lastPublish = wearEvents.lastOrNull { it.action == WearAction.Published },
         lastRequest = wearEvents.lastOrNull { it.action == WearAction.RefreshRequested },
       ),
+      inPane = screen.inPane,
     ) { event ->
       when (event) {
         DiagnosticsEvent.Back -> navigator.pop()

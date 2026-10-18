@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -27,6 +28,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
+import com.r0adkll.cassette.common.compose.LocalScreenLayout
+import com.r0adkll.cassette.common.compose.ScreenLayout
 import com.r0adkll.cassette.common.compose.UpdateStatus
 import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.ComponentRow
@@ -36,6 +39,7 @@ import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.StatusBlock
 import com.r0adkll.cassette.common.compose.components.StatusBlockMeta
 import com.r0adkll.cassette.common.compose.components.StatusBlockText
+import com.r0adkll.cassette.common.compose.currentTabletopHinge
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.screens.BikeScreen
@@ -43,12 +47,35 @@ import com.r0adkll.cassette.settings.api.Tip
 import com.slack.circuit.codegen.annotations.CircuitInject
 import dev.zacsweers.metro.AppScope
 
-/** Content is capped at phone width and centred, so large screens don't stretch it (layout TBD). */
+/** The phone layout's width (decision 0014). */
 private val MaxContentWidth = 480.dp
 
 @CircuitInject(BikeScreen::class, AppScope::class)
 @Composable
 fun BikeUi(state: BikeUiState, modifier: Modifier = Modifier) {
+  val layout = LocalScreenLayout.current
+  // Folding the phone with a sheet open carries the component over as its own screen.
+  val openSheet = (state as? BikeUiState.Loaded)?.sheet
+  LaunchedEffect(layout, openSheet) {
+    if (layout == ScreenLayout.Column && openSheet != null) {
+      state.eventSink(BikeEvent.CloseSheet)
+      state.eventSink(BikeEvent.OpenComponent(openSheet))
+    }
+  }
+  // Half open with the hinge horizontal: readings above the fold, the refresh below.
+  val hinge = currentTabletopHinge()
+  if (state is BikeUiState.Loaded && hinge != null) {
+    TabletopBike(state, hinge, modifier)
+    return
+  }
+  if (state is BikeUiState.Empty && layout != ScreenLayout.Column) {
+    WideEmptyBike(state.eventSink, modifier)
+    return
+  }
+  if (state is BikeUiState.Loaded && layout != ScreenLayout.Column) {
+    BikeDashboard(state, rail = layout == ScreenLayout.DashboardWithRail, modifier)
+    return
+  }
   Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
     Column(
       Modifier.widthIn(max = MaxContentWidth)
@@ -144,7 +171,7 @@ private fun LoadedBike(state: BikeUiState.Loaded) {
 
 /** One quiet suggestion: what it is, why, and a way to say no. */
 @Composable
-private fun TipPanel(tip: Tip, onAccept: () -> Unit, onDismiss: () -> Unit) {
+internal fun TipPanel(tip: Tip, onAccept: () -> Unit, onDismiss: () -> Unit) {
   val colors = CassetteTheme.colors
   val (icon, title, body, action) =
     when (tip) {
@@ -207,7 +234,9 @@ private data class TipCopy(
 @Composable
 private fun RefreshButton(refresh: RefreshButton, onClick: () -> Unit) {
   when (refresh) {
-    RefreshButton.Idle -> CassetteButton("Refresh now", onClick = onClick, trailing = "60 s scan")
+    RefreshButton.Idle,
+    is RefreshButton.Done ->
+      CassetteButton("Refresh now", onClick = onClick, trailing = "60 s scan")
     is RefreshButton.Scanning -> {
       val seconds = refresh.secondsLeft
       CassetteButton(

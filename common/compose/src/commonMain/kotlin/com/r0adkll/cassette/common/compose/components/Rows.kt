@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,17 +22,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.compose.theme.StatusTone
 
 private val PanelShape = RoundedCornerShape(16.dp)
 
-/** A bordered surface for grouped content. */
+/** A bordered surface for grouped content. [selected] outlines it in the text colour. */
 @Composable
 fun Panel(
   modifier: Modifier = Modifier,
   onClick: (() -> Unit)? = null,
+  selected: Boolean = false,
   content: @Composable ColumnScope.() -> Unit,
 ) {
   val colors = CassetteTheme.colors
@@ -41,7 +45,10 @@ fun Panel(
         .fillMaxWidth()
         .clip(PanelShape)
         .background(colors.panel)
-        .border(1.dp, colors.line, PanelShape)
+        .then(
+          if (selected) Modifier.border(2.dp, colors.text, PanelShape)
+          else Modifier.border(1.dp, colors.line, PanelShape)
+        )
         .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
         .padding(horizontal = 14.dp, vertical = 10.dp),
     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -107,6 +114,82 @@ fun ComponentRow(
       }
     }
     LevelBar(level, tone)
+  }
+}
+
+/**
+ * One component on the dashboard (decision 0014): badge, name and source, status, then the value
+ * beside its 30-day [trend] (0 to 1, oldest first), and a level bar. The trend is drawn in the text
+ * colour while all is well and in the status colour when it isn't. [selected] outlines it while its
+ * sheet is open.
+ */
+@Composable
+fun ComponentTile(
+  code: String,
+  name: String,
+  source: String,
+  value: String,
+  level: Float,
+  tone: StatusTone,
+  trend: List<Float>,
+  modifier: Modifier = Modifier,
+  trendHeight: Dp = 40.dp,
+  selected: Boolean = false,
+  onClick: (() -> Unit)? = null,
+) {
+  val colors = CassetteTheme.colors
+  val type = CassetteTheme.type
+  Panel(modifier, onClick, selected) {
+    Column(
+      Modifier.padding(vertical = 4.dp),
+      verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+      ) {
+        CodeBadge(code)
+        Column(Modifier.weight(1f)) {
+          Text(
+            name,
+            style = type.itemTitle,
+            color = colors.text,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+          )
+          Text(
+            source,
+            style = type.bodySmall,
+            color = colors.muted,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+          )
+        }
+        StatusLabel(tone)
+      }
+      Row(
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+      ) {
+        Text(
+          value,
+          style = type.numeral.copy(fontSize = type.numeral.fontSize * 1.7f, lineHeight = 0.85.em),
+          color = colors.text,
+          modifier = Modifier.widthIn(min = 100.dp),
+        )
+        Sparkline(
+          trend,
+          Modifier.weight(1f).height(trendHeight),
+          color =
+            when (tone) {
+              StatusTone.Low,
+              StatusTone.Critical -> colors.status(tone)
+              else -> colors.text
+            },
+        )
+      }
+      LevelBar(level, tone)
+    }
   }
 }
 

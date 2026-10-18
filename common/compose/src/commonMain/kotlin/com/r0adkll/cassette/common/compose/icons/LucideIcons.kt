@@ -120,6 +120,13 @@ object LucideIcons {
     }
   }
 
+  /** Lucide `chevron-left`. */
+  val ChevronLeft: ImageVector by lazy {
+    lucide("ChevronLeft") {
+      stroke("m15 18-6-6 6-6")
+    }
+  }
+
   /** Lucide `chevron-right`. */
   val ChevronRight: ImageVector by lazy {
     lucide("ChevronRight") {
@@ -337,6 +344,32 @@ object LucideIcons {
       stroke("M12 20v-8")
       stroke("M17 20V8")
       stroke("M22 4v16")
+    }
+  }
+
+  /** Lucide `sun-moon`. */
+  val SunMoon: ImageVector by lazy {
+    lucide("SunMoon") {
+      stroke("M12 8a2.83 2.83 0 0 0 4 4 4 4 0 1 1-4-4")
+      stroke("M12 2v2")
+      stroke("M12 20v2")
+      stroke("m4.9 4.9 1.4 1.4")
+      stroke("m17.7 17.7 1.4 1.4")
+      stroke("M2 12h2")
+      stroke("M20 12h2")
+      stroke("m6.3 17.7-1.4 1.4")
+      stroke("m19.1 4.9-1.4 1.4")
+    }
+  }
+
+  /** Lucide `trash-2`. */
+  val Trash: ImageVector by lazy {
+    lucide("Trash") {
+      stroke("M3 6h18")
+      stroke("M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6")
+      stroke("M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2")
+      stroke("M10.0 11.0L10.0 17.0")
+      stroke("M14.0 11.0L14.0 17.0")
     }
   }
 

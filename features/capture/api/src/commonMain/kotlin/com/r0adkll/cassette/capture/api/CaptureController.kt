@@ -14,6 +14,12 @@ interface CaptureController {
    */
   fun refresh(): Flow<RefreshProgress>
 
+  /**
+   * [refresh], a minute longer each time [more] emits (the tabletop's Add 60 s), with at most
+   * [RefreshProgress.MaxSecondsLeft] to go. Cancelling the collection stops the scan.
+   */
+  fun refresh(more: Flow<Unit>): Flow<RefreshProgress> = refresh()
+
   /** Arms the background scan when there's a bike to watch; stops it when there isn't. */
   suspend fun ensureBackgroundCapture(reason: String)
 }
@@ -31,9 +37,16 @@ interface SharedRefresh {
 }
 
 sealed interface RefreshProgress {
-  data class Scanning(val secondsLeft: Int, val componentsHeard: Int) : RefreshProgress
+  /** [totalSeconds] is the scan's length so far: 60, plus a minute for each Add 60 s. */
+  data class Scanning(val secondsLeft: Int, val componentsHeard: Int, val totalSeconds: Int = 60) :
+    RefreshProgress
 
   data class Done(val componentsHeard: Int, val hubRead: Boolean) : RefreshProgress
 
   data object NotReady : RefreshProgress
+
+  companion object {
+    /** Add 60 s never leaves more than this to go, so a forgotten scan still ends. */
+    const val MaxSecondsLeft = 180
+  }
 }

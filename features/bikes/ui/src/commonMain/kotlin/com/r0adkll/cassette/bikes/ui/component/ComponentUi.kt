@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.r0adkll.cassette.common.compose.components.HistoryChart
 import com.r0adkll.cassette.common.compose.components.IconCircleButton
@@ -36,6 +37,16 @@ import dev.zacsweers.metro.AppScope
 @Composable
 fun ComponentUi(state: ComponentUiState, modifier: Modifier = Modifier) {
   val model = state.loaded
+  if (state.inSheet) {
+    // The dashboard's sheet draws the header (close, previous, next) above this.
+    Column(
+      modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 24.dp),
+      verticalArrangement = Arrangement.spacedBy(16.dp),
+    ) {
+      if (model != null) Detail(model, state.eventSink, gutter = SheetGutter)
+    }
+    return
+  }
   Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
     Column(
       Modifier.widthIn(max = 480.dp)
@@ -58,15 +69,22 @@ fun ComponentUi(state: ComponentUiState, modifier: Modifier = Modifier) {
   }
 }
 
+/** The sheet's side padding; its header lines up with it. */
+internal val SheetGutter = 24.dp
+
 @Composable
-private fun Detail(model: ComponentDetailModel, sink: (ComponentEvent) -> Unit) {
+private fun Detail(
+  model: ComponentDetailModel,
+  sink: (ComponentEvent) -> Unit,
+  gutter: Dp = 20.dp,
+) {
   val colors = CassetteTheme.colors
   val type = CassetteTheme.type
   Text(
     model.name,
     style = type.title,
     color = colors.text,
-    modifier = Modifier.padding(horizontal = 20.dp),
+    modifier = Modifier.padding(horizontal = gutter),
   )
   ValueStatusBlock(
     value = model.value,
@@ -74,8 +92,9 @@ private fun Detail(model: ComponentDetailModel, sink: (ComponentEvent) -> Unit) 
     source = model.source,
     level = model.level,
     tone = model.tone,
+    horizontalPadding = gutter,
   )
-  Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+  Column(Modifier.padding(horizontal = gutter), verticalArrangement = Arrangement.spacedBy(6.dp)) {
     model.stats.chunked(3).forEach { row ->
       Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         row.forEach { (label, value) -> StatCell(label, value, Modifier.weight(1f)) }

@@ -31,7 +31,11 @@ import kotlin.time.Instant
 fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
   val sink = state.eventSink
   val colors = CassetteTheme.colors
-  DiagnosticsScaffold("Diagnostics.", onBack = { sink(DiagnosticsEvent.Back) }, modifier) {
+  DiagnosticsScaffold(
+    "Diagnostics.",
+    onBack = { sink(DiagnosticsEvent.Back) }.takeUnless { state.inPane },
+    modifier,
+  ) {
     val healthy = state.bluetoothReady && state.health.armResult?.startsWith("Armed") == true
     Panel {
       Row(verticalAlignment = Alignment.CenterVertically) {

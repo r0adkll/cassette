@@ -1,15 +1,20 @@
 package com.r0adkll.cassette.app
 
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -17,10 +22,13 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
 import com.r0adkll.cassette.common.compose.LocalPermissionController
+import com.r0adkll.cassette.common.compose.LocalScreenLayout
+import com.r0adkll.cassette.common.compose.currentScreenLayout
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.screens.BikeScreen
 import com.r0adkll.cassette.common.screens.DeepLinks
 import com.r0adkll.cassette.common.screens.OnboardingScreen
+import com.r0adkll.cassette.settings.api.ThemeMode
 import com.r0adkll.drop.ui.DropUpdateSheet
 import com.slack.circuit.backstack.rememberSaveableBackStack
 import com.slack.circuit.foundation.CircuitCompositionLocals
@@ -52,7 +60,24 @@ class MainActivity : ComponentActivity() {
     // A restored activity keeps its back stack; only a fresh start follows the launching link.
     val launchLink = if (savedInstanceState == null) intent.link() else null
     setContent {
-      CassetteTheme {
+      // Settings → Appearance; the phone's theme until the setting has loaded.
+      val mode by remember {
+        app.graph.settings.themeMode
+      }
+        .collectAsState(initial = ThemeMode.System)
+      val dark =
+        when (mode) {
+          ThemeMode.System -> isSystemInDarkTheme()
+          ThemeMode.Light -> false
+          ThemeMode.Dark -> true
+        }
+      // The status and navigation bar icons follow the app's theme, not the phone's.
+      DisposableEffect(dark) {
+        val style = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { dark }
+        enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+        onDispose {}
+      }
+      CassetteTheme(darkTheme = dark) {
         // The background runs under the system bars; content stays inside them.
         Box(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) {
           val initial by produceState<List<Screen>?>(null) { value = firstScreens(launchLink) }
@@ -60,6 +85,7 @@ class MainActivity : ComponentActivity() {
             CompositionLocalProvider(
               LocalPermissionController provides permissions,
               LocalAppUpdates provides updates,
+              LocalScreenLayout provides currentScreenLayout(),
             ) {
               CircuitCompositionLocals(circuit) {
                 val backStack = rememberSaveableBackStack(start)

@@ -194,6 +194,40 @@ class CaptureTest {
   }
 
   @Test
+  fun addSixtySecondsLengthensTheScanUpToTheCap() = runTest {
+    bikeWithHub()
+    val controller =
+      DefaultCaptureController(
+        FakeScanner(),
+        recorder,
+        refresher,
+        db,
+        InMemorySettings(),
+        captureLog,
+        alerts,
+        clock,
+      )
+    val more = kotlinx.coroutines.flow.MutableSharedFlow<Unit>()
+
+    controller.refresh(more).test {
+      assertEquals(60, assertIs<RefreshProgress.Scanning>(awaitItem()).totalSeconds)
+      more.emit(Unit)
+      var item = assertIs<RefreshProgress.Scanning>(awaitItem())
+      assertEquals(120, item.totalSeconds)
+      // Three more would leave 300 s to go; the cap keeps it to 180.
+      repeat(3) { more.emit(Unit) }
+      item = assertIs<RefreshProgress.Scanning>(awaitItem())
+      assertEquals(RefreshProgress.MaxSecondsLeft, item.secondsLeft)
+
+      now += kotlin.time.Duration.parse("3m")
+      var last: RefreshProgress = awaitItem()
+      while (last is RefreshProgress.Scanning) last = awaitItem()
+      assertIs<RefreshProgress.Done>(last)
+      awaitComplete()
+    }
+  }
+
+  @Test
   fun backgroundCaptureNeedsABike() = runTest {
     val scanner = FakeScanner()
     val controller =

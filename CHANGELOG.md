@@ -12,6 +12,20 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Changed
 
+- Settings are grouped by category (decision 0014): Bikes, Capture, Notifications, App updates,
+  Diagnostics and Licences, each with a line on where it stands ("2 of 3 on", a red dot for a waiting
+  build). On a phone each category opens its own screen; on an open foldable or a tablet the list sits
+  beside the open category, and Diagnostics' tools open in that pane.
+- Settings' Bikes page is a garage: a card per bike with its components and status, an "Open the last
+  bike seen" switch, and the bike that opens first marked. Each bike has its own page to rename it,
+  change its type, make it open first, see its components and remove it; on an open foldable or a
+  tablet the bike's details sit on the left and its components on the right. Remove bike is red with
+  a trash can; after the first tap (a light tick) it fills red and the can shakes until the second
+  tap (a firmer buzz), or resets after 5 seconds.
+- Settings' App updates page says what's waiting: the build, what's new, its size and when it was
+  uploaded, the installed build, and one action (Install, or Reinstall with a warning that it clears
+  the bikes). Up to date and couldn't-check states say when it last checked.
+
 - The app icon (phone and watch, release and dev) drops its four small screw dots.
 - The watch app's internal build goes to Drop as a Wear Build in the same run as the phone's (Drop
   0.4.0), with the phone's commit-count version code, so it installs from its Build page instead of a
@@ -23,6 +37,28 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Added
 
+- Settings → Appearance: System, Light or Dark, each shown as a small picture of the bike screen.
+  The app and its system bars follow the choice; widgets, the Quick Settings tile and the watch keep
+  following the phone.
+- Welcome and add bike unfolded (decision 0014): on an open foldable the welcome's red poster takes
+  the half before the hinge (wordmark, tape mark, "Know before you ride.") and the three points and
+  Get started the other; adding a bike shows waking and found on one screen, the listening pulse on
+  the left and the components arriving on the right. The permissions screen splits the same way: the
+  ask on one half, the two permissions and Continue on the other. Tablets split down the middle.
+- Tabletop refresh (decision 0014): on a foldable standing half open, the bike screen splits at the
+  fold. Above, the status and a tall column per component filled to its level; during a scan the
+  ones not heard yet are grey and each rises into colour as it answers. Below, a circle that is the
+  Refresh button, then the scan's countdown ring with pulses (Stop, Add 60 s), then Done with how
+  long it took, or how many answered.
+- The bike screen on open foldables and tablets (decision 0014): the status block with Refresh inside
+  it, then a tile per component with its 30-day trend, the one to charge next on a wide tile. Tablets
+  in landscape list the bikes on the left, with Add bike and Settings; an open foldable (and a tablet
+  in portrait) puts them in the top bar as chips. Either switches bikes in place. Phones keep the
+  column.
+- On those screens a component opens in a sheet that slides over the dashboard, with close, previous
+  and next. On an open foldable it covers about three quarters of the screen and tapping the dimmed
+  edge closes it; on a tablet it is narrower and tapping another tile switches it. Back closes it, and
+  folding the phone with it open carries the component over as its own screen.
 - Watch app updates from Drop: an "Update ready" row under the bikes, an update screen with Install and a
   progress ring, "Updated to build N." after, and a one-time step to allow updates that shows where the
   switch is (App info, Advanced, Install unknown apps). With Drop 0.5.0 the update installs without

@@ -7,11 +7,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.unit.Density
 import com.r0adkll.cassette.common.compose.AppPermission
 import com.r0adkll.cassette.common.compose.FixedPermissionController
 import com.r0adkll.cassette.common.compose.LocalPermissionController
+import com.r0adkll.cassette.common.compose.LocalScreenLayout
 import com.r0adkll.cassette.common.compose.PermissionState
+import com.r0adkll.cassette.common.compose.currentScreenLayout
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import java.io.File
 import kotlin.test.Test
@@ -45,6 +48,21 @@ class OnboardingRenderTest {
       render(File(out, "onboarding-3-permissions-answered-$theme.png"), dark, answered) {
         PermissionsUi(PermissionsUiState {})
       }
+      // Unfolded (decision 0014): the open fold splits at its hinge, a tablet down the middle.
+      render(File(out, "onboarding-fold-welcome-$theme.png"), dark, askable, 852, 883) {
+        WideWelcome(WelcomeUiState {}, hinge = Rect(852f, 0f, 852f, 883f * 2))
+      }
+      render(File(out, "onboarding-tablet-welcome-$theme.png"), dark, askable, 1280, 800) {
+        WelcomeUi(WelcomeUiState {})
+      }
+      for ((name, permissions) in listOf("permissions" to askable, "answered" to answered)) {
+        render(File(out, "onboarding-fold-$name-$theme.png"), dark, permissions, 852, 883) {
+          WidePermissions(PermissionsUiState {}, hinge = Rect(852f, 0f, 852f, 883f * 2))
+        }
+      }
+      render(File(out, "onboarding-tablet-permissions-$theme.png"), dark, askable, 1280, 800) {
+        PermissionsUi(PermissionsUiState {})
+      }
     }
   }
 
@@ -52,12 +70,17 @@ class OnboardingRenderTest {
     file: File,
     dark: Boolean,
     permissions: FixedPermissionController,
+    width: Int = 412,
+    height: Int = 892,
     content: @Composable () -> Unit,
   ) {
     val scene =
-      ImageComposeScene(width = 412 * 2, height = 892 * 2, density = Density(2f)) {
+      ImageComposeScene(width = width * 2, height = height * 2, density = Density(2f)) {
         CassetteTheme(darkTheme = dark) {
-          CompositionLocalProvider(LocalPermissionController provides permissions) {
+          CompositionLocalProvider(
+            LocalPermissionController provides permissions,
+            LocalScreenLayout provides currentScreenLayout(),
+          ) {
             Box(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) { content() }
           }
         }

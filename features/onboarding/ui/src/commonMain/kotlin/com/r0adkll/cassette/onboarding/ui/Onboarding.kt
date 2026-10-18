@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -45,11 +46,15 @@ import androidx.compose.ui.unit.sp
 import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.common.compose.AppPermission
 import com.r0adkll.cassette.common.compose.LocalPermissionController
+import com.r0adkll.cassette.common.compose.LocalScreenLayout
 import com.r0adkll.cassette.common.compose.PermissionState
+import com.r0adkll.cassette.common.compose.ScreenLayout
 import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.IconCircleButton
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
+import com.r0adkll.cassette.common.compose.components.SplitPanes
+import com.r0adkll.cassette.common.compose.currentVerticalHinge
 import com.r0adkll.cassette.common.compose.icons.CassetteMarks
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteRed
@@ -130,6 +135,10 @@ class PermissionsPresenter(
 @CircuitInject(OnboardingScreen::class, AppScope::class)
 @Composable
 fun WelcomeUi(state: WelcomeUiState, modifier: Modifier = Modifier) {
+  if (LocalScreenLayout.current != ScreenLayout.Column) {
+    WideWelcome(state, modifier)
+    return
+  }
   val colors = CassetteTheme.colors
   // The app pads every screen inside the system bars; the poster's red runs up under the status
   // bar.
@@ -213,6 +222,106 @@ fun WelcomeUi(state: WelcomeUiState, modifier: Modifier = Modifier) {
   }
 }
 
+/**
+ * The welcome unfolded (decision 0014, iteration 10b): the poster takes the half before the hinge,
+ * its wordmark at the top and the tape mark above the title at the foot, anchored left; what
+ * Cassette does, Get started and the unofficial notice take the other half.
+ */
+@Composable
+internal fun WideWelcome(
+  state: WelcomeUiState,
+  modifier: Modifier = Modifier,
+  hinge: Rect? = currentVerticalHinge(),
+) {
+  val colors = CassetteTheme.colors
+  val type = CassetteTheme.type
+  // The red runs up under the status bar and down under the navigation bar.
+  val density = LocalDensity.current
+  val top = WindowInsets.safeDrawing.getTop(density).toFloat()
+  val bottom = WindowInsets.safeDrawing.getBottom(density).toFloat()
+  SplitPanes(
+    start = {
+      Column(
+        Modifier.fillMaxSize()
+          .drawBehind {
+            drawRect(
+              CassetteRed,
+              topLeft = Offset(0f, -top),
+              size = Size(size.width, size.height + top + bottom),
+            )
+          }
+          .padding(start = 32.dp, end = 32.dp, top = 56.dp, bottom = 40.dp)
+      ) {
+        Text("CASSETTE", style = type.label.copy(letterSpacing = 0.24.em), color = Color.White)
+        Spacer(Modifier.weight(1f))
+        // The tape, drawn straight on the red: the poster is its shell.
+        Image(
+          rememberVectorPainter(CassetteMarks.Tape),
+          contentDescription = null,
+          modifier = Modifier.size(150.dp),
+        )
+        Spacer(Modifier.height(20.dp))
+        Text(
+          "Know before you ride.",
+          style = type.display.copy(fontSize = 92.sp, lineHeight = 0.86.em),
+          color = Color.White,
+        )
+      }
+    },
+    end = {
+      Column(
+        Modifier.fillMaxSize().padding(start = 32.dp, end = 32.dp, top = 56.dp, bottom = 32.dp)
+      ) {
+        Column(
+          Modifier.weight(1f).verticalScroll(rememberScrollState()),
+          verticalArrangement = Arrangement.spacedBy(28.dp),
+        ) {
+          WidePoint(
+            "1",
+            "Hears the bike when it wakes.",
+            "No pairing, no app open: a shake or a shift is enough.",
+          )
+          WidePoint("2", "Shows it at a glance.", "Widgets, Quick Settings and notifications.")
+          WidePoint(
+            "3",
+            "Warns you before a ride.",
+            "A nudge when the bike wakes and something is low.",
+          )
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+          CassetteButton("Get started", onClick = { state.eventSink(WelcomeEvent.GetStarted) })
+          Text(
+            "Unofficial. Not affiliated with SRAM.",
+            style = type.bodySmall,
+            color = colors.muted,
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+          )
+        }
+      }
+    },
+    modifier = modifier.fillMaxSize(),
+    hinge = hinge,
+  )
+}
+
+/** A point on the unfolded welcome: a big red number, a title and a line. */
+@Composable
+private fun WidePoint(number: String, title: String, text: String) {
+  val type = CassetteTheme.type
+  Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+    Text(
+      number,
+      style = type.numeral.copy(fontSize = 34.sp, lineHeight = 0.9.em),
+      color = CassetteRed,
+      modifier = Modifier.width(28.dp),
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+      Text(title, style = type.numeral.copy(fontSize = 24.sp), color = CassetteTheme.colors.text)
+      Text(text, style = type.body, color = CassetteTheme.colors.muted)
+    }
+  }
+}
+
 @Composable
 private fun Point(number: String, title: String, text: String) {
   val colors = CassetteTheme.colors
@@ -235,9 +344,11 @@ private fun Point(number: String, title: String, text: String) {
 @CircuitInject(OnboardingPermissionsScreen::class, AppScope::class)
 @Composable
 fun PermissionsUi(state: PermissionsUiState, modifier: Modifier = Modifier) {
+  if (LocalScreenLayout.current != ScreenLayout.Column) {
+    WidePermissions(state, modifier)
+    return
+  }
   val colors = CassetteTheme.colors
-  val controller = LocalPermissionController.current
-  val states by controller.states.collectAsState()
   Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
     Column(
       Modifier.widthIn(max = MaxContentWidth)
@@ -264,42 +375,122 @@ fun PermissionsUi(state: PermissionsUiState, modifier: Modifier = Modifier) {
           style = CassetteTheme.type.body,
           color = colors.muted,
         )
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-          PermissionCard(
-            icon = LucideIcons.BluetoothSearching,
-            title = "Nearby devices",
-            text =
-              "Hears your bike's AXS radio when it wakes, even with the app closed. It never uses your location.",
-            state = states[AppPermission.Nearby] ?: PermissionState.Askable,
-            onAllow = { controller.request(AppPermission.Nearby) },
-            onSettings = controller::openSettings,
-          )
-          PermissionCard(
-            icon = LucideIcons.Bell,
-            title = "Notifications",
-            text =
-              "Tells you when a battery runs low, and nudges you before a ride if something needs charging.",
-            state = states[AppPermission.Notifications] ?: PermissionState.Askable,
-            onAllow = { controller.request(AppPermission.Notifications) },
-            onSettings = controller::openSettings,
-          )
-        }
+        PermissionCards()
       }
-      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(
-          horizontalArrangement = Arrangement.spacedBy(8.dp),
-          verticalAlignment = Alignment.CenterVertically,
-        ) {
-          Icon(LucideIcons.Info, null, tint = colors.muted, modifier = Modifier.size(15.dp))
-          Text(
-            "You can change these any time in Settings.",
-            style = CassetteTheme.type.bodySmall,
-            color = colors.muted,
-          )
-        }
-        CassetteButton("Continue", onClick = { state.eventSink(PermissionsEvent.Continue) })
-      }
+      ContinueFooter(state)
     }
+  }
+}
+
+/**
+ * The permissions unfolded (decision 0014), laid out like the welcome before it: the ask on the
+ * half before the hinge, in the panel colour (red stays the welcome's), its title at the foot; the
+ * two permissions and Continue on the other half.
+ */
+@Composable
+internal fun WidePermissions(
+  state: PermissionsUiState,
+  modifier: Modifier = Modifier,
+  hinge: Rect? = currentVerticalHinge(),
+) {
+  val colors = CassetteTheme.colors
+  val density = LocalDensity.current
+  val top = WindowInsets.safeDrawing.getTop(density).toFloat()
+  val bottom = WindowInsets.safeDrawing.getBottom(density).toFloat()
+  SplitPanes(
+    start = {
+      Column(
+        Modifier.fillMaxSize()
+          .drawBehind {
+            // The panel runs under the system bars, as the welcome's red does.
+            drawRect(
+              colors.panel,
+              topLeft = Offset(0f, -top),
+              size = Size(size.width, size.height + top + bottom),
+            )
+          }
+          .padding(start = 32.dp, end = 32.dp, top = 24.dp, bottom = 40.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+      ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          IconCircleButton(
+            LucideIcons.ArrowLeft,
+            "Back",
+            onClick = { state.eventSink(PermissionsEvent.Back) },
+          )
+          Spacer(Modifier.weight(1f))
+          Kicker("Set up")
+        }
+        Spacer(Modifier.weight(1f))
+        Text(
+          "Two things to allow.",
+          style = CassetteTheme.type.display.copy(fontSize = 80.sp, lineHeight = 0.88.em),
+          color = colors.text,
+        )
+        Text(
+          "Cassette runs quietly in the background. These let it hear your bike and tell you when to charge.",
+          style = CassetteTheme.type.body,
+          color = colors.muted,
+        )
+      }
+    },
+    end = {
+      Column(
+        Modifier.fillMaxSize().padding(start = 32.dp, end = 32.dp, top = 92.dp, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+      ) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) { PermissionCards() }
+        ContinueFooter(state)
+      }
+    },
+    modifier = modifier.fillMaxSize(),
+    hinge = hinge,
+  )
+}
+
+@Composable
+private fun PermissionCards() {
+  val controller = LocalPermissionController.current
+  val states by controller.states.collectAsState()
+  Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    PermissionCard(
+      icon = LucideIcons.BluetoothSearching,
+      title = "Nearby devices",
+      text =
+        "Hears your bike's AXS radio when it wakes, even with the app closed. It never uses your location.",
+      state = states[AppPermission.Nearby] ?: PermissionState.Askable,
+      onAllow = { controller.request(AppPermission.Nearby) },
+      onSettings = controller::openSettings,
+    )
+    PermissionCard(
+      icon = LucideIcons.Bell,
+      title = "Notifications",
+      text =
+        "Tells you when a battery runs low, and nudges you before a ride if something needs charging.",
+      state = states[AppPermission.Notifications] ?: PermissionState.Askable,
+      onAllow = { controller.request(AppPermission.Notifications) },
+      onSettings = controller::openSettings,
+    )
+  }
+}
+
+/** "You can change these any time", then Continue, which is always there. */
+@Composable
+private fun ContinueFooter(state: PermissionsUiState) {
+  val colors = CassetteTheme.colors
+  Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Icon(LucideIcons.Info, null, tint = colors.muted, modifier = Modifier.size(15.dp))
+      Text(
+        "You can change these any time in Settings.",
+        style = CassetteTheme.type.bodySmall,
+        color = colors.muted,
+      )
+    }
+    CassetteButton("Continue", onClick = { state.eventSink(PermissionsEvent.Continue) })
   }
 }
 

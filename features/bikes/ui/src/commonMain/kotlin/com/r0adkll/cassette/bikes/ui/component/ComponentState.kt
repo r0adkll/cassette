@@ -6,6 +6,8 @@ import com.slack.circuit.runtime.CircuitUiState
 
 data class ComponentUiState(
   val loaded: ComponentDetailModel?,
+  /** Inside the dashboard's sheet: no back button, and the content fills the sheet. */
+  val inSheet: Boolean = false,
   val eventSink: (ComponentEvent) -> Unit,
 ) : CircuitUiState
 
