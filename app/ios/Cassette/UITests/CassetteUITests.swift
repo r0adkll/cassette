@@ -11,7 +11,8 @@ final class CassetteUITests: XCTestCase {
     app.launch()
   }
 
-  func testFirstRunToSampleBike() {
+  func testFirstRunToSampleBike() throws {
+    try XCTSkipIf(UIDevice.current.userInterfaceIdiom == .pad, "The phone walk-through")
     // Welcome (decision 0017: no widgets or Quick Settings on iOS yet).
     expect("The bike screen and notifications.")
     shot("01-welcome")
@@ -59,7 +60,58 @@ final class CassetteUITests: XCTestCase {
     shot("09-component")
   }
 
+  /// An iPad in landscape is a large window: the bike rail beside the dashboard (decision 0014).
+  func testTabletRail() throws {
+    try XCTSkipIf(UIDevice.current.userInterfaceIdiom != .pad, "The tablet walk-through")
+    XCUIDevice.shared.orientation = .landscapeLeft
+
+    // Wide onboarding: the welcome and permissions split, add bike with its found pane.
+    expect("Never ride")
+    shot("t01-welcome")
+    tap("Get started")
+    expect("Bluetooth")
+    tap("Continue")
+    expect("Wake your bike.")
+    shot("t02-add-bike")
+    tap("Close")
+
+    // The wide empty screen, then Settings with Diagnostics in its pane.
+    expect("No bike yet.")
+    shot("t03-empty")
+    tap("Settings")
+    tap("Diagnostics")
+    expect("scan (Core Bluetooth, FE51)")
+    tap("Load sample bike", scrolling: true)
+    shot("t04-settings-diagnostics")
+    button("Back").tap()
+
+    // The rail: the bikes, Add bike, and Settings at its foot.
+    expect("Bikes")
+    expect("Sample bike")
+    shot("t05-rail")
+
+    // The component sheet over the dashboard, with the rail still in reach.
+    tap("Front derailleur")
+    expect("Firmware")
+    shot("t06-sheet")
+    button("Close").tap()
+
+    // Settings from the rail.
+    tap("Settings")
+    expect("Settings.")
+    shot("t07-rail-settings")
+  }
+
   // MARK: Helpers
+
+  /// A button by its exact label: "Back" would otherwise match "background" in Diagnostics.
+  private func button(_ label: String, file: StaticString = #filePath, line: UInt = #line)
+    -> XCUIElement
+  {
+    let match = app.buttons.matching(NSPredicate(format: "label ==[c] %@", label)).firstMatch
+    XCTAssertTrue(match.waitForExistence(timeout: 10), "Expected button \"\(label)\"", file: file, line: line)
+    return match
+  }
 
   /// The first element whose label starts with [text], ignoring case: Compose merges a row's
   /// texts into one label ("Notifications, 3 of 3 on") and some buttons are upper-cased.
@@ -90,7 +142,8 @@ final class CassetteUITests: XCTestCase {
   }
 
   private func shot(_ name: String) {
-    let attachment = XCTAttachment(screenshot: app.screenshot())
+    // The screen's capture, not the app's: the app's comes out offset and cropped in landscape.
+    let attachment = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
     attachment.name = name
     attachment.lifetime = .keepAlways
     add(attachment)
