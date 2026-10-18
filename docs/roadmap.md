@@ -49,4 +49,16 @@ folded, and a "Raw data in diagnostics" link in the component sheet.
 
 ## M3: iOS
 
-iOS app with Core Bluetooth, if still wanted.
+An iPhone app sharing everything up to the screens ([0016](decisions/0016-ios.md)), from a Core
+Bluetooth spike on the bike (branch `spike/ios-corebluetooth`, 2026-10-18):
+
+1. The app shell: `:app:ios` and the Xcode project, the iOS graph, the shared screens on an iPhone.
+2. Core Bluetooth: live scan and GATT reads, identifiers as addresses, the permission ask.
+3. Background capture: the `FE51` scan with restoration, background hub reads (after the ride test).
+4. Notifications and the daily reminders.
+5. TestFlight from CI.
+6. Liquid Glass buttons and actions, and the iOS-only screens: mockups, then the components.
+7. WidgetKit widgets, then the Live Activity, then the Apple Watch app, each with its mockups first.
+
+Waiting on the bike: the spike's ride test, identifiers across days and a battery swap, and a hub read
+from a background discovery.
