@@ -27,8 +27,9 @@ https://drop.thescavengers.software. Play/Fastlane tooling is adopted but unused
 
 - CI uploads the `internal` build type: the release build's R8 optimisation and resource shrinking, under
   the debug build's application id (`com.r0adkll.cassette.debug`) and dev icon, so it updates the debug
-  installs. The watch app (`:app:wear`) has the same `internal` build type, built alongside it and kept
-  as a CI artifact (Drop doesn't take it yet); with the same id and key it pairs with the phone's Drop
+  installs. The watch app (`:app:wear`) has the same `internal` build type, built alongside it and
+  uploaded in the same run as a Wear Build (Drop 0.4.0 tells them apart by the watch feature in the
+  manifest, so phones are never offered it); with the same id and key it pairs with the phone's Drop
   build. Both R8 mappings are kept as CI artifacts for retracing. Release gets R8 too, with drop-noop.
 - CI signs the internal build with one internal key, so every Drop build can update every other. The key lives
   only in repository secrets (`CASSETTE_KEYSTORE_BASE64`, `CASSETTE_KEYSTORE_PASSWORD`, `CASSETTE_KEY_ALIAS`,

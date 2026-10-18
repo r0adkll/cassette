@@ -157,8 +157,6 @@ jobs:
           name: cassette-apk
           path: app/android/build/outputs/apk/internal/android-internal.apk
 
-      # Drop doesn't take the watch app yet (decision 0013): installed with adb, it pairs with the
-      # phone's Drop Build since both carry the internal key.
       - name: Upload the Wear APK
         uses: actions/upload-artifact@v7
         with:
@@ -184,12 +182,26 @@ jobs:
           server: https://drop.thescavengers.software
           apk: app/android/build/outputs/apk/internal/android-internal.apk
 
-      - name: Link the Build
+      # Same run as the phone's, so Drop keeps them as sibling Builds; the Action reads the watch
+      # feature from the APK and uploads it as a Wear Build (Drop 0.4.0, decision 0013).
+      - name: Upload the watch app to Drop
+        id: upload-wear
+        if: steps.upload.outcome == 'success'
+        uses: r0adkll/drop/action@v0
+        with:
+          server: https://drop.thescavengers.software
+          apk: app/wear/build/outputs/apk/internal/wear-internal.apk
+
+      - name: Link the Builds
         if: steps.upload.outcome == 'success'
         env:
           BUILD_URL: ${{ steps.upload.outputs.build-url }}
+          WEAR_BUILD_URL: ${{ steps.upload-wear.outputs.build-url }}
         run: |
           echo "Drop Build: $BUILD_URL" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$WEAR_BUILD_URL" ]; then
+            echo "Drop Wear Build: $WEAR_BUILD_URL" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
   ios:
     name: iOS compile
