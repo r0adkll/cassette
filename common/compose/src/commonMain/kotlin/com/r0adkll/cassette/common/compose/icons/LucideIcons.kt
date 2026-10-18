@@ -120,6 +120,13 @@ object LucideIcons {
     }
   }
 
+  /** Lucide `chevron-left`. */
+  val ChevronLeft: ImageVector by lazy {
+    lucide("ChevronLeft") {
+      stroke("m15 18-6-6 6-6")
+    }
+  }
+
   /** Lucide `chevron-right`. */
   val ChevronRight: ImageVector by lazy {
     lucide("ChevronRight") {

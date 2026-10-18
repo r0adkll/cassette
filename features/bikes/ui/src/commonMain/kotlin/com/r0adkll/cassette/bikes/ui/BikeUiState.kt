@@ -4,6 +4,7 @@ import com.r0adkll.cassette.bikes.summary.BikeStatus
 import com.r0adkll.cassette.bikes.summary.ComponentRowModel
 import com.r0adkll.cassette.common.compose.theme.StatusTone
 import com.r0adkll.cassette.settings.api.Tip
+import com.slack.circuit.foundation.NavEvent
 import com.slack.circuit.runtime.CircuitUiEvent
 import com.slack.circuit.runtime.CircuitUiState
 
@@ -29,6 +30,8 @@ sealed interface BikeUiState : CircuitUiState {
     val bikes: List<BikeChoice> = emptyList(),
     /** Each component's last 30 days (0 to 1, oldest first), by component id, for the tiles. */
     val trends: Map<Long, List<Float>> = emptyMap(),
+    /** The component open in the dashboard's sheet; null when it's closed. */
+    val sheet: Long? = null,
     override val eventSink: (BikeEvent) -> Unit,
   ) : BikeUiState
 }
@@ -50,6 +53,14 @@ sealed interface BikeEvent : CircuitUiEvent {
 
   /** Shows another bike in place, from the rail or a chip. */
   data class SelectBike(val id: Long) : BikeEvent
+
+  /** Opens the component in the dashboard's sheet, or switches the open sheet to it. */
+  data class ShowComponent(val id: Long) : BikeEvent
+
+  data object CloseSheet : BikeEvent
+
+  /** Navigation from the screen inside the sheet, other than closing it. */
+  data class SheetNavigation(val event: NavEvent) : BikeEvent
 
   data object OpenSettings : BikeEvent
 

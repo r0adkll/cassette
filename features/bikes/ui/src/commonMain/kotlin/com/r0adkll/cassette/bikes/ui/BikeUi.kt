@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -52,6 +53,14 @@ private val MaxContentWidth = 480.dp
 @Composable
 fun BikeUi(state: BikeUiState, modifier: Modifier = Modifier) {
   val layout = LocalScreenLayout.current
+  // Folding the phone with a sheet open carries the component over as its own screen.
+  val openSheet = (state as? BikeUiState.Loaded)?.sheet
+  LaunchedEffect(layout, openSheet) {
+    if (layout == ScreenLayout.Column && openSheet != null) {
+      state.eventSink(BikeEvent.CloseSheet)
+      state.eventSink(BikeEvent.OpenComponent(openSheet))
+    }
+  }
   if (state is BikeUiState.Loaded && layout != ScreenLayout.Column) {
     BikeDashboard(state, rail = layout == ScreenLayout.DashboardWithRail, modifier)
     return

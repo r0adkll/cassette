@@ -45,6 +45,6 @@ class ComponentPresenter(
         is ComponentEvent.SelectRange -> range = event.range
       }
     }
-    return ComponentUiState(detail?.toModel(range, clock.now()), eventSink)
+    return ComponentUiState(detail?.toModel(range, clock.now()), screen.inSheet, eventSink)
   }
 }

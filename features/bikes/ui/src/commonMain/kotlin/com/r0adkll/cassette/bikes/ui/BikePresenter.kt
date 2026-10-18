@@ -20,6 +20,7 @@ import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.settings.api.CassetteSettings
 import com.r0adkll.cassette.settings.api.Tip
 import com.slack.circuit.codegen.annotations.CircuitInject
+import com.slack.circuit.foundation.onNavEvent
 import com.slack.circuit.retained.collectAsRetainedState
 import com.slack.circuit.retained.rememberRetained
 import com.slack.circuit.runtime.Navigator
@@ -55,6 +56,8 @@ class BikePresenter(
     val scope = rememberCoroutineScope()
     // The rail and the chips switch bikes in place; the screen's bike is only where it starts.
     var selected by rememberRetained { mutableStateOf(screen.bikeId) }
+    // The component open in the dashboard's sheet (decision 0014).
+    var sheet by rememberRetained { mutableStateOf<Long?>(null) }
     val overview by
       remember(selected) { repository.observeOverview(selected?.let(::BikeId)).map { Result(it) } }
         .collectAsRetainedState(initial = null)
@@ -111,7 +114,13 @@ class BikePresenter(
     val eventSink: (BikeEvent) -> Unit = { event ->
       when (event) {
         is BikeEvent.OpenComponent -> navigator.goTo(ComponentScreen(event.id))
-        is BikeEvent.SelectBike -> selected = event.id
+        is BikeEvent.SelectBike -> {
+          selected = event.id
+          sheet = null
+        }
+        is BikeEvent.ShowComponent -> sheet = event.id
+        BikeEvent.CloseSheet -> sheet = null
+        is BikeEvent.SheetNavigation -> navigator.onNavEvent(event.event)
         BikeEvent.OpenSettings -> navigator.goTo(SettingsScreen)
         BikeEvent.AddBike -> navigator.goTo(AddBikeScreen)
         is BikeEvent.AcceptTip -> {
@@ -140,9 +149,15 @@ class BikePresenter(
 
     val loaded = overview ?: return BikeUiState.Loading(eventSink)
     val bike = loaded.overview ?: return BikeUiState.Empty(eventSink)
-    return bike
-      .toLoaded(now, eventSink)
-      .copy(refresh = refresh, tip = tip, bikes = bikes.toChoices(now), trends = trends)
+    val loadedBike = bike.toLoaded(now, eventSink)
+    return loadedBike.copy(
+      refresh = refresh,
+      tip = tip,
+      bikes = bikes.toChoices(now),
+      trends = trends,
+      // A component that has gone (removed with its bike) closes the sheet.
+      sheet = sheet?.takeIf { id -> loadedBike.components.any { it.id == id } },
+    )
   }
 
   /** Wraps the nullable overview so "loading" and "no bike" are different states. */

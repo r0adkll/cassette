@@ -28,6 +28,10 @@ All notable changes to Cassette are documented here. The format follows
   in landscape list the bikes on the left, with Add bike and Settings; an open foldable (and a tablet
   in portrait) puts them in the top bar as chips. Either switches bikes in place. Phones keep the
   column.
+- On those screens a component opens in a sheet that slides over the dashboard, with close, previous
+  and next. On an open foldable it covers about three quarters of the screen and tapping the dimmed
+  edge closes it; on a tablet it is narrower and tapping another tile switches it. Back closes it, and
+  folding the phone with it open carries the component over as its own screen.
 - Watch app updates from Drop: an "Update ready" row under the bikes, an update screen with Install and a
   progress ring, "Updated to build N." after, and a one-time step to allow updates that shows where the
   switch is (App info, Advanced, Install unknown apps). With Drop 0.5.0 the update installs without

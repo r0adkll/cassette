@@ -11,7 +11,7 @@ from pathlib import Path
 VERSION = "0.460.0"
 ICONS = [
     "activity", "arrow-left", "battery-low", "battery-medium", "battery-warning", "bell", "bell-ring",
-    "bike", "bluetooth", "bluetooth-searching", "check", "chevron-down", "chevron-right", "circle-check",
+    "bike", "bluetooth", "bluetooth-searching", "check", "chevron-down", "chevron-left", "chevron-right", "circle-check",
     "circle-help", "cpu", "download", "file-text", "history", "image-plus", "info", "layout-grid", "mountain",
     "panel-top", "pin", "radio", "shield",
     "refresh-cw", "route", "scan-line", "settings", "share-2", "signal", "x",

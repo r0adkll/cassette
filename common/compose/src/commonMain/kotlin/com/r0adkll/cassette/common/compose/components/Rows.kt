@@ -30,11 +30,12 @@ import com.r0adkll.cassette.common.compose.theme.StatusTone
 
 private val PanelShape = RoundedCornerShape(16.dp)
 
-/** A bordered surface for grouped content. */
+/** A bordered surface for grouped content. [selected] outlines it in the text colour. */
 @Composable
 fun Panel(
   modifier: Modifier = Modifier,
   onClick: (() -> Unit)? = null,
+  selected: Boolean = false,
   content: @Composable ColumnScope.() -> Unit,
 ) {
   val colors = CassetteTheme.colors
@@ -44,7 +45,10 @@ fun Panel(
         .fillMaxWidth()
         .clip(PanelShape)
         .background(colors.panel)
-        .border(1.dp, colors.line, PanelShape)
+        .then(
+          if (selected) Modifier.border(2.dp, colors.text, PanelShape)
+          else Modifier.border(1.dp, colors.line, PanelShape)
+        )
         .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
         .padding(horizontal = 14.dp, vertical = 10.dp),
     verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -116,7 +120,8 @@ fun ComponentRow(
 /**
  * One component on the dashboard (decision 0014): badge, name and source, status, then the value
  * beside its 30-day [trend] (0 to 1, oldest first), and a level bar. The trend is drawn in the text
- * colour while all is well and in the status colour when it isn't.
+ * colour while all is well and in the status colour when it isn't. [selected] outlines it while its
+ * sheet is open.
  */
 @Composable
 fun ComponentTile(
@@ -129,11 +134,12 @@ fun ComponentTile(
   trend: List<Float>,
   modifier: Modifier = Modifier,
   trendHeight: Dp = 40.dp,
+  selected: Boolean = false,
   onClick: (() -> Unit)? = null,
 ) {
   val colors = CassetteTheme.colors
   val type = CassetteTheme.type
-  Panel(modifier, onClick) {
+  Panel(modifier, onClick, selected) {
     Column(
       Modifier.padding(vertical = 4.dp),
       verticalArrangement = Arrangement.spacedBy(10.dp),

@@ -4,6 +4,7 @@ import app.cash.turbine.ReceiveTurbine
 import com.r0adkll.cassette.bikes.api.BikeOverview
 import com.r0adkll.cassette.bikes.api.BikeRepository
 import com.r0adkll.cassette.bikes.api.ComponentDetail
+import com.r0adkll.cassette.bikes.api.ComponentWithReading
 import com.r0adkll.cassette.bikes.api.HomeSurfaces
 import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.capture.api.RefreshProgress
@@ -12,7 +13,9 @@ import com.r0adkll.cassette.common.screens.ComponentScreen
 import com.r0adkll.cassette.core.Bike
 import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.core.BikeType
+import com.r0adkll.cassette.core.Component
 import com.r0adkll.cassette.core.ComponentId
+import com.r0adkll.cassette.protocol.ComponentKind
 import com.r0adkll.cassette.settings.api.Tip
 import com.r0adkll.cassette.settings.test.InMemorySettings
 import com.slack.circuit.test.FakeNavigator
@@ -139,6 +142,78 @@ class BikePresenterTest {
       )
     }
   }
+
+  @Test
+  fun theSheetOpensSwitchesAndCloses() = runTest {
+    val withComponents =
+      roadBike.copy(
+        components =
+          listOf(
+            component(7, ComponentKind.REAR_DERAILLEUR),
+            component(8, ComponentKind.FRONT_DERAILLEUR),
+          )
+      )
+    overviews.emit(withComponents)
+    presenter(FakeNavigator(BikeScreen())).test {
+      val closed = awaitLoaded()
+      assertEquals(null, closed.sheet)
+
+      closed.eventSink(BikeEvent.ShowComponent(7))
+      val open = awaitLoaded { it.sheet == 7L }
+
+      open.eventSink(BikeEvent.ShowComponent(8))
+      val switched = awaitLoaded { it.sheet == 8L }
+
+      switched.eventSink(BikeEvent.CloseSheet)
+      awaitLoaded { it.sheet == null }
+      cancelAndIgnoreRemainingEvents()
+    }
+  }
+
+  @Test
+  fun theSheetClosesWhenItsComponentGoes() = runTest {
+    overviews.emit(roadBike.copy(components = listOf(component(7, ComponentKind.REAR_DERAILLEUR))))
+    presenter(FakeNavigator(BikeScreen())).test {
+      awaitLoaded().eventSink(BikeEvent.ShowComponent(7))
+      awaitLoaded { it.sheet == 7L }
+
+      overviews.emit(roadBike)
+      awaitLoaded { it.components.isEmpty() && it.sheet == null }
+      cancelAndIgnoreRemainingEvents()
+    }
+  }
+
+  @Test
+  fun switchingBikesClosesTheSheet() = runTest {
+    overviews.emit(roadBike.copy(components = listOf(component(7, ComponentKind.REAR_DERAILLEUR))))
+    presenter(FakeNavigator(BikeScreen())).test {
+      awaitLoaded().eventSink(BikeEvent.ShowComponent(7))
+      val open = awaitLoaded { it.sheet == 7L }
+
+      open.eventSink(BikeEvent.SelectBike(2))
+      awaitLoaded { it.sheet == null }
+      cancelAndIgnoreRemainingEvents()
+    }
+  }
+
+  private fun component(id: Long, kind: ComponentKind) =
+    ComponentWithReading(
+      Component(
+        id = ComponentId(id),
+        bikeId = BikeId(1),
+        key = "$id",
+        serial = id,
+        kind = kind,
+        modelId = null,
+        deviceType = null,
+        firmware = null,
+        actuations = null,
+        addedAt = now,
+        lastSeenAt = now,
+        removedAt = null,
+      ),
+      latest = null,
+    )
 
   private suspend fun ReceiveTurbine<BikeUiState>.awaitLoaded(
     until: (BikeUiState.Loaded) -> Boolean = { true }

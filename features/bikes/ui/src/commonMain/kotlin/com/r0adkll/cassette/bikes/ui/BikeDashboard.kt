@@ -1,9 +1,19 @@
 package com.r0adkll.cassette.bikes.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -11,21 +21,32 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.navigationevent.NavigationEventInfo
+import androidx.navigationevent.compose.NavigationBackHandler
+import androidx.navigationevent.compose.rememberNavigationEventState
 import com.r0adkll.cassette.bikes.summary.ComponentRowModel
 import com.r0adkll.cassette.bikes.summary.weakest
+import com.r0adkll.cassette.bikes.ui.component.SheetGutter
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
 import com.r0adkll.cassette.common.compose.UpdateStatus
 import com.r0adkll.cassette.common.compose.components.BikeChip
@@ -41,23 +62,40 @@ import com.r0adkll.cassette.common.compose.components.StatusBlockText
 import com.r0adkll.cassette.common.compose.components.WideStatusBlock
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
+import com.r0adkll.cassette.common.screens.ComponentScreen
+import com.slack.circuit.foundation.CircuitContent
+import com.slack.circuit.foundation.NavEvent
 
 /**
  * The bike screen on an open foldable or a tablet (decision 0014): the status block with Refresh
  * inside it, then the components as tiles, the one to charge next on a wide tile. With [rail]
  * (large windows) the bikes are listed on the left; otherwise they are chips in the top bar.
+ *
+ * Tapping a tile opens the component in a sheet over the dashboard, which never re-lays out.
+ * [sheetContent] draws the component; renders pass their own, since the app's runs its presenter.
  */
 @Composable
 internal fun BikeDashboard(
   state: BikeUiState.Loaded,
   rail: Boolean,
   modifier: Modifier = Modifier,
+  sheetContent: @Composable (componentId: Long) -> Unit = { id ->
+    ComponentInSheet(id, state.eventSink)
+  },
 ) {
+  Box(modifier.fillMaxSize()) {
+    Dashboard(state, rail)
+    ComponentSheet(state, rail, sheetContent)
+  }
+}
+
+@Composable
+private fun Dashboard(state: BikeUiState.Loaded, rail: Boolean) {
   val update by LocalAppUpdates.current.status.collectAsState()
   val updateWaiting = update is UpdateStatus.Available
   val gutter = if (rail) 28.dp else 24.dp
   val sink = state.eventSink
-  Row(modifier.fillMaxSize()) {
+  Row(Modifier.fillMaxSize()) {
     if (rail) {
       BikeRail(state, updateWaiting, Modifier.width(240.dp).fillMaxHeight())
       Box(Modifier.width(1.dp).fillMaxHeight().background(CassetteTheme.colors.line))
@@ -217,7 +255,8 @@ private fun ComponentGrid(
               nextToCharge = isWide && component == next,
               trendHeight = if (isWide) 64.dp else 44.dp,
               modifier = Modifier.width(if (isWide) wide else cell).fillMaxHeight(),
-              onClick = { state.eventSink(BikeEvent.OpenComponent(component.id)) },
+              selected = state.sheet == component.id,
+              onClick = { state.eventSink(BikeEvent.ShowComponent(component.id)) },
             )
           }
         }
@@ -233,6 +272,7 @@ private fun Tile(
   nextToCharge: Boolean,
   trendHeight: Dp,
   modifier: Modifier,
+  selected: Boolean,
   onClick: () -> Unit,
 ) {
   ComponentTile(
@@ -245,9 +285,134 @@ private fun Tile(
     trend = trend,
     trendHeight = trendHeight,
     modifier = modifier,
+    selected = selected,
     onClick = onClick,
   )
 }
+
+/** Material's emphasized curves: the sheet decelerates in and accelerates out. */
+private val EmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
+private val EmphasizedAccelerate = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)
+private const val SheetInMillis = 340
+private const val SheetOutMillis = 220
+
+private val SheetShape = RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp)
+
+/**
+ * The component sheet, sliding in from the right edge. On the open foldable it covers about three
+ * quarters of the width and dims the dashboard strip left showing, which closes it when tapped.
+ * With the rail it is 480 dp wide and not dimmed, so tapping another tile switches it. System back
+ * closes it either way.
+ */
+@Composable
+private fun BoxScope.ComponentSheet(
+  state: BikeUiState.Loaded,
+  rail: Boolean,
+  content: @Composable (componentId: Long) -> Unit,
+) {
+  val colors = CassetteTheme.colors
+  val sink = state.eventSink
+  val open = state.sheet
+  // Keeps the last component drawn while the sheet slides out.
+  val shown = remember { Held<Long?>(null) }
+  if (open != null) shown.value = open
+
+  NavigationBackHandler(
+    rememberNavigationEventState(NavigationEventInfo.None),
+    isBackEnabled = open != null,
+    onBackCompleted = { sink(BikeEvent.CloseSheet) },
+  )
+
+  if (!rail) {
+    AnimatedVisibility(
+      open != null,
+      enter = fadeIn(tween(SheetInMillis)),
+      exit = fadeOut(tween(SheetOutMillis)),
+    ) {
+      Box(
+        Modifier.fillMaxSize()
+          .background(Color.Black.copy(alpha = if (colors.isDark) 0.45f else 0.22f))
+          .clickable(
+            interactionSource = null,
+            indication = null,
+            onClickLabel = "Close component",
+            onClick = { sink(BikeEvent.CloseSheet) },
+          )
+      )
+    }
+  }
+
+  AnimatedVisibility(
+    open != null,
+    modifier =
+      Modifier.align(Alignment.CenterEnd)
+        .fillMaxHeight()
+        .then(if (rail) Modifier.width(480.dp) else Modifier.fillMaxWidth(0.76f)),
+    enter = slideInHorizontally(tween(SheetInMillis, easing = EmphasizedDecelerate)) { it },
+    exit = slideOutHorizontally(tween(SheetOutMillis, easing = EmphasizedAccelerate)) { it },
+  ) {
+    val id = shown.value ?: return@AnimatedVisibility
+    Column(
+      Modifier.fillMaxSize()
+        .shadow(16.dp, SheetShape)
+        .clip(SheetShape)
+        .background(colors.panel)
+        .border(1.dp, colors.line, SheetShape)
+        .padding(top = 24.dp),
+      verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+      SheetHeader(state, id, Modifier.padding(horizontal = SheetGutter))
+      key(id) { Box(Modifier.weight(1f)) { content(id) } }
+    }
+  }
+}
+
+/** Close, which component of how many, and previous and next to step through them. */
+@Composable
+private fun SheetHeader(state: BikeUiState.Loaded, id: Long, modifier: Modifier) {
+  val sink = state.eventSink
+  val components = state.components
+  val index = components.indexOfFirst { it.id == id }.coerceAtLeast(0)
+  val count = components.size
+  Row(
+    modifier,
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+  ) {
+    IconCircleButton(LucideIcons.X, "Close", onClick = { sink(BikeEvent.CloseSheet) })
+    Kicker(
+      "${components.getOrNull(index)?.code.orEmpty()} · ${index + 1} of $count",
+      Modifier.weight(1f).padding(start = 4.dp),
+    )
+    if (count > 1) {
+      IconCircleButton(
+        LucideIcons.ChevronLeft,
+        "Previous component",
+        onClick = { sink(BikeEvent.ShowComponent(components[(index + count - 1) % count].id)) },
+      )
+      IconCircleButton(
+        LucideIcons.ChevronRight,
+        "Next component",
+        onClick = { sink(BikeEvent.ShowComponent(components[(index + 1) % count].id)) },
+      )
+    }
+  }
+}
+
+/** The app's sheet body: the component screen itself, whose back closes the sheet. */
+@Composable
+private fun ComponentInSheet(id: Long, sink: (BikeEvent) -> Unit) {
+  CircuitContent(
+    ComponentScreen(id, inSheet = true),
+    onNavEvent = { event ->
+      if (event is NavEvent.Pop) sink(BikeEvent.CloseSheet)
+      else sink(BikeEvent.SheetNavigation(event))
+    },
+  )
+}
+
+/** A value kept across recompositions without causing them. */
+private class Held<T>(var value: T)
 
 /** Refresh inside the status block: the same three states as the phone's button. */
 @Composable

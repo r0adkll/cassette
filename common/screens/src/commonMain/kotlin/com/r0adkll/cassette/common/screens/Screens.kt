@@ -7,7 +7,12 @@ import com.slack.circuit.runtime.screen.StaticScreen
 /** A bike's overview. [bikeId] null means the default (most recently seen) bike (decision 0010). */
 @Parcelize data class BikeScreen(val bikeId: Long? = null) : ParcelableScreen
 
-@Parcelize data class ComponentScreen(val componentId: Long) : ParcelableScreen
+/**
+ * A component's detail. [inSheet] shows it inside the bike dashboard's sheet (decision 0014), which
+ * draws its own header, so the screen leaves out its back button.
+ */
+@Parcelize
+data class ComponentScreen(val componentId: Long, val inSheet: Boolean = false) : ParcelableScreen
 
 @Parcelize data object AddBikeScreen : ParcelableScreen
 

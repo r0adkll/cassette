@@ -129,6 +129,16 @@ class ScreenRenderTest {
         val suffix = "${size.name.lowercase()}-${if (dark) "dark" else "light"}"
         render("bike-$suffix", dark, size) { BikeUi(bike) }
         render("bike-low-$suffix", dark, size) { BikeUi(low) }
+        // The sheet open on the rear derailleur, drawn with the component screen's own UI.
+        render("bike-sheet-$suffix", dark, size) {
+          BikeDashboard(
+            bike.copy(sheet = 1),
+            rail = size == RenderSize.Tablet,
+            sheetContent = {
+              ComponentUi(ComponentUiState(sampleComponent, inSheet = true) {})
+            },
+          )
+        }
         render("component-$suffix", dark, size) {
           ComponentUi(ComponentUiState(sampleComponent) {})
         }
