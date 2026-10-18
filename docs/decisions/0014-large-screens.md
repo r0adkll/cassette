@@ -16,7 +16,7 @@ Layouts follow the window, not the device, so split screen and resizing work.
 | Window | Example | Layout |
 |---|---|---|
 | Narrow (under 600 dp wide, or under 480 dp tall) | Phones, the Fold closed, phones in landscape | The phone layout, as today |
-| Medium (600 to 839 dp wide) | The Pixel 10 Pro Fold open (≈790 × 820 dp at default display size; to confirm on the device) | Dashboard; the component sheet covers most of the screen |
+| Medium (600 to 839 dp wide) | The Pixel 10 Pro Fold open (≈790 × 820 dp at default display size; to confirm on the device), tablets in portrait | Dashboard; the component sheet covers most of the screen |
 | Expanded (840 dp and wider) | Tablets; the iPhone foldable (rumoured 4:3, about iPad mini size) | A bike rail on the left, then the dashboard; a narrower sheet |
 
 Phones in landscape keep the phone layout: they are wide but too short for the dashboard. The Fold's dp

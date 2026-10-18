@@ -1,7 +1,6 @@
 package com.r0adkll.cassette.bikes.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.ImageComposeScene
@@ -20,6 +19,7 @@ import com.r0adkll.cassette.bikes.ui.component.ComponentUiState
 import com.r0adkll.cassette.bikes.ui.component.HistoryRange
 import com.r0adkll.cassette.bikes.ui.picker.BikeOption
 import com.r0adkll.cassette.bikes.ui.picker.BikePicker
+import com.r0adkll.cassette.common.compose.ProvideWindowSize
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.compose.theme.StatusTone
 import com.r0adkll.cassette.core.BikeType
@@ -73,33 +73,37 @@ class ScreenRenderTest {
 
   @Test
   fun componentScreen() {
-    val levels =
-      listOf(62, 58, 55, 51, 48, 44, 41, 37, 98, 97, 95, 93, 91, 89, 88, 86, 84, 83, 81, 80, 78)
-    val model =
-      ComponentDetailModel(
-        bikeName = "Road bike",
-        name = "Rear derailleur",
-        value = "78%",
-        headline = "Good.",
-        source = "Reported by the hub, 2 min ago",
-        level = 0.78f,
-        tone = StatusTone.Good,
-        stats =
-          listOf(
-            "Voltage" to "7.87 V",
-            "Shifts" to "12,324",
-            "Firmware" to "2.55.8",
-            "Model" to "1066",
-            "Serial" to "1405188718",
-            "Last read" to "2 min",
-          ),
-        range = HistoryRange.Month,
-        chart = levels.map { it / 100f },
-        chartCaption = "Charged 12 days ago (sample)",
-      )
     for (dark in listOf(true, false)) {
       render("component-${if (dark) "dark" else "light"}", dark) {
-        ComponentUi(ComponentUiState(model) {})
+        ComponentUi(ComponentUiState(sampleComponent) {})
+      }
+    }
+  }
+
+  /** The bike and component screens on an open fold and a tablet (decision 0014). */
+  @Test
+  fun largeScreens() {
+    val bike =
+      BikeUiState.Loaded(
+        bikeId = 1,
+        name = "Road bike",
+        position = "1 OF 2",
+        status =
+          BikeStatus(
+            StatusTone.Good,
+            "All good.",
+            "Next to charge: rear derailleur, in about 3 weeks (est.)",
+            "Seen 2 min ago",
+          ),
+        components = sampleRows,
+      ) {}
+    for (size in listOf(RenderSize.Fold, RenderSize.Tablet)) {
+      for (dark in listOf(true, false)) {
+        val suffix = "${size.name.lowercase()}-${if (dark) "dark" else "light"}"
+        render("bike-$suffix", dark, size) { BikeUi(bike) }
+        render("component-$suffix", dark, size) {
+          ComponentUi(ComponentUiState(sampleComponent) {})
+        }
       }
     }
   }
@@ -166,11 +170,16 @@ class ScreenRenderTest {
     }
   }
 
-  private fun render(name: String, dark: Boolean, content: @Composable () -> Unit) {
+  private fun render(
+    name: String,
+    dark: Boolean,
+    size: RenderSize = RenderSize.Phone,
+    content: @Composable () -> Unit,
+  ) {
     val scene =
-      ImageComposeScene(width = 412 * 2, height = 892 * 2, density = Density(2f)) {
+      ImageComposeScene(width = size.width * 2, height = size.height * 2, density = Density(2f)) {
         CassetteTheme(darkTheme = dark) {
-          Box(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) {
+          ProvideWindowSize(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) {
             content()
           }
         }
@@ -180,4 +189,77 @@ class ScreenRenderTest {
       .writeBytes(scene.render(100_000_000L).encodeToData(EncodedImageFormat.PNG)!!.bytes)
     scene.close()
   }
+
+  /** Window sizes in dp. The fold's is computed from its panel, not yet read off the device. */
+  private enum class RenderSize(val width: Int, val height: Int) {
+    Phone(412, 892),
+    Fold(790, 820),
+    Tablet(1280, 800),
+  }
+
+  private val sampleRows =
+    listOf(
+      ComponentRowModel(
+        1,
+        "RD",
+        "Rear derailleur",
+        "Reported · fw 2.55.8",
+        "78%",
+        0.78f,
+        StatusTone.Good,
+      ),
+      ComponentRowModel(
+        2,
+        "FD",
+        "Front derailleur",
+        "Estimated from 8.09 V",
+        "≈96%",
+        0.96f,
+        StatusTone.Good,
+      ),
+      ComponentRowModel(
+        3,
+        "L",
+        "Left shifter",
+        "CR2032 coin cell",
+        "2.91 V",
+        0.89f,
+        StatusTone.Good,
+      ),
+      ComponentRowModel(
+        4,
+        "R",
+        "Right shifter",
+        "CR2032 coin cell",
+        "2.89 V",
+        0.86f,
+        StatusTone.Good,
+      ),
+      ComponentRowModel(5, "PM", "Power meter", "Quarq DZero", "85%", 0.85f, StatusTone.Good),
+    )
+
+  private val sampleComponent =
+    ComponentDetailModel(
+      bikeName = "Road bike",
+      name = "Rear derailleur",
+      value = "78%",
+      headline = "Good.",
+      source = "Reported by the hub, 2 min ago",
+      level = 0.78f,
+      tone = StatusTone.Good,
+      stats =
+        listOf(
+          "Voltage" to "7.87 V",
+          "Shifts" to "12,324",
+          "Firmware" to "2.55.8",
+          "Model" to "1066",
+          "Serial" to "1405188718",
+          "Last read" to "2 min",
+        ),
+      range = HistoryRange.Month,
+      chart =
+        listOf(62, 58, 55, 51, 48, 44, 41, 37, 98, 97, 95, 93, 91, 89, 88, 86, 84, 83, 81, 80, 78)
+          .map { it / 100f },
+      chartCaption = "Charged 12 days ago (sample)",
+    )
 }
