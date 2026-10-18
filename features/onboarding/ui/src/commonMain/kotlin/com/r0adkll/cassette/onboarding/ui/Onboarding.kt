@@ -557,7 +557,12 @@ private fun PermissionCard(
     Text(text, style = CassetteTheme.type.bodySmall, color = colors.muted)
     if (state == PermissionState.Blocked)
       Text(
-        "Turned off. Open Settings to allow it.",
+        when (LocalAppPlatform.current) {
+          AppPlatform.Android -> "Turned off. Open Settings to allow it."
+          // Iteration 14: iOS keeps each app's permissions on its own page in Settings.
+          AppPlatform.Ios ->
+            "Turned off for Cassette. Settings → Cassette → $title turns it back on."
+        },
         style = CassetteTheme.type.bodySmall,
         color = colors.low,
       )

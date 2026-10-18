@@ -20,6 +20,18 @@ object LucideIcons {
     }
   }
 
+  /** Lucide `app-window`. */
+  val AppWindow: ImageVector by lazy {
+    lucide("AppWindow") {
+      stroke(
+        "M4.0 4.0h16.0a2.0 2.0 0 0 1 2.0 2.0v12.0a2.0 2.0 0 0 1 -2.0 2.0h-16.0a2.0 2.0 0 0 1 -2.0 -2.0v-12.0a2.0 2.0 0 0 1 2.0 -2.0Z"
+      )
+      stroke("M10 4v4")
+      stroke("M2 8h20")
+      stroke("M6 4v4")
+    }
+  }
+
   /** Lucide `arrow-left`. */
   val ArrowLeft: ImageVector by lazy {
     lucide("ArrowLeft") {

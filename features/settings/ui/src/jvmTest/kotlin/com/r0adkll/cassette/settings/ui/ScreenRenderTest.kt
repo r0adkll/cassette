@@ -162,6 +162,16 @@ class ScreenRenderTest {
       listOf(
         Shot("notifications", RenderSize.Phone, state.copy(category = Notifications), off, askable),
         Shot("appearance", RenderSize.Phone, state.copy(category = Appearance), off),
+        Shot(
+          "capture",
+          RenderSize.Phone,
+          state.copy(
+            category = Capture,
+            lastHeard = "Last heard 5 min ago",
+            wakes = "42 background wakes",
+          ),
+          off,
+        ),
         Shot("tablet-notifications", RenderSize.Tablet, state.copy(selected = Notifications), off),
       )
     for (dark in listOf(true, false)) {
@@ -265,5 +275,6 @@ class ScreenRenderTest {
     val Notifications = SettingsCategory.Notifications
     val Updates = SettingsCategory.Updates
     val Appearance = SettingsCategory.Appearance
+    val Capture = SettingsCategory.Capture
   }
 }

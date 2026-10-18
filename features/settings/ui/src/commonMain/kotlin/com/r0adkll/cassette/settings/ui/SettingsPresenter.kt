@@ -8,6 +8,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.r0adkll.cassette.bikes.api.BikeOverview
 import com.r0adkll.cassette.bikes.api.BikeRepository
+import com.r0adkll.cassette.bikes.summary.ago
 import com.r0adkll.cassette.bikes.summary.toSummary
 import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.common.compose.theme.StatusTone
@@ -48,6 +49,10 @@ data class SettingsUiState(
   val category: SettingsCategory? = null,
   /** The category open beside the list on wide windows. */
   val selected: SettingsCategory = category ?: SettingsCategory.Bikes,
+  /** "Last heard 5 min ago", from the background scan; null before its first wake. */
+  val lastHeard: String? = null,
+  /** "42 background wakes" */
+  val wakes: String? = null,
   val eventSink: (SettingsEvent) -> Unit,
 ) : CircuitUiState {
   /** "Gravel bike opens first", or the last bike seen does. */
@@ -122,7 +127,9 @@ class SettingsPresenter(
     var selected by rememberRetained {
       mutableStateOf(screen.category ?: SettingsCategory.Bikes)
     }
-    val garage = overviews.toGarage(pinned, clock.now())
+    val health by remember { settings.captureHealth }.collectAsRetainedState(null)
+    val now = clock.now()
+    val garage = overviews.toGarage(pinned, now)
 
     return SettingsUiState(
       garage,
@@ -133,6 +140,8 @@ class SettingsPresenter(
       themeMode = themeMode,
       category = screen.category,
       selected = selected,
+      lastHeard = health?.lastDeliveryAt?.let { "Last heard ${ago(now - it)}" },
+      wakes = health?.let { "${it.deliveries} background wakes" },
     ) { event ->
       when (event) {
         SettingsEvent.Back -> navigator.pop()

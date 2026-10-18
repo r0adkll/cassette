@@ -9,7 +9,10 @@ All notable changes to Cassette are documented here. The format follows
 
 - An iPhone app (decision 0016), in progress: the shared screens on iOS, Core Bluetooth scanning and
   unpaired GATT reads (a peripheral's identifier stands in for its Bluetooth address), the background
-  scan with state restoration, and the three notifications with "Snooze until tomorrow".
+  scan with state restoration, and the three notifications with "Snooze until tomorrow". On iOS,
+  Settings → Capture says how iOS lets Cassette listen and when the bike was last heard, and a
+  permission turned off points to its place in the Settings app.
+- Settings → Notifications asks again, or opens the system settings, while notifications are off.
 
 ### Fixed
 

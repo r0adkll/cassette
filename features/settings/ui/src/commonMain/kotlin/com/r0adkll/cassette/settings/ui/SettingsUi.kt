@@ -247,25 +247,10 @@ private fun ColumnScope.CategoryBody(
   when (category) {
     SettingsCategory.Bikes -> Garage(state, columns = if (wide) 2 else 1)
     SettingsCategory.Updates -> UpdatesBody(wide, gutter)
-    SettingsCategory.Capture ->
-      Panel {
-        SettingsSwitchRow(
-          "Background capture",
-          subtitle =
-            if (state.backgroundCapture) "On · reads the bike when it wakes"
-            else "Off · only Refresh reads the bike",
-          icon = LucideIcons.Bluetooth,
-          checked = state.backgroundCapture,
-          onCheckedChange = { sink(SettingsEvent.SetBackgroundCapture(it)) },
-        )
-        SettingsRow(
-          "Refresh scan length",
-          subtitle = "60 seconds",
-          icon = LucideIcons.RefreshCw,
-          divider = false,
-          trailing = {},
-        )
-      }
+    SettingsCategory.Capture -> {
+      CapturePanel(state)
+      if (LocalAppPlatform.current == AppPlatform.Ios) OnIphone(state)
+    }
     SettingsCategory.Notifications -> {
       NotificationPermission()
       Panel {
@@ -301,6 +286,59 @@ private fun ColumnScope.CategoryBody(
     SettingsCategory.Licences -> LicencesList()
     // Opens as its own screen on a phone, and in the pane on a wide window.
     SettingsCategory.Diagnostics -> Unit
+  }
+}
+
+@Composable
+private fun CapturePanel(state: SettingsUiState) {
+  val sink = state.eventSink
+  Panel {
+    SettingsSwitchRow(
+      "Background capture",
+      subtitle =
+        if (state.backgroundCapture) "On · reads the bike when it wakes"
+        else "Off · only Refresh reads the bike",
+      icon = LucideIcons.Bluetooth,
+      checked = state.backgroundCapture,
+      onCheckedChange = { sink(SettingsEvent.SetBackgroundCapture(it)) },
+    )
+    SettingsRow(
+      "Refresh scan length",
+      subtitle = "60 seconds",
+      icon = LucideIcons.RefreshCw,
+      divider = false,
+      trailing = {},
+    )
+  }
+}
+
+/**
+ * How iOS lets Cassette listen (iteration 14, decision 0016): iOS sets the cadence, and swiping the
+ * app away stops background capture until it's opened again.
+ */
+@Composable
+private fun OnIphone(state: SettingsUiState) {
+  SettingsSection("On iPhone") {
+    SettingsRow(
+      "iOS decides when Cassette listens",
+      subtitle =
+        "It hears the bike when it wakes nearby, but can miss a short stop. Refresh always reads it.",
+      icon = LucideIcons.Info,
+      trailing = {},
+    )
+    SettingsRow(
+      "Keep Cassette in the app switcher",
+      subtitle = "Swiping it away stops background capture until you open it again.",
+      icon = LucideIcons.AppWindow,
+      trailing = {},
+    )
+    SettingsRow(
+      state.lastHeard ?: "Not heard in the background yet",
+      subtitle = state.wakes,
+      icon = LucideIcons.History,
+      divider = false,
+      trailing = {},
+    )
   }
 }
 
