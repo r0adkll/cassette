@@ -80,9 +80,11 @@ categories.
 
 ## Onboarding (iteration 6, approved 2026-10-17)
 
-- **Welcome (C · Poster)**: a full-bleed SRAM red block ("Know before you ride.") running up under the status
-  bar, three numbered points (hears the bike when it wakes, shows it at a glance, warns you before a ride),
-  Get started, and the unofficial notice as a one-line footnote.
+- **Welcome (C · Poster)**: a full-bleed SRAM red block ("Never ride single-speed by accident.", chosen
+  2026-10-17 over the earlier "Know before you ride."; up to 54 sp, shrinking on narrow phones so
+  "single-speed" stays on one line beside the tape; up to 92 sp on the unfolded poster) running up under the
+  status bar, three numbered points (hears the bike when it wakes, shows it at a glance, warns you before a
+  ride), Get started, and the unofficial notice as a one-line footnote.
 - **Permissions (P1 · Checklist)**: "Two things to allow." Each permission is a panel with its own Allow chip,
   one system prompt per tap; granted shows a green check and ALLOWED, blocked shows a Settings chip and a
   line in amber. Continue is always enabled. States are re-read when the app resumes, so a change made in

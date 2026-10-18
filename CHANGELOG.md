@@ -25,7 +25,8 @@ All notable changes to Cassette are documented here. The format follows
 - Settings' App updates page says what's waiting: the build, what's new, its size and when it was
   uploaded, the installed build, and one action (Install, or Reinstall with a warning that it clears
   the bikes). Up to date and couldn't-check states say when it last checked.
-
+- The welcome screen's tagline, folded and unfolded, is now "Never ride single-speed by accident."
+  (was "Know before you ride.").
 - The app icon (phone and watch, release and dev) drops its four small screw dots.
 - The watch app's internal build goes to Drop as a Wear Build in the same run as the phone's (Drop
   0.4.0), with the phone's commit-count version code, so it installs from its Build page instead of a
@@ -41,8 +42,8 @@ All notable changes to Cassette are documented here. The format follows
   The app and its system bars follow the choice; widgets, the Quick Settings tile and the watch keep
   following the phone.
 - Welcome and add bike unfolded (decision 0014): on an open foldable the welcome's red poster takes
-  the half before the hinge (wordmark, tape mark, "Know before you ride.") and the three points and
-  Get started the other; adding a bike shows waking and found on one screen, the listening pulse on
+  the half before the hinge (wordmark, tape mark, tagline) and the three points and Get started the
+  other; adding a bike shows waking and found on one screen, the listening pulse on
   the left and the components arriving on the right. The permissions screen splits the same way: the
   ask on one half, the two permissions and Continue on the other. Tablets split down the middle.
 - Tabletop refresh (decision 0014): on a foldable standing half open, the bike screen splits at the

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -162,12 +163,16 @@ fun WelcomeUi(state: WelcomeUiState, modifier: Modifier = Modifier) {
       ) {
         Text("CASSETTE", style = CassetteTheme.type.label, color = Color.White)
         Row(verticalAlignment = Alignment.Top) {
+          // Each line stays whole: the title shrinks below 54 sp on narrow phones instead of
+          // breaking "single-speed".
           Text(
-            "Know\nbefore\nyou ride.",
-            style = CassetteTheme.type.display.copy(fontSize = 66.sp, lineHeight = 0.88.em),
+            "Never ride\nsingle-speed\nby accident.",
+            style = CassetteTheme.type.display.copy(lineHeight = 0.88.em),
             color = Color.White,
+            softWrap = false,
+            autoSize = TextAutoSize.StepBased(maxFontSize = 54.sp),
+            modifier = Modifier.weight(1f),
           )
-          Spacer(Modifier.weight(1f))
           // The tape, drawn straight on the red: the poster is its shell.
           Image(
             rememberVectorPainter(CassetteMarks.Tape),
@@ -261,10 +266,13 @@ internal fun WideWelcome(
           modifier = Modifier.size(150.dp),
         )
         Spacer(Modifier.height(20.dp))
+        // As on the phone, each line stays whole, shrinking below 92 sp in a narrow pane.
         Text(
-          "Know before you ride.",
-          style = type.display.copy(fontSize = 92.sp, lineHeight = 0.86.em),
+          "Never ride\nsingle-speed\nby accident.",
+          style = type.display.copy(lineHeight = 0.86.em),
           color = Color.White,
+          softWrap = false,
+          autoSize = TextAutoSize.StepBased(maxFontSize = 92.sp),
         )
       }
     },
