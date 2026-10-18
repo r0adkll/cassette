@@ -1,10 +1,13 @@
 package com.r0adkll.cassette.bikes.ui
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.keyframes
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -32,9 +35,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,7 +55,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -122,15 +127,18 @@ private fun HalfStatus(state: BikeUiState.Loaded) {
   val type = CassetteTheme.type
   val scanning = state.refresh is RefreshButton.Scanning
   val block = colors.block(state.status.tone)
-  val content = if (scanning) colors.text else block.content
   val heard = state.heard.orEmpty()
   val waiting = state.components.filter { it.id !in heard }
+  // The block eases between the bike's status colour and the live panel.
+  val morph = tween<Color>(MorphMillis, easing = Settle)
+  val container by animateColorAsState(if (scanning) colors.panel else block.container, morph)
+  val content by animateColorAsState(if (scanning) colors.text else block.content, morph)
+  val quiet by animateColorAsState(if (scanning) colors.muted else block.content, morph)
+  val line by animateColorAsState(if (scanning) colors.line else block.container, morph)
   Row(
     Modifier.fillMaxWidth()
-      .then(
-        if (scanning) Modifier.background(colors.panel).bottomLine(colors.line)
-        else Modifier.background(block.container)
-      )
+      .background(container)
+      .bottomLine(line)
       .padding(start = 28.dp, end = 28.dp, top = 20.dp, bottom = 16.dp),
     verticalAlignment = Alignment.Bottom,
     horizontalArrangement = Arrangement.spacedBy(24.dp),
@@ -145,7 +153,7 @@ private fun HalfStatus(state: BikeUiState.Loaded) {
           if (scanning) "${state.name} · Refreshing".uppercase()
           else "${state.name} · ${state.status.meta}".uppercase(),
           style = type.label,
-          color = if (scanning) colors.muted else content.copy(alpha = 0.85f),
+          color = if (scanning) quiet else quiet.copy(alpha = 0.85f),
           maxLines = 1,
         )
       }
@@ -167,7 +175,7 @@ private fun HalfStatus(state: BikeUiState.Loaded) {
         else -> waitingLine(waiting)
       },
       style = type.body.copy(lineHeight = 1.3.em),
-      color = if (scanning) colors.muted else content,
+      color = quiet,
       textAlign = TextAlign.End,
       modifier = Modifier.widthIn(max = 280.dp).padding(bottom = 4.dp),
     )
@@ -211,7 +219,13 @@ private fun LevelColumn(
       rise.animateTo(1f, tween(1080, easing = Settle))
     }
   }
-  val fill = if (waiting) colors.line else colors.status(row.tone).copy(alpha = 0.32f)
+  // Waiting greys out, and answering colours in, gradually; the rise above plays on top.
+  val fill by
+    animateColorAsState(
+      if (waiting) colors.line else colors.status(row.tone).copy(alpha = 0.32f),
+      tween(MorphMillis, easing = Settle),
+    )
+  val readout by animateFloatAsState(if (waiting) 0.45f else 1f, tween(MorphMillis))
   Box(
     modifier
       .clip(RoundedCornerShape(20.dp))
@@ -239,7 +253,7 @@ private fun LevelColumn(
         color = colors.text,
       )
       Column(
-        Modifier.graphicsLayer { alpha = if (waiting) 0.45f else 1f },
+        Modifier.graphicsLayer { alpha = readout },
         verticalArrangement = Arrangement.spacedBy(4.dp),
       ) {
         Text(
@@ -277,13 +291,12 @@ private fun RefreshHalf(state: BikeUiState.Loaded, modifier: Modifier) {
   val heard = state.heard.orEmpty()
   val total = state.components.size
   val allAnswered = total > 0 && heard.size == total
+  val doneRing = colors.block(doneTone(heard.size, total)).container
   Box(modifier.topLine(colors.line).clipToBounds()) {
-    when (refresh) {
-      is RefreshButton.Scanning -> PulseRings(CassetteRed, repeat = true)
-      is RefreshButton.Done ->
-        if (heard.isNotEmpty()) PulseRings(doneColor(allAnswered), repeat = false)
-      else -> Unit
-    }
+    PulseRings(
+      scanning = refresh is RefreshButton.Scanning,
+      done = doneRing.takeIf { refresh is RefreshButton.Done && heard.isNotEmpty() },
+    )
     Row(
       Modifier.fillMaxSize().padding(horizontal = 28.dp, vertical = 24.dp),
       horizontalArrangement = Arrangement.spacedBy(20.dp),
@@ -295,11 +308,16 @@ private fun RefreshHalf(state: BikeUiState.Loaded, modifier: Modifier) {
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-          when (refresh) {
-            is RefreshButton.Scanning -> BlinkingDot(CassetteRed)
-            is RefreshButton.Done -> Dot(doneColor(allAnswered))
-            else -> Dot(colors.muted)
-          }
+          val dot by
+            animateColorAsState(
+              when (refresh) {
+                is RefreshButton.Scanning -> CassetteRed
+                is RefreshButton.Done -> doneRing
+                else -> colors.muted
+              },
+              tween(MorphMillis),
+            )
+          if (refresh is RefreshButton.Scanning) BlinkingDot(dot) else Dot(dot)
           Text(words.state, style = type.label, color = colors.muted)
         }
         Text(
@@ -327,54 +345,13 @@ private fun RefreshHalf(state: BikeUiState.Loaded, modifier: Modifier) {
         }
       }
       Box(Modifier.size(300.dp, 220.dp), contentAlignment = Alignment.Center) {
-        when (refresh) {
-          RefreshButton.Idle ->
-            ActionCircle(
-              LucideIcons.RefreshCw,
-              "Refresh",
-              "60 s scan",
-              container = colors.text,
-              content = colors.background,
-              description = "Refresh now, 60 second scan",
-              onClick = { sink(BikeEvent.Refresh) },
-              breathe = true,
-            )
-          RefreshButton.Unavailable ->
-            ActionCircle(
-              LucideIcons.Bluetooth,
-              "Turn on",
-              "Bluetooth",
-              container = colors.text,
-              content = colors.background,
-              description = "Turn on Bluetooth",
-              onClick = { sink(BikeEvent.Refresh) },
-              breathe = false,
-            )
-          is RefreshButton.Scanning -> ScanRing(refresh.secondsLeft, refresh.totalSeconds)
-          is RefreshButton.Done -> {
-            val block =
-              colors.block(
-                when {
-                  allAnswered -> StatusTone.Good
-                  heard.isNotEmpty() -> StatusTone.Low
-                  else -> StatusTone.Unknown
-                }
-              )
-            LandingCircle {
-              ActionCircle(
-                if (heard.isNotEmpty()) LucideIcons.Check else LucideIcons.BluetoothSearching,
-                "Done",
-                "${heard.size} of $total read",
-                container = block.container,
-                content = block.content,
-                outline = block.outline,
-                description = "Done, ${heard.size} of $total read",
-                onClick = { sink(BikeEvent.FinishRefresh) },
-                breathe = false,
-              )
-            }
-          }
-        }
+        RefreshCircle(
+          refresh,
+          heard.size,
+          total,
+          onRefresh = { sink(BikeEvent.Refresh) },
+          onFinish = { sink(BikeEvent.FinishRefresh) },
+        )
       }
     }
   }
@@ -443,83 +420,93 @@ private fun refreshWords(
 private fun clock(seconds: Int): String =
   "${seconds / 60}:${(seconds % 60).toString().padStart(2, '0')}"
 
-@Composable
-private fun doneColor(allAnswered: Boolean): Color =
-  if (allAnswered) CassetteTheme.colors.block(StatusTone.Good).container
-  else CassetteTheme.colors.block(StatusTone.Low).container
+/** Done's colour: good when everything answered, low when some did, grey when none. */
+private fun doneTone(heard: Int, total: Int): StatusTone =
+  when {
+    total > 0 && heard == total -> StatusTone.Good
+    heard > 0 -> StatusTone.Low
+    else -> StatusTone.Unknown
+  }
 
-/** The circle as a button: an icon and two lines. Ready, it breathes slowly. */
+/** What the circle says, which crossfades as the refresh moves on. */
+private enum class CircleFace {
+  Ready,
+  Bluetooth,
+  Scanning,
+  Done,
+}
+
+/**
+ * The bottom half's one action, a single circle that changes with the refresh rather than three
+ * that swap. Ready, it's the Refresh button, breathing. When the scan starts it eases into the
+ * panel colour as the red countdown ring and its beating dot come in; the ring drains smoothly
+ * between the once-a-second updates. Done fills it in the result's colour with a small landing.
+ */
 @Composable
-private fun ActionCircle(
-  icon: ImageVector,
-  title: String,
-  sub: String,
-  container: Color,
-  content: Color,
-  description: String,
-  onClick: () -> Unit,
-  breathe: Boolean,
-  outline: Color? = null,
+private fun RefreshCircle(
+  refresh: RefreshButton,
+  heard: Int,
+  total: Int,
+  onRefresh: () -> Unit,
+  onFinish: () -> Unit,
 ) {
-  val scale =
-    if (breathe) {
-      val breathing = rememberInfiniteTransition()
-      breathing
-        .animateFloat(
-          1f,
-          1.035f,
-          infiniteRepeatable(tween(1800, easing = Breathe), RepeatMode.Reverse),
-        )
-        .value
-    } else 1f
-  Column(
-    Modifier.scale(scale)
-      .size(204.dp)
-      .clip(CircleShape)
-      .background(container)
-      .then(if (outline != null) Modifier.border(1.dp, outline, CircleShape) else Modifier)
-      .clickable(role = Role.Button, onClick = onClick)
-      .semantics { contentDescription = description },
-    horizontalAlignment = Alignment.CenterHorizontally,
-    verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically),
-  ) {
-    Icon(icon, null, tint = content, modifier = Modifier.size(44.dp))
-    Text(
-      title.uppercase(),
-      style = CassetteTheme.type.numeral.copy(letterSpacing = 0.1.em),
-      color = content,
-    )
-    Text(
-      sub.uppercase(),
-      style = CassetteTheme.type.label.copy(fontSize = 12.sp, letterSpacing = 0.16.em),
-      color = content.copy(alpha = 0.72f),
-    )
-  }
-}
-
-/** Done lands: in from 70%, a small overshoot, then still. */
-@Composable
-private fun LandingCircle(content: @Composable () -> Unit) {
-  val land = remember { Animatable(0.7f) }
-  LaunchedEffect(Unit) {
-    land.animateTo(
-      1f,
-      keyframes {
-        durationMillis = 800
-        1.06f at 430 using Settle
-      },
-    )
-  }
-  Box(Modifier.scale(land.value)) { content() }
-}
-
-/** The scan's countdown: a red ring draining over the scan, around a beating dot. */
-@Composable
-private fun ScanRing(secondsLeft: Int, totalSeconds: Int) {
   val colors = CassetteTheme.colors
-  val beat = rememberInfiniteTransition()
+  val type = CassetteTheme.type
+  val face =
+    when (refresh) {
+      RefreshButton.Idle -> CircleFace.Ready
+      RefreshButton.Unavailable -> CircleFace.Bluetooth
+      is RefreshButton.Scanning -> CircleFace.Scanning
+      is RefreshButton.Done -> CircleFace.Done
+    }
+  val scanning = face == CircleFace.Scanning
+  val done = colors.block(doneTone(heard, total))
+  val morph = tween<Color>(MorphMillis, easing = Settle)
+  val fill by
+    animateColorAsState(
+      when (face) {
+        CircleFace.Ready,
+        CircleFace.Bluetooth -> colors.text
+        CircleFace.Scanning -> colors.panel
+        CircleFace.Done -> done.container
+      },
+      morph,
+    )
+  val content by
+    animateColorAsState(
+      if (face == CircleFace.Done) done.content else colors.background,
+      morph,
+    )
+  val outline by
+    animateColorAsState(
+      if (face == CircleFace.Done) done.outline ?: Color.Transparent else Color.Transparent,
+      morph,
+    )
+  val ring by animateFloatAsState(if (scanning) 1f else 0f, tween(MorphMillis, easing = Settle))
+  // The dot arrives once the ring has.
   val dot by
-    beat.animateFloat(
+    animateFloatAsState(
+      if (scanning) 1f else 0f,
+      tween(MorphMillis, delayMillis = if (scanning) MorphMillis / 2 else 0, easing = Settle),
+    )
+  val radius by
+    animateFloatAsState(if (scanning) 96f else 102f, tween(MorphMillis, easing = Settle))
+  // Progress arrives once a second; easing linearly over that second keeps the drain continuous.
+  val left =
+    if (refresh is RefreshButton.Scanning && refresh.totalSeconds > 0)
+      refresh.secondsLeft.toFloat() / refresh.totalSeconds
+    else 1f
+  val sweep by animateFloatAsState(left, tween(1000, easing = LinearEasing))
+
+  val motion = rememberInfiniteTransition()
+  val breath by
+    motion.animateFloat(
+      0f,
+      1f,
+      infiniteRepeatable(tween(1800, easing = Breathe), RepeatMode.Reverse),
+    )
+  val beat by
+    motion.animateFloat(
       1f,
       1f,
       infiniteRepeatable(
@@ -530,54 +517,140 @@ private fun ScanRing(secondsLeft: Int, totalSeconds: Int) {
         }
       ),
     )
-  val left = if (totalSeconds > 0) secondsLeft.toFloat() / totalSeconds else 0f
-  Canvas(Modifier.size(220.dp)) {
-    val stroke = 6.dp.toPx()
-    val radius = 96.dp.toPx()
-    drawCircle(colors.panel, radius)
-    drawCircle(colors.line, radius, style = Stroke(stroke))
-    drawArc(
-      CassetteRed,
-      startAngle = -90f,
-      sweepAngle = 360f * left,
-      useCenter = false,
-      topLeft = Offset(center.x - radius, center.y - radius),
-      size = Size(radius * 2, radius * 2),
-      style = Stroke(stroke, cap = StrokeCap.Round),
-    )
-    drawCircle(CassetteRed, 22.dp.toPx() * dot)
+  // Breathing fades out rather than stopping mid-breath.
+  val breathing by animateFloatAsState(if (face == CircleFace.Ready) 1f else 0f, tween(MorphMillis))
+
+  // Done lands: a dip, a small overshoot, then still.
+  val land = remember { Animatable(1f) }
+  LaunchedEffect(face == CircleFace.Done) {
+    if (face == CircleFace.Done)
+      land.animateTo(
+        1f,
+        keyframes {
+          durationMillis = 750
+          0.9f at 150 using Settle
+          1.06f at 450 using Settle
+        },
+      )
+  }
+
+  Box(
+    Modifier.size(220.dp)
+      .scale(land.value * (1f + 0.035f * breath * breathing))
+      .clip(CircleShape)
+      .clickable(
+        enabled = !scanning,
+        role = Role.Button,
+        onClick = if (face == CircleFace.Done) onFinish else onRefresh,
+      )
+      .semantics {
+        contentDescription =
+          when (face) {
+            CircleFace.Ready -> "Refresh now, 60 second scan"
+            CircleFace.Bluetooth -> "Turn on Bluetooth"
+            CircleFace.Scanning -> "Scanning"
+            CircleFace.Done -> "Done, $heard of $total read"
+          }
+      },
+    contentAlignment = Alignment.Center,
+  ) {
+    Canvas(Modifier.fillMaxSize()) {
+      val r = radius.dp.toPx()
+      val stroke = 6.dp.toPx()
+      drawCircle(fill, r)
+      if (outline.alpha > 0f) drawCircle(outline, r, style = Stroke(1.dp.toPx()))
+      if (ring > 0f) {
+        drawCircle(colors.line.copy(alpha = ring), r, style = Stroke(stroke))
+        drawArc(
+          CassetteRed.copy(alpha = ring),
+          startAngle = -90f,
+          sweepAngle = 360f * sweep,
+          useCenter = false,
+          topLeft = Offset(center.x - r, center.y - r),
+          size = Size(r * 2, r * 2),
+          style = Stroke(stroke, cap = StrokeCap.Round),
+        )
+      }
+      if (dot > 0f) drawCircle(CassetteRed, 22.dp.toPx() * dot * beat)
+    }
+    Crossfade(face, animationSpec = tween(MorphMillis)) { shown ->
+      val (icon, title, sub) =
+        when (shown) {
+          CircleFace.Ready -> Triple(LucideIcons.RefreshCw, "Refresh", "60 s scan")
+          CircleFace.Bluetooth -> Triple(LucideIcons.Bluetooth, "Turn on", "Bluetooth")
+          CircleFace.Done ->
+            Triple(
+              if (heard > 0) LucideIcons.Check else LucideIcons.BluetoothSearching,
+              "Done",
+              "$heard of $total read",
+            )
+          // The ring and the dot say it.
+          CircleFace.Scanning -> return@Crossfade
+        }
+      Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+      ) {
+        Icon(icon, null, tint = content, modifier = Modifier.size(44.dp))
+        Text(title.uppercase(), style = type.numeral.copy(letterSpacing = 0.1.em), color = content)
+        Text(
+          sub.uppercase(),
+          style = type.label.copy(fontSize = 12.sp, letterSpacing = 0.16.em),
+          color = content.copy(alpha = 0.72f),
+        )
+      }
+    }
   }
 }
 
+/** A pulse ring: when it left the circle (frame time), its colour, and how long it flies. */
+private class Ring(val start: Long, val color: Color, val millis: Int)
+
 /**
  * Rings that leave the circle at the timer ring's thickness, thin and fade as they grow to about
- * 3.8 times its size. While scanning one leaves every 0.9 s; Done sends one. The half clips them.
+ * 3.8 times its size. While [scanning], one leaves every 0.9 s, starting once the circle has turned
+ * into the ring; when the scan stops, the ones in flight finish. [done] sends one ring of that
+ * colour as the circle lands. The half clips them, so none crosses the fold.
  */
 @Composable
-private fun PulseRings(color: Color, repeat: Boolean) {
-  val phase =
-    if (repeat) {
-      rememberInfiniteTransition()
-        .animateFloat(0f, 1f, infiniteRepeatable(tween(PulseMillis, easing = LinearEasing)))
-        .value
-    } else {
-      val once = remember { Animatable(0f) }
-      LaunchedEffect(Unit) { once.animateTo(1f, tween(PulseMillis * 2 / 5, easing = LinearEasing)) }
-      // One ring over the first 40% of a pulse's length, as in the mockup.
-      once.value
+private fun PulseRings(scanning: Boolean, done: Color?) {
+  val rings = remember { mutableStateListOf<Ring>() }
+  var now by remember { mutableLongStateOf(0L) }
+  LaunchedEffect(scanning, done) {
+    var started = -1L
+    var emitted = 0L
+    var doneSent = done == null
+    while (scanning || !doneSent || rings.isNotEmpty()) {
+      withFrameMillis { t ->
+        if (started < 0) started = t
+        if (scanning) {
+          // Every ring due by now, each at its own start, so a slow frame doesn't bunch them.
+          val due = (t - started - MorphMillis).let { if (it < 0) 0 else it / PulseEveryMillis + 1 }
+          while (emitted < due) {
+            rings +=
+              Ring(started + MorphMillis + emitted * PulseEveryMillis, CassetteRed, PulseMillis)
+            emitted++
+          }
+        }
+        if (!doneSent && done != null && t - started >= DoneRingDelayMillis) {
+          rings += Ring(t, done, PulseMillis * 2 / 5)
+          doneSent = true
+        }
+        rings.removeAll { t - it.start >= it.millis }
+        now = t
+      }
     }
+  }
   Box(
     Modifier.fillMaxSize().drawBehind {
       // The circle's centre: the right-hand 300 dp column, inside the half's padding.
       val centre = Offset(size.width - 28.dp.toPx() - 150.dp.toPx(), size.height / 2)
-      val offsets = if (repeat) listOf(0f, 0.25f, 0.5f, 0.75f) else listOf(0f)
-      offsets.forEach { offset ->
-        val t = Pulse.transform(if (repeat) (phase - offset + 1f) % 1f else phase)
-        if (!repeat && phase >= 1f) return@forEach
+      rings.forEach { ring ->
+        val t = Pulse.transform(((now - ring.start).toFloat() / ring.millis).coerceIn(0f, 1f))
         val diameter = mix(200.dp.toPx(), 760.dp.toPx(), t)
         val width = mix(6.dp.toPx(), 1.dp.toPx(), t)
         drawCircle(
-          color.copy(alpha = mix(0.85f, 0f, t)),
+          ring.color.copy(alpha = mix(0.85f, 0f, t)),
           radius = (diameter - width) / 2,
           center = centre,
           style = Stroke(width),
@@ -635,5 +708,9 @@ private val Settle = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 private val Breathe = CubicBezierEasing(0.42f, 0f, 0.58f, 1f)
 private val Pulse = CubicBezierEasing(0.2f, 0f, 0.4f, 1f)
 private const val PulseMillis = 3600
+private const val PulseEveryMillis = 900L
+/** How long the circle takes to turn from one state to the next; the pulses wait for it. */
+private const val MorphMillis = 450
+private const val DoneRingDelayMillis = 200
 
 private fun mix(from: Float, to: Float, t: Float) = from + (to - from) * t

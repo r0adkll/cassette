@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Density
@@ -190,6 +193,58 @@ class ScreenRenderTest {
         }
       }
     }
+  }
+
+  /**
+   * Starting a tabletop refresh as a filmstrip: ready, then frames after Refresh as the circle
+   * turns into the ring and the pulses start, so the motion can be checked without a device.
+   */
+  @Test
+  fun tabletopStartFilmstrip() {
+    val size = RenderSize.Tabletop
+    val ready =
+      BikeUiState.Loaded(
+        bikeId = 1,
+        name = "Road bike",
+        position = null,
+        status =
+          BikeStatus(
+            StatusTone.Good,
+            "All good.",
+            "Next to charge: rear derailleur, in about 3 weeks (est.)",
+            "Seen 2 h ago",
+          ),
+        components = sampleRows,
+        lastRead = "2 h ago",
+      ) {}
+    var state by mutableStateOf(ready)
+    val scene =
+      ImageComposeScene(width = size.width * 2, height = size.height * 2, density = Density(2f)) {
+        CassetteTheme(darkTheme = true) {
+          Box(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) {
+            BikeTabletop(state, foldTop = (size.height / 2).dp, foldBottom = (size.height / 2).dp)
+          }
+        }
+      }
+    var at = 0L
+    fun advanceTo(millis: Long) {
+      while (at < millis) {
+        at = minOf(millis, at + 16)
+        scene.render(at * 1_000_000L)
+      }
+    }
+    advanceTo(1_000)
+    state = ready.copy(refresh = RefreshButton.Scanning(60), heard = emptySet())
+    val frames = listOf(0L, 150, 300, 450, 700, 1_000, 1_800, 3_000)
+    val start = at
+    for (frame in frames) {
+      advanceTo(start + frame)
+      // The countdown ticks once a second, as capture reports it.
+      state = state.copy(refresh = RefreshButton.Scanning(60 - (frame / 1_000).toInt()))
+      File(out, "tabletop-start-${frame.toString().padStart(4, '0')}ms.png")
+        .writeBytes(scene.render(at * 1_000_000L).encodeToData(EncodedImageFormat.PNG)!!.bytes)
+    }
+    scene.close()
   }
 
   /** Thirty days falling to [level], with a charge on day 8 (sample data). */
