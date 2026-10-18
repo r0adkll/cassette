@@ -26,6 +26,12 @@ class InMemorySettings : CassetteSettings {
     themeMode.value = mode
   }
 
+  override val playfulTitles = MutableStateFlow(true)
+
+  override suspend fun setPlayfulTitles(enabled: Boolean) {
+    playfulTitles.value = enabled
+  }
+
   override suspend fun dismissTip(tip: Tip) {
     dismissedTips.update { it + tip }
   }

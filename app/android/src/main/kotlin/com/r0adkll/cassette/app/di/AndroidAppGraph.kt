@@ -3,6 +3,7 @@ package com.r0adkll.cassette.app.di
 import android.app.Application
 import app.cash.sqldelight.db.SqlDriver
 import com.r0adkll.cassette.alerts.api.Alerts
+import com.r0adkll.cassette.bikes.ui.StatusTitles
 import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.capture.impl.CaptureLogFile
 import com.r0adkll.cassette.core.CassetteDispatchers
@@ -28,6 +29,7 @@ interface AndroidAppGraph {
   val backgroundDeliveryHandler: BackgroundDeliveryHandler
   val alerts: Alerts
   val settings: CassetteSettings
+  val statusTitles: StatusTitles
 
   @Provides
   @SingleIn(AppScope::class)

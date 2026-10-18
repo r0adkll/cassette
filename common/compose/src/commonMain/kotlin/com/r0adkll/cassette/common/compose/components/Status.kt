@@ -23,13 +23,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.text
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -64,6 +70,7 @@ private val LocalBlockContent = staticCompositionLocalOf { Color.Unspecified }
 /**
  * The full-width block under the bike name. Its colour is the status. Callers make it bleed to the
  * screen edges; [horizontalPadding] keeps its text aligned with the rest of the screen.
+ * [titleDescription] is what screen readers say for the title, when it differs from the text.
  */
 @Composable
 fun StatusBlock(
@@ -71,6 +78,7 @@ fun StatusBlock(
   tone: StatusTone,
   modifier: Modifier = Modifier,
   horizontalPadding: Dp = 20.dp,
+  titleDescription: String? = null,
   titleStyle: TextStyle =
     CassetteTheme.type.display.copy(fontSize = CassetteTheme.type.display.fontSize * 0.93f),
   content: @Composable ColumnScope.() -> Unit = {},
@@ -91,11 +99,12 @@ fun StatusBlock(
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
       ) {
-        Text(
+        StatusTitle(
           title,
-          style = titleStyle,
-          color = colors.content,
-          modifier = Modifier.weight(1f),
+          titleStyle,
+          colors.content,
+          titleDescription,
+          Modifier.weight(1f),
         )
         Icon(
           tone.icon,
@@ -116,7 +125,7 @@ private val LocalBlockContainer = staticCompositionLocalOf { Color.Unspecified }
  * The dashboard's status block (decision 0014): [kicker], [title] and [content] on the left, the
  * status icon in the top-right corner (as on [StatusBlock]), and [aside] (the meta line and
  * Refresh) at the bottom of a fixed column on the right. Like [StatusBlock], callers make it bleed
- * to the edges of its pane.
+ * to the edges of its pane. [titleDescription] is as on [StatusBlock].
  */
 @Composable
 fun WideStatusBlock(
@@ -124,6 +133,7 @@ fun WideStatusBlock(
   tone: StatusTone,
   modifier: Modifier = Modifier,
   kicker: String? = null,
+  titleDescription: String? = null,
   horizontalPadding: Dp = 24.dp,
   asideWidth: Dp = 240.dp,
   content: @Composable ColumnScope.() -> Unit = {},
@@ -154,10 +164,11 @@ fun WideStatusBlock(
       ) {
         if (kicker != null)
           Text(kicker.uppercase(), style = type.label, color = colors.content.copy(alpha = 0.85f))
-        Text(
+        StatusTitle(
           title,
-          style = type.display.copy(fontSize = type.display.fontSize * 1.07f),
-          color = colors.content,
+          type.display.copy(fontSize = type.display.fontSize * 1.07f),
+          colors.content,
+          titleDescription,
         )
         content()
       }
@@ -213,6 +224,50 @@ fun StatusBlockButton(
       Text(trailing.uppercase(), style = CassetteTheme.type.button, color = content)
   }
 }
+
+/**
+ * A status block's title, broken at its punctuation when it doesn't fit on one line
+ * ([breakAtPunctuation]). [description], when set, is what screen readers say instead.
+ */
+@Composable
+private fun StatusTitle(
+  title: String,
+  style: TextStyle,
+  color: Color,
+  description: String?,
+  modifier: Modifier = Modifier,
+) {
+  // Both versions are composed and the one that fits is placed. A plain Layout (not
+  // BoxWithConstraints) answers the intrinsic measurements WideStatusBlock asks for.
+  val broken = remember(title) { breakAtPunctuation(title) { false } }
+  Layout(
+    content = {
+      Text(title, style = style, color = color)
+      Text(broken, style = style, color = color)
+    },
+    modifier =
+      modifier.clearAndSetSemantics {
+        text = AnnotatedString(title)
+        if (description != null) contentDescription = description
+      },
+  ) { measurables, constraints ->
+    val fits = { _: String ->
+      measurables[0].maxIntrinsicWidth(constraints.maxHeight) <= constraints.maxWidth
+    }
+    val chosen = if (breakAtPunctuation(title, fits) == title) measurables[0] else measurables[1]
+    val placeable = chosen.measure(constraints)
+    layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+  }
+}
+
+/**
+ * A title too long for one line breaks after its inner punctuation ("Full tape." / "Press play.")
+ * rather than wherever the width runs out (decision 0015). One that fits stays on one line.
+ */
+fun breakAtPunctuation(title: String, fitsOnOneLine: (String) -> Boolean): String =
+  if (fitsOnOneLine(title)) title else title.replace(InnerPunctuation, "$1\n")
+
+private val InnerPunctuation = Regex("([.,?!]) ")
 
 /** A sentence inside a [StatusBlock]: what to charge next, or what's wrong. */
 @Composable

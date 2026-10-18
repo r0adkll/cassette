@@ -150,6 +150,9 @@ class ScreenRenderTest {
         val suffix = "${size.name.lowercase()}-${if (dark) "dark" else "light"}"
         render("bike-$suffix", dark, size) { BikeUi(bike) }
         render("bike-low-$suffix", dark, size) { BikeUi(low) }
+        render("bike-title-$suffix", dark, size) {
+          BikeUi(bike.copy(title = "Full tape. Press play."))
+        }
         // The sheet open on the rear derailleur, drawn with the component screen's own UI.
         render("bike-sheet-$suffix", dark, size) {
           BikeDashboard(
@@ -361,6 +364,46 @@ class ScreenRenderTest {
                 ),
               components = rows,
               tip = tip,
+            ) {}
+          )
+        }
+      }
+    }
+  }
+
+  /** Decision 0015: a playful title that breaks after its inner punctuation. */
+  @Test
+  fun bikeWithPlayfulTitle() {
+    val rows =
+      listOf(
+        ComponentRowModel(
+          1,
+          "RD",
+          "Rear derailleur",
+          "Reported · fw 2.55.8",
+          "78%",
+          0.78f,
+          StatusTone.Good,
+        )
+      )
+    for (title in listOf("Full tape. Press play.", "No single-speed today.")) {
+      for (dark in listOf(true, false)) {
+        val slug = title.lowercase().replace(Regex("[^a-z]+"), "-").trim('-')
+        render("bike-title-$slug-${if (dark) "dark" else "light"}", dark) {
+          BikeUi(
+            BikeUiState.Loaded(
+              bikeId = 1,
+              name = "Road bike",
+              position = null,
+              status =
+                BikeStatus(
+                  StatusTone.Good,
+                  "All good.",
+                  "Lowest: rear derailleur, 78%.",
+                  "Seen 2 min ago",
+                ),
+              title = title,
+              components = rows,
             ) {}
           )
         }

@@ -1,6 +1,6 @@
 # 0015: Rotating status titles
 
-Date: 2026-10-17 · Status: accepted, not built yet
+Date: 2026-10-17 · Status: accepted
 
 The bike screen's status block can show a playful title in place of its plain one ("No single-speed
 today." for "All good."), picked at random from a short list each time the app opens. It plays on the
@@ -17,17 +17,19 @@ get the plain title.
 
 The phone app's bike screen only: the phone layout and the dashboard on foldables and tablets
 ([0014](0014-large-screens.md)). The tabletop refresh keeps the plain title: it's one line at 72 sp and
-shares its slot with the scan's progress ("2 of 3."). Widgets, the Quick Settings tile,
-notifications, Wear and Diagnostics keep the plain titles: they are glanced at, and a reworded title slows
-that down. `BikeSummary` (`:features:bikes:summary`) keeps producing the plain title for every surface; the
-bike screen swaps it, so nothing else has to opt out.
+shares its slot with the scan's progress ("2 of 3."). Widgets, the Quick Settings tile, notifications, Wear
+and Diagnostics keep the plain titles: they are glanced at, and a reworded title slows that down.
+`BikeSummary` (`:features:bikes:summary`) keeps producing the plain title for every surface; the bike screen
+swaps it, so nothing else has to opt out.
 
 ## When it changes
 
-A title is picked when the app comes to the foreground and kept until it next does, so it never changes
-while the screen is open or as it recomposes. The plain title is in each list on equal terms, and the same
-title isn't picked twice in a row for a status. Picking is a pure function of the status, the previous
-pick and a `Random`, so tests seed it; screenshot tests render the plain titles.
+A title is picked when the app comes to the foreground and kept until it next does, so it never changes while
+the screen is open or as it recomposes. `StatusTitles` (`:features:bikes:ui`, app-scoped) holds the picks;
+`MainActivity` starts a new round when it stops for real (not for a configuration change). The plain title is
+in each list on equal terms, and the same title isn't picked twice in a row for a status. Picking is a pure
+function of the status, the previous pick and a `Random`, so tests seed it; screenshot tests set the title
+directly.
 
 ## Tone by status
 
@@ -51,6 +53,8 @@ A title with punctuation inside it ("Full tape. Press play.", "Wireless, not car
 punctuation when it doesn't fit on one line, rather than wherever the width runs out. A title that fits
 stays on one line. Titles without punctuation inside wrap normally.
 
-## Not decided
+## Turning it off
 
-A setting to turn the playful titles off. It isn't in the first version; add it if people ask.
+Settings → Bikes → Playful titles, on by default. Off, the bike screen shows the plain titles. The bike
+screen waits for the setting before it shows a title, so a playful one never replaces the plain one (or the
+other way round) as it opens.

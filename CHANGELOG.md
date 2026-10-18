@@ -60,6 +60,11 @@ All notable changes to Cassette are documented here. The format follows
   and next. On an open foldable it covers about three quarters of the screen and tapping the dimmed
   edge closes it; on a tablet it is narrower and tapping another tile switches it. Back closes it, and
   folding the phone with it open carries the component over as its own screen.
+- Playful status titles (decision 0015): the bike screen's status title is sometimes a joke ("No
+  single-speed today.", "Full tape. Press play."), picked again each time the app opens. The colour, icon
+  and sentence don't change, screen readers hear the plain title, and widgets, the tile, notifications and
+  the watch stay plain. Settings → Bikes → Playful titles turns them off. Long titles break after their
+  inner punctuation ("Full tape." / "Press play.").
 - Watch app updates from Drop: an "Update ready" row under the bikes, an update screen with Install and a
   progress ring, "Updated to build N." after, and a one-time step to allow updates that shows where the
   switch is (App info, Advanced, Install unknown apps). With Drop 0.5.0 the update installs without

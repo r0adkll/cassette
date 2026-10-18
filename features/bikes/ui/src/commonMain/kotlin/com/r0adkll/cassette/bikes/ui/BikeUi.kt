@@ -140,7 +140,8 @@ private fun LoadedBike(state: BikeUiState.Loaded) {
       }
     }
   }
-  StatusBlock(state.status.headline, state.status.tone) {
+  // Screen readers get the plain title (decision 0015).
+  StatusBlock(state.title, state.status.tone, titleDescription = state.status.headline) {
     StatusBlockText(state.status.summary)
     StatusBlockMeta(state.status.meta)
   }
