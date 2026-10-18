@@ -344,9 +344,11 @@ private fun Point(number: String, title: String, text: String) {
 @CircuitInject(OnboardingPermissionsScreen::class, AppScope::class)
 @Composable
 fun PermissionsUi(state: PermissionsUiState, modifier: Modifier = Modifier) {
+  if (LocalScreenLayout.current != ScreenLayout.Column) {
+    WidePermissions(state, modifier)
+    return
+  }
   val colors = CassetteTheme.colors
-  val controller = LocalPermissionController.current
-  val states by controller.states.collectAsState()
   Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
     Column(
       Modifier.widthIn(max = MaxContentWidth)
@@ -373,42 +375,122 @@ fun PermissionsUi(state: PermissionsUiState, modifier: Modifier = Modifier) {
           style = CassetteTheme.type.body,
           color = colors.muted,
         )
-        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-          PermissionCard(
-            icon = LucideIcons.BluetoothSearching,
-            title = "Nearby devices",
-            text =
-              "Hears your bike's AXS radio when it wakes, even with the app closed. It never uses your location.",
-            state = states[AppPermission.Nearby] ?: PermissionState.Askable,
-            onAllow = { controller.request(AppPermission.Nearby) },
-            onSettings = controller::openSettings,
-          )
-          PermissionCard(
-            icon = LucideIcons.Bell,
-            title = "Notifications",
-            text =
-              "Tells you when a battery runs low, and nudges you before a ride if something needs charging.",
-            state = states[AppPermission.Notifications] ?: PermissionState.Askable,
-            onAllow = { controller.request(AppPermission.Notifications) },
-            onSettings = controller::openSettings,
-          )
-        }
+        PermissionCards()
       }
-      Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(
-          horizontalArrangement = Arrangement.spacedBy(8.dp),
-          verticalAlignment = Alignment.CenterVertically,
-        ) {
-          Icon(LucideIcons.Info, null, tint = colors.muted, modifier = Modifier.size(15.dp))
-          Text(
-            "You can change these any time in Settings.",
-            style = CassetteTheme.type.bodySmall,
-            color = colors.muted,
-          )
-        }
-        CassetteButton("Continue", onClick = { state.eventSink(PermissionsEvent.Continue) })
-      }
+      ContinueFooter(state)
     }
+  }
+}
+
+/**
+ * The permissions unfolded (decision 0014), laid out like the welcome before it: the ask on the
+ * half before the hinge, in the panel colour (red stays the welcome's), its title at the foot; the
+ * two permissions and Continue on the other half.
+ */
+@Composable
+internal fun WidePermissions(
+  state: PermissionsUiState,
+  modifier: Modifier = Modifier,
+  hinge: Rect? = currentVerticalHinge(),
+) {
+  val colors = CassetteTheme.colors
+  val density = LocalDensity.current
+  val top = WindowInsets.safeDrawing.getTop(density).toFloat()
+  val bottom = WindowInsets.safeDrawing.getBottom(density).toFloat()
+  SplitPanes(
+    start = {
+      Column(
+        Modifier.fillMaxSize()
+          .drawBehind {
+            // The panel runs under the system bars, as the welcome's red does.
+            drawRect(
+              colors.panel,
+              topLeft = Offset(0f, -top),
+              size = Size(size.width, size.height + top + bottom),
+            )
+          }
+          .padding(start = 32.dp, end = 32.dp, top = 24.dp, bottom = 40.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+      ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          IconCircleButton(
+            LucideIcons.ArrowLeft,
+            "Back",
+            onClick = { state.eventSink(PermissionsEvent.Back) },
+          )
+          Spacer(Modifier.weight(1f))
+          Kicker("Set up")
+        }
+        Spacer(Modifier.weight(1f))
+        Text(
+          "Two things to allow.",
+          style = CassetteTheme.type.display.copy(fontSize = 80.sp, lineHeight = 0.88.em),
+          color = colors.text,
+        )
+        Text(
+          "Cassette runs quietly in the background. These let it hear your bike and tell you when to charge.",
+          style = CassetteTheme.type.body,
+          color = colors.muted,
+        )
+      }
+    },
+    end = {
+      Column(
+        Modifier.fillMaxSize().padding(start = 32.dp, end = 32.dp, top = 92.dp, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+      ) {
+        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) { PermissionCards() }
+        ContinueFooter(state)
+      }
+    },
+    modifier = modifier.fillMaxSize(),
+    hinge = hinge,
+  )
+}
+
+@Composable
+private fun PermissionCards() {
+  val controller = LocalPermissionController.current
+  val states by controller.states.collectAsState()
+  Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    PermissionCard(
+      icon = LucideIcons.BluetoothSearching,
+      title = "Nearby devices",
+      text =
+        "Hears your bike's AXS radio when it wakes, even with the app closed. It never uses your location.",
+      state = states[AppPermission.Nearby] ?: PermissionState.Askable,
+      onAllow = { controller.request(AppPermission.Nearby) },
+      onSettings = controller::openSettings,
+    )
+    PermissionCard(
+      icon = LucideIcons.Bell,
+      title = "Notifications",
+      text =
+        "Tells you when a battery runs low, and nudges you before a ride if something needs charging.",
+      state = states[AppPermission.Notifications] ?: PermissionState.Askable,
+      onAllow = { controller.request(AppPermission.Notifications) },
+      onSettings = controller::openSettings,
+    )
+  }
+}
+
+/** "You can change these any time", then Continue, which is always there. */
+@Composable
+private fun ContinueFooter(state: PermissionsUiState) {
+  val colors = CassetteTheme.colors
+  Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Row(
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Icon(LucideIcons.Info, null, tint = colors.muted, modifier = Modifier.size(15.dp))
+      Text(
+        "You can change these any time in Settings.",
+        style = CassetteTheme.type.bodySmall,
+        color = colors.muted,
+      )
+    }
+    CassetteButton("Continue", onClick = { state.eventSink(PermissionsEvent.Continue) })
   }
 }
 

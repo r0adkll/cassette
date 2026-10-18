@@ -55,6 +55,14 @@ class OnboardingRenderTest {
       render(File(out, "onboarding-tablet-welcome-$theme.png"), dark, askable, 1280, 800) {
         WelcomeUi(WelcomeUiState {})
       }
+      for ((name, permissions) in listOf("permissions" to askable, "answered" to answered)) {
+        render(File(out, "onboarding-fold-$name-$theme.png"), dark, permissions, 852, 883) {
+          WidePermissions(PermissionsUiState {}, hinge = Rect(852f, 0f, 852f, 883f * 2))
+        }
+      }
+      render(File(out, "onboarding-tablet-permissions-$theme.png"), dark, askable, 1280, 800) {
+        PermissionsUi(PermissionsUiState {})
+      }
     }
   }
 

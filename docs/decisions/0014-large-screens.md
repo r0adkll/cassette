@@ -111,7 +111,10 @@ come from the same adaptive library (`windowPosture`: `isTabletop` and the hinge
   which says it clears the bikes and their history). On wide windows the action sits in the hero. Up to
   date shows only the installed build and when it was checked: Drop says nothing about the latest build
   then. Couldn't check gives the reason and Try again.
-- Screens not listed (licences, hub tables, ride tests, permissions) cap their content at phone width
+- **Permissions:** split like the welcome before it: the ask in the panel colour on the first half
+  (back at the top, "Two things to allow." and why at the foot; red stays the welcome's), the two
+  permissions and Continue on the other.
+- Screens not listed (licences, hub tables, ride tests) cap their content at phone width
   and centre it, as `TitledScreen` already does.
 
 Widgets, the Quick Settings tile, notifications and Wear are unaffected.
