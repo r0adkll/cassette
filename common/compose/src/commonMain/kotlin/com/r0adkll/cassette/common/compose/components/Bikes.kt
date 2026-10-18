@@ -263,7 +263,7 @@ fun RailLink(
 ) {
   val colors = CassetteTheme.colors
   val shape = RoundedCornerShape(22.dp)
-  Row(
+  Box(
     modifier =
       modifier
         .fillMaxWidth()
@@ -275,16 +275,17 @@ fun RailLink(
         )
         .clickable(role = Role.Button, onClick = onClick)
         .padding(horizontal = 16.dp),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(8.dp),
+    contentAlignment = Alignment.Center,
   ) {
-    Icon(icon, null, tint = colors.text, modifier = Modifier.size(16.dp))
-    Text(
-      text.uppercase(),
-      style = CassetteTheme.type.button,
-      color = colors.text,
-      modifier = Modifier.weight(1f),
-    )
-    if (badge) Box(Modifier.size(10.dp).clip(CircleShape).background(CassetteRed))
+    // Centred like Add bike; the dot keeps to the end so it doesn't push them off centre.
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+      Icon(icon, null, tint = colors.text, modifier = Modifier.size(16.dp))
+      Text(text.uppercase(), style = CassetteTheme.type.button, color = colors.text)
+    }
+    if (badge)
+      Box(Modifier.align(Alignment.CenterEnd).size(10.dp).clip(CircleShape).background(CassetteRed))
   }
 }
