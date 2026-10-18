@@ -32,6 +32,13 @@ sealed interface BikeUiState : CircuitUiState {
     val trends: Map<Long, List<Float>> = emptyMap(),
     /** The component open in the dashboard's sheet; null when it's closed. */
     val sheet: Long? = null,
+    /**
+     * The components that have answered the running (or just finished) refresh, by id; null when no
+     * refresh is on screen. The tabletop greys out the rest as waiting.
+     */
+    val heard: Set<Long>? = null,
+    /** When the bike was last read ("2 h ago"); null if it never has been. */
+    val lastRead: String? = null,
     override val eventSink: (BikeEvent) -> Unit,
   ) : BikeUiState
 }
@@ -42,7 +49,14 @@ data class BikeChoice(val id: Long, val name: String, val tone: StatusTone, val 
 sealed interface RefreshButton {
   data object Idle : RefreshButton
 
-  data class Scanning(val secondsLeft: Int) : RefreshButton
+  /** [totalSeconds] grows by 60 with each Add 60 s; the tabletop's ring drains over it. */
+  data class Scanning(val secondsLeft: Int, val totalSeconds: Int = 60) : RefreshButton
+
+  /**
+   * The refresh ended after [seconds]; the tabletop shows it until it's tapped away. Elsewhere it
+   * reads as [Idle].
+   */
+  data class Done(val seconds: Int) : RefreshButton
 
   /** Bluetooth is off or the Nearby devices permission is missing. */
   data object Unavailable : RefreshButton
@@ -65,6 +79,15 @@ sealed interface BikeEvent : CircuitUiEvent {
   data object OpenSettings : BikeEvent
 
   data object Refresh : BikeEvent
+
+  /** The tabletop's Stop: ends the scan now. */
+  data object StopRefresh : BikeEvent
+
+  /** The tabletop's Add 60 s. */
+  data object MoreTime : BikeEvent
+
+  /** Tapping the tabletop's Done circle: back to ready. */
+  data object FinishRefresh : BikeEvent
 
   data object AddBike : BikeEvent
 

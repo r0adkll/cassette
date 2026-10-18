@@ -39,6 +39,7 @@ import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.StatusBlock
 import com.r0adkll.cassette.common.compose.components.StatusBlockMeta
 import com.r0adkll.cassette.common.compose.components.StatusBlockText
+import com.r0adkll.cassette.common.compose.currentTabletopHinge
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.screens.BikeScreen
@@ -60,6 +61,12 @@ fun BikeUi(state: BikeUiState, modifier: Modifier = Modifier) {
       state.eventSink(BikeEvent.CloseSheet)
       state.eventSink(BikeEvent.OpenComponent(openSheet))
     }
+  }
+  // Half open with the hinge horizontal: readings above the fold, the refresh below.
+  val hinge = currentTabletopHinge()
+  if (state is BikeUiState.Loaded && hinge != null) {
+    TabletopBike(state, hinge, modifier)
+    return
   }
   if (state is BikeUiState.Loaded && layout != ScreenLayout.Column) {
     BikeDashboard(state, rail = layout == ScreenLayout.DashboardWithRail, modifier)
@@ -223,7 +230,9 @@ private data class TipCopy(
 @Composable
 private fun RefreshButton(refresh: RefreshButton, onClick: () -> Unit) {
   when (refresh) {
-    RefreshButton.Idle -> CassetteButton("Refresh now", onClick = onClick, trailing = "60 s scan")
+    RefreshButton.Idle,
+    is RefreshButton.Done ->
+      CassetteButton("Refresh now", onClick = onClick, trailing = "60 s scan")
     is RefreshButton.Scanning -> {
       val seconds = refresh.secondsLeft
       CassetteButton(

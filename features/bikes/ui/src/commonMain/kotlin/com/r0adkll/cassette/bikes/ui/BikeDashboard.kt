@@ -462,7 +462,8 @@ private class Held<T>(var value: T)
 @Composable
 private fun BlockRefresh(refresh: RefreshButton, onClick: () -> Unit) {
   when (refresh) {
-    RefreshButton.Idle -> StatusBlockButton("Refresh now", onClick, trailing = "60 s")
+    RefreshButton.Idle,
+    is RefreshButton.Done -> StatusBlockButton("Refresh now", onClick, trailing = "60 s")
     is RefreshButton.Scanning ->
       StatusBlockButton(
         "Wake the bike",

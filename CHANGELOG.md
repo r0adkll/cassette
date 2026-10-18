@@ -37,6 +37,11 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Added
 
+- Tabletop refresh (decision 0014): on a foldable standing half open, the bike screen splits at the
+  fold. Above, the status and a tall column per component filled to its level; during a scan the
+  ones not heard yet are grey and each rises into colour as it answers. Below, a circle that is the
+  Refresh button, then the scan's countdown ring with pulses (Stop, Add 60 s), then Done with how
+  long it took, or how many answered.
 - The bike screen on open foldables and tablets (decision 0014): the status block with Refresh inside
   it, then a tile per component with its 30-day trend, the one to charge next on a wide tile. Tablets
   in landscape list the bikes on the left, with Add bike and Settings; an open foldable (and a tablet

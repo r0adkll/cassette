@@ -3,6 +3,7 @@ package com.r0adkll.cassette.common.compose
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.geometry.Rect
 import androidx.window.core.layout.WindowSizeClass
 import androidx.window.core.layout.WindowSizeClass.Companion.HEIGHT_DP_MEDIUM_LOWER_BOUND
 import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_LARGE_LOWER_BOUND
@@ -51,3 +52,15 @@ val LocalScreenLayout = staticCompositionLocalOf { ScreenLayout.Column }
 fun currentScreenLayout(): ScreenLayout =
   // V2 includes the large and extra-large width classes.
   ScreenLayout.of(currentWindowAdaptiveInfoV2().windowSizeClass)
+
+/**
+ * Where a half-open foldable folds, in window pixels, while it stands in tabletop (hinge
+ * horizontal); null otherwise, and always on phones, tablets and iOS today. The bike screen splits
+ * there (decision 0014).
+ */
+@Composable
+fun currentTabletopHinge(): Rect? {
+  val posture = currentWindowAdaptiveInfoV2().windowPosture
+  if (!posture.isTabletop) return null
+  return posture.hingeList.firstOrNull { !it.isVertical }?.bounds
+}

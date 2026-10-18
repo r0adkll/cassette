@@ -72,6 +72,12 @@ come from the same adaptive library (`windowPosture`: `isTabletop` and the hinge
      overshoot, and sends one last green ring. Tapping it finishes; Scan again is on the left.
 - Rejected: markers for each component around the ring (the columns already say who answered) and
   spinning cassette reels.
+- Built (M2.5 step 5): a component has answered once its latest reading is newer than the refresh's
+  start. Add 60 s lengthens the running scan (`CaptureController.refresh(more)`), never leaving more
+  than 3 minutes to go; Stop cancels it and goes back to ready. Beyond the mockup: a scan that ends
+  with some components silent fills the circle amber ("4 OF 5 READ") and marks the rest NO ANSWER;
+  with none, it stays grey; Bluetooth off makes the circle "Turn on". Columns open their component.
+  Elsewhere Done reads as ready, so the phone and the dashboard are unchanged.
 
 ## Other screens
 

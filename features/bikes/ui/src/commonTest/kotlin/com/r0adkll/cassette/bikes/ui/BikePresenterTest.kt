@@ -10,11 +10,13 @@ import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.capture.api.RefreshProgress
 import com.r0adkll.cassette.common.screens.BikeScreen
 import com.r0adkll.cassette.common.screens.ComponentScreen
+import com.r0adkll.cassette.core.BatteryReading
 import com.r0adkll.cassette.core.Bike
 import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.core.BikeType
 import com.r0adkll.cassette.core.Component
 import com.r0adkll.cassette.core.ComponentId
+import com.r0adkll.cassette.core.ReadMethod
 import com.r0adkll.cassette.protocol.ComponentKind
 import com.r0adkll.cassette.settings.api.Tip
 import com.r0adkll.cassette.settings.test.InMemorySettings
@@ -29,7 +31,9 @@ import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 
 class BikePresenterTest {
@@ -55,9 +59,16 @@ class BikePresenterTest {
   private val capture =
     object : CaptureController {
       override val isReady = true
-
-      override fun refresh(): Flow<RefreshProgress> =
+      var progress: Flow<RefreshProgress> =
         flowOf(RefreshProgress.Scanning(59, 0), RefreshProgress.Done(5, true))
+      var more: Flow<Unit> = emptyFlow()
+
+      override fun refresh(): Flow<RefreshProgress> = progress
+
+      override fun refresh(more: Flow<Unit>): Flow<RefreshProgress> {
+        this.more = more
+        return progress
+      }
 
       override suspend fun ensureBackgroundCapture(reason: String) = Unit
     }
@@ -194,6 +205,59 @@ class BikePresenterTest {
 
       open.eventSink(BikeEvent.SelectBike(2))
       awaitLoaded { it.sheet == null }
+      cancelAndIgnoreRemainingEvents()
+    }
+  }
+
+  @Test
+  fun aRefreshMarksWhatAnsweredAndStaysDoneUntilFinished() = runTest {
+    // The rear derailleur was read during the refresh; the front derailleur wasn't.
+    val read = BatteryReading(ComponentId(7), now, null, 78, null, ReadMethod.Advert)
+    overviews.emit(
+      roadBike.copy(
+        components =
+          listOf(
+            component(7, ComponentKind.REAR_DERAILLEUR).copy(latest = read),
+            component(8, ComponentKind.FRONT_DERAILLEUR),
+          )
+      )
+    )
+    presenter(FakeNavigator(BikeScreen())).test {
+      val idle = awaitLoaded()
+      assertEquals(null, idle.heard)
+
+      idle.eventSink(BikeEvent.Refresh)
+      val done = awaitLoaded { it.refresh is RefreshButton.Done }
+      assertEquals(setOf(7L), done.heard)
+
+      done.eventSink(BikeEvent.FinishRefresh)
+      awaitLoaded { it.refresh == RefreshButton.Idle && it.heard == null }
+      cancelAndIgnoreRemainingEvents()
+    }
+  }
+
+  @Test
+  fun stopEndsTheScanAndAddSixtySecondsAsksForMore() = runTest {
+    val progress = MutableSharedFlow<RefreshProgress>()
+    capture.progress = progress
+    overviews.emit(roadBike)
+    presenter(FakeNavigator(BikeScreen())).test {
+      awaitLoaded().eventSink(BikeEvent.Refresh)
+      progress.subscriptionCount.first { it == 1 }
+      val asked = mutableListOf<Unit>()
+      backgroundScope.launch { capture.more.collect { asked += it } }
+      testScheduler.runCurrent()
+      progress.emit(RefreshProgress.Scanning(50, 0, 60))
+      val scanning = awaitLoaded { it.refresh is RefreshButton.Scanning }
+
+      scanning.eventSink(BikeEvent.MoreTime)
+      testScheduler.runCurrent()
+      assertEquals(1, asked.size)
+
+      scanning.eventSink(BikeEvent.StopRefresh)
+      awaitLoaded { it.refresh == RefreshButton.Idle && it.heard == null }
+      // Stopping cancels the collection, which stops the scan.
+      progress.subscriptionCount.first { it == 0 }
       cancelAndIgnoreRemainingEvents()
     }
   }

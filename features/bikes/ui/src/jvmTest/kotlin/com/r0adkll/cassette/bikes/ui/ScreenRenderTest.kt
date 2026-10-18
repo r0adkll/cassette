@@ -8,6 +8,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
 import com.r0adkll.cassette.bikes.summary.BikeStatus
 import com.r0adkll.cassette.bikes.summary.ComponentRowModel
 import com.r0adkll.cassette.bikes.ui.add.AddBikeStep
@@ -146,6 +147,51 @@ class ScreenRenderTest {
     }
   }
 
+  /** The tabletop refresh (iteration 10d): each state, with the fold across the middle. */
+  @Test
+  fun tabletop() {
+    val bike =
+      BikeUiState.Loaded(
+        bikeId = 1,
+        name = "Road bike",
+        position = null,
+        status =
+          BikeStatus(
+            StatusTone.Good,
+            "All good.",
+            "Next to charge: rear derailleur, in about 3 weeks (est.)",
+            "Seen 2 h ago",
+          ),
+        components = sampleRows,
+        lastRead = "2 h ago",
+      ) {}
+    val all = sampleRows.map { it.id }.toSet()
+    val states =
+      listOf(
+        "1-ready" to bike,
+        "2-listening" to bike.copy(refresh = RefreshButton.Scanning(52), heard = emptySet()),
+        "3-reading" to bike.copy(refresh = RefreshButton.Scanning(41), heard = all.take(3).toSet()),
+        "4-done" to
+          bike.copy(
+            refresh = RefreshButton.Done(19),
+            heard = all,
+            status = bike.status.copy(meta = "Seen just now"),
+            lastRead = "just now",
+          ),
+        "5-done-partly" to bike.copy(refresh = RefreshButton.Done(60), heard = all.take(4).toSet()),
+        "6-bluetooth-off" to bike.copy(refresh = RefreshButton.Unavailable),
+      )
+    val size = RenderSize.Tabletop
+    for ((name, state) in states) {
+      for (dark in listOf(true, false)) {
+        // Late enough that Done has landed.
+        render("tabletop-$name-${if (dark) "dark" else "light"}", dark, size, atMillis = 1_500) {
+          BikeTabletop(state, foldTop = (size.height / 2).dp, foldBottom = (size.height / 2).dp)
+        }
+      }
+    }
+  }
+
   /** Thirty days falling to [level], with a charge on day 8 (sample data). */
   private fun trendTo(level: Float): List<Float> =
     listOf(0.62f, 0.58f, 0.55f, 0.51f, 0.48f, 0.44f, 0.41f, 0.37f) +
@@ -217,6 +263,7 @@ class ScreenRenderTest {
     name: String,
     dark: Boolean,
     size: RenderSize = RenderSize.Phone,
+    atMillis: Long = 100,
     content: @Composable () -> Unit,
   ) {
     val scene =
@@ -229,8 +276,10 @@ class ScreenRenderTest {
         }
       }
     repeat(4) { scene.render(it * 16_000_000L) }
+    // Steps up to the frame, so animations that start on the first frames get there.
+    (100L..atMillis step 100).forEach { scene.render(it * 1_000_000L) }
     File(out, "$name.png")
-      .writeBytes(scene.render(100_000_000L).encodeToData(EncodedImageFormat.PNG)!!.bytes)
+      .writeBytes(scene.render(atMillis * 1_000_000L).encodeToData(EncodedImageFormat.PNG)!!.bytes)
     scene.close()
   }
 
@@ -242,6 +291,8 @@ class ScreenRenderTest {
     Phone(412, 892),
     Fold(852, 883),
     Tablet(1280, 800),
+    /** The open fold turned so its hinge runs across, standing half open. */
+    Tabletop(883, 852),
   }
 
   private val sampleRows =

@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import com.r0adkll.cassette.bikes.api.BikeOverview
 import com.r0adkll.cassette.bikes.api.BikeRepository
 import com.r0adkll.cassette.bikes.api.HomeSurfaces
+import com.r0adkll.cassette.bikes.summary.ago
 import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.capture.api.RefreshProgress
 import com.r0adkll.cassette.common.screens.AddBikeScreen
@@ -30,8 +31,11 @@ import dev.zacsweers.metro.Inject
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.Instant
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -95,6 +99,10 @@ class BikePresenter(
     }
 
     var refresh by remember { mutableStateOf<RefreshButton>(RefreshButton.Idle) }
+    // When the refresh on screen started: components read since then have answered it.
+    var refreshStarted by remember { mutableStateOf<Instant?>(null) }
+    var refreshJob by remember { mutableStateOf<Job?>(null) }
+    val moreTime = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
 
     val dismissed by settings.dismissedTips.collectAsRetainedState(initial = null)
     val tip =
@@ -129,16 +137,35 @@ class BikePresenter(
         is BikeEvent.DismissTip -> scope.launch { settings.dismissTip(event.tip) }
         BikeEvent.Refresh ->
           if (refresh !is RefreshButton.Scanning) {
-            scope.launch {
-              capture.refresh().collect { progress ->
+            val started = clock.now()
+            refreshStarted = started
+            refreshJob = scope.launch {
+              capture.refresh(moreTime).collect { progress ->
                 refresh =
                   when (progress) {
-                    is RefreshProgress.Scanning -> RefreshButton.Scanning(progress.secondsLeft)
-                    is RefreshProgress.Done -> RefreshButton.Idle
-                    RefreshProgress.NotReady -> RefreshButton.Unavailable
+                    is RefreshProgress.Scanning ->
+                      RefreshButton.Scanning(progress.secondsLeft, progress.totalSeconds)
+                    is RefreshProgress.Done ->
+                      RefreshButton.Done((clock.now() - started).inWholeSeconds.toInt())
+                    RefreshProgress.NotReady -> {
+                      refreshStarted = null
+                      RefreshButton.Unavailable
+                    }
                   }
               }
             }
+          }
+        BikeEvent.StopRefresh -> {
+          // Cancelling the collection stops the scan.
+          refreshJob?.cancel()
+          refresh = RefreshButton.Idle
+          refreshStarted = null
+        }
+        BikeEvent.MoreTime -> moreTime.tryEmit(Unit)
+        BikeEvent.FinishRefresh ->
+          if (refresh is RefreshButton.Done) {
+            refresh = RefreshButton.Idle
+            refreshStarted = null
           }
       }
     }
@@ -146,7 +173,16 @@ class BikePresenter(
     val loaded = overview ?: return BikeUiState.Loading(eventSink)
     val bike = loaded.overview ?: return BikeUiState.Empty(eventSink)
     val loadedBike = bike.toLoaded(now, eventSink)
+    val started = refreshStarted
     return loadedBike.copy(
+      heard =
+        started?.let {
+          bike.components
+            .filter { c -> c.latest?.let { reading -> reading.at >= started } == true }
+            .map { c -> c.component.id.value }
+            .toSet()
+        },
+      lastRead = bike.bike.lastSeenAt?.let { ago(now - it) },
       refresh = refresh,
       tip = tip,
       bikes = bikes.toChoices(now),
