@@ -83,7 +83,3 @@ struct AddRefreshTimeIntent: LiveActivityIntent {
     return .result()
   }
 }
-
-extension Date {
-  init(epochMillis: Int64) { self.init(timeIntervalSince1970: Double(epochMillis) / 1_000) }
-}

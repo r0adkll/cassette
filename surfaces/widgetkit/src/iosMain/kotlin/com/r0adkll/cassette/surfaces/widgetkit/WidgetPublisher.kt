@@ -7,17 +7,11 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlin.time.Clock
-import kotlin.time.Duration.Companion.seconds
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.IO
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import platform.Foundation.NSBundle
@@ -44,21 +38,15 @@ class WidgetPublisher(
   private var lastFailure: String? = null
 
   /** [reload] is WidgetKit's `reloadAllTimelines`, which only Swift can call. */
-  @OptIn(FlowPreview::class)
   fun start(scope: CoroutineScope, reload: () -> Unit) {
     scope.launch {
-      val defaultBike = repository.observeOverview(null).map { it?.bike?.id }.distinctUntilChanged()
-      combine(repository.observeOverviews(), defaultBike, ::Pair)
-        .debounce(1.seconds)
-        .distinctUntilChanged()
-        .collect { (overviews, default) ->
-          val snapshot = widgetSnapshot(overviews, default, clock.now())
-          if (write(WidgetCodec.encode(snapshot))) {
-            reload()
-            log("${snapshot.bikes.size} bikes", ok = true)
-            lastFailure = null
-          }
+      repository.widgetSnapshots(clock).collect { snapshot ->
+        if (write(WidgetCodec.encode(snapshot))) {
+          reload()
+          log("${snapshot.bikes.size} bikes", ok = true)
+          lastFailure = null
         }
+      }
     }
   }
 

@@ -68,7 +68,9 @@ Bluetooth spike on the bike (2026-10-18; its findings are in 0017, and the spike
    Widgets are built (iteration 15): home screen, all bikes, Lock Screen and StandBy, rendered by
    the widget test; not yet seen on a home screen or an iPhone. The Live Activity is built
    (iteration 16): Lock Screen, Dynamic Island and StandBy, rendered by the widget test; not yet
-   seen on an iPhone.
+   seen on an iPhone. The Apple Watch app is built (iteration 17): a page per bike, complications
+   and the Smart Stack card, fed over WatchConnectivity; rendered by the watch render test, not
+   yet run on a watch.
 
 Checked without a device: the Simulator UI test (`scripts/ios-uitest`) and iOS screen renders.
 
@@ -86,3 +88,6 @@ Waiting on an iPhone and the bike (deferred to a later phase, 2026-10-18):
   identifiers across days and a battery swap, and a hub read from a background discovery; then
   background capture's tuning in 0017.
 - The first TestFlight build installed from TestFlight.
+- The Apple Watch app on a watch paired to the iPhone: the snapshot arriving, the complications on
+  faces (tinted too) and in the Smart Stack, its rise when the bike wakes, and Refresh from the watch
+  with the phone locked.

@@ -63,8 +63,8 @@ fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
       MonoLine("hub read", state.bike?.bike?.hubReadAt?.let { agoShort(state.now - it) } ?: "—")
       MonoLine("bluetooth", if (state.bluetoothReady) "ready" else "off or not allowed")
     }
-    // No Wear OS on iOS (decision 0017).
-    if (!ios) WearPanel(state.wear, state.now)
+    // The Apple Watch on iOS (decision 0017).
+    WearPanel(state.wear, state.now, ios)
     SettingsSection("Tools") {
       SettingsRow(
         "Live adverts",
@@ -149,20 +149,24 @@ fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
   }
 }
 
-/** Wear sync (decision 0013): the watches, the last snapshot sent and the last refresh asked. */
+/**
+ * Watch sync (decisions 0013 and 0017): the watches, the last snapshot sent and the last refresh
+ * asked. On iOS, the paired Apple Watch.
+ */
 @Composable
-private fun WearPanel(wear: WearDiagnostics, now: Instant) {
+private fun WearPanel(wear: WearDiagnostics, now: Instant, ios: Boolean) {
   Panel {
-    Kicker("Wear")
+    Kicker(if (ios) "Apple Watch" else "Wear")
     MonoLine(
       "watches",
       when (val check = wear.watches) {
         null -> "checking…"
-        WatchCheck.Unavailable -> "no Wear OS app on this phone"
+        WatchCheck.Unavailable ->
+          if (ios) "no Apple Watch support on this device" else "no Wear OS app on this phone"
         is WatchCheck.Found ->
           check.watches
             .joinToString { "${it.name}${if (it.hasCassette) "" else " (no Cassette)"}" }
-            .ifEmpty { "none connected" }
+            .ifEmpty { if (ios) "none paired" else "none connected" }
       },
     )
     MonoLine(

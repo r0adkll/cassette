@@ -11,7 +11,7 @@ import com.r0adkll.cassette.data.ble.IosCentral
 import com.r0adkll.cassette.data.db.createNativeDriver
 import com.r0adkll.cassette.settings.api.CassetteSettings
 import com.r0adkll.cassette.settings.impl.SettingsFile
-import com.r0adkll.cassette.surfaces.wear.sync.ConnectedWatches
+import com.r0adkll.cassette.surfaces.watchkit.WatchPublisher
 import com.r0adkll.cassette.surfaces.widgetkit.RefreshActivityPublisher
 import com.r0adkll.cassette.surfaces.widgetkit.WidgetPublisher
 import com.slack.circuit.foundation.Circuit
@@ -43,6 +43,7 @@ interface IosAppGraph {
   val permissions: IosPermissionController
   val widgets: WidgetPublisher
   val refreshActivity: RefreshActivityPublisher
+  val watch: WatchPublisher
 
   @Provides
   @SingleIn(AppScope::class)
@@ -71,9 +72,6 @@ interface IosAppGraph {
     CassetteDispatchers(io = Dispatchers.IO, default = Dispatchers.Default, main = Dispatchers.Main)
 
   @Provides fun provideClock(): Clock = Clock.System
-
-  /** No Wear Data Layer on iOS: Diagnostics hides the Wear panel. */
-  @Provides fun provideConnectedWatches(): ConnectedWatches = ConnectedWatches { null }
 }
 
 /** Application Support: private to the app and backed up, like Android's files dir. */

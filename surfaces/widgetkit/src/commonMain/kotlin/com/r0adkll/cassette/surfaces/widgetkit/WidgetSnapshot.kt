@@ -1,14 +1,23 @@
 package com.r0adkll.cassette.surfaces.widgetkit
 
 import com.r0adkll.cassette.bikes.api.BikeOverview
+import com.r0adkll.cassette.bikes.api.BikeRepository
 import com.r0adkll.cassette.bikes.summary.BikeSummary
 import com.r0adkll.cassette.bikes.summary.toSummary
 import com.r0adkll.cassette.bikes.summary.weakest
 import com.r0adkll.cassette.common.compose.components.word
 import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.core.STALE_AFTER
+import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -79,6 +88,19 @@ object WidgetCodec {
     json.decodeFromString(WidgetSnapshot.serializer(), text)
   }
     .getOrNull()
+}
+
+/**
+ * The snapshot whenever bike data changes (captures, added or removed bikes, a new default bike),
+ * debounced since a hub read writes several rows. The widgets and the Apple Watch both send it.
+ */
+@OptIn(FlowPreview::class)
+fun BikeRepository.widgetSnapshots(clock: Clock): Flow<WidgetSnapshot> {
+  val defaultBike = observeOverview(null).map { it?.bike?.id }.distinctUntilChanged()
+  return combine(observeOverviews(), defaultBike, ::Pair)
+    .debounce(1.seconds)
+    .distinctUntilChanged()
+    .map { (overviews, default) -> widgetSnapshot(overviews, default, clock.now()) }
 }
 
 fun widgetSnapshot(

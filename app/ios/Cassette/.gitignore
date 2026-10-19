@@ -5,3 +5,7 @@ Sources/Info.plist
 Cassette.entitlements
 Widgets/Info.plist
 Widgets.entitlements
+Watch/Info.plist
+Watch.entitlements
+WatchWidgets/Info.plist
+WatchWidgets.entitlements

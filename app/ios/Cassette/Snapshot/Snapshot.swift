@@ -124,16 +124,30 @@ func agoText(_ elapsed: TimeInterval) -> String {
 }
 
 
-/// The App Group file the app writes (`WidgetPublisher`).
+/// The App Group file the iPhone app writes (`WidgetPublisher`). On the watch, the watch app writes
+/// it from what the phone sends, for the complications.
 enum SnapshotStore {
   static func load() -> WidgetSnapshot? {
+    guard let file, let data = try? Data(contentsOf: file) else { return nil }
+    return decode(data)
+  }
+
+  static func save(_ data: Data) {
+    guard let file else { return }
+    try? data.write(to: file, options: .atomic)
+  }
+
+  static func decode(_ data: Data) -> WidgetSnapshot? {
+    try? JSONDecoder().decode(WidgetSnapshot.self, from: data)
+  }
+
+  private static var file: URL? {
     guard
       let group = Bundle.main.object(forInfoDictionaryKey: "CassetteAppGroup") as? String,
       let container = FileManager.default.containerURL(
-        forSecurityApplicationGroupIdentifier: group),
-      let data = try? Data(contentsOf: container.appendingPathComponent("widgets.json"))
+        forSecurityApplicationGroupIdentifier: group)
     else { return nil }
-    return try? JSONDecoder().decode(WidgetSnapshot.self, from: data)
+    return container.appendingPathComponent("widgets.json")
   }
 }
 

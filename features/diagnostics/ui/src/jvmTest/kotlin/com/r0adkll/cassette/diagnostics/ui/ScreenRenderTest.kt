@@ -39,8 +39,13 @@ class ScreenRenderTest {
             lastRequest = wearEvent(WearAction.RefreshRequested, "Pixel Watch 3", 1.hours.ago),
           ),
         "no-wear" to WearDiagnostics(WatchCheck.Unavailable, null, null),
-        // No Wear panel or scan profiles on iOS (decision 0017).
-        "ios" to WearDiagnostics(WatchCheck.Unavailable, null, null),
+        // The Apple Watch panel and no scan profiles on iOS (decision 0017).
+        "ios" to
+          WearDiagnostics(
+            WatchCheck.Found(listOf(ConnectedWatch("Apple Watch", hasCassette = true))),
+            lastPublish = wearEvent(WearAction.Published, "2 bikes", 2.minutes.ago),
+            lastRequest = wearEvent(WearAction.RefreshRequested, "Apple Watch", 1.hours.ago),
+          ),
       )
     for (dark in listOf(true, false)) {
       for ((name, panel) in wear) {
