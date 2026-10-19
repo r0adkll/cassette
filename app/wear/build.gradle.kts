@@ -66,7 +66,8 @@ android {
   testOptions { unitTests.isReturnDefaultValues = true }
 }
 
-// The phone app's version, with Wear's own codes: Play needs every bundle of a package distinct.
+// The phone app's version, with Wear's own codes: Play needs every bundle of a package distinct,
+// and each Drop Build has its own.
 configureVersions(FormFactor.Wear)
 
 // Drop (decisions 0008 and 0013): CI uploads the internal build as a Wear Build beside the phone's.

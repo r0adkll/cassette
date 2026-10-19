@@ -60,7 +60,8 @@ android {
   buildFeatures { compose = true }
 }
 
-// The version name is `cassette.version`; each build type's code is derived from it.
+// The version name is `cassette.version`; release's code derives from it, the Drop builds' from
+// the commit count.
 configureVersions(FormFactor.Phone)
 
 // Builds from CI go to Drop; the debug and internal builds get its SDK (in-app updates), release
