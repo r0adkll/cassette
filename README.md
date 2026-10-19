@@ -29,7 +29,7 @@ every battery on your phone, home screen, watch and notifications.
 - **Warns you before a ride.** A heads-up when the bike wakes and something is already low, an alert when a
   component drops to low or charge now, and a reminder when a bike hasn't been seen for a while.
 - **Puts it everywhere you look:** home screen widgets, a Quick Settings tile, Wear OS tiles and
-  complications, iPhone widgets and a Live Activity while a refresh runs.
+  complications, iPhone widgets, a Live Activity while a refresh runs, and Apple Watch complications.
 - **Keeps a history** per component: a 30-day, 90-day or 1-year chart that marks charges and coin-cell
   swaps, beside its voltage, shift count and firmware.
 - **Shows its working.** Diagnostics holds the raw adverts, nearby SRAM-looking devices, hub table dumps,
@@ -41,7 +41,8 @@ every battery on your phone, home screen, watch and notifications.
 |---|---|
 | Android (12+) | The main app: phone, foldables and tablets, widgets, Quick Settings tile, notifications |
 | Wear OS | Bike list, tile and complications, reading the phone's data |
-| iPhone (iOS 17+) | In progress: the shared screens, widgets and Live Activity; Bluetooth not yet tested on a device |
+| iPhone and iPad (iOS 17+) | The shared screens, widgets, Live Activity and notifications; Bluetooth not yet tested on a device |
+| Apple Watch (watchOS 10+) | A page per bike, complications and a Smart Stack card, reading the iPhone's data |
 
 ## Hardware
 

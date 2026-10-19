@@ -2,9 +2,11 @@
 
 Cassette keeps track of the batteries in SRAM AXS components without the official app. It listens for the
 components' Bluetooth broadcasts, reads the rear derailleur's system tables, and shows battery state on the
-phone, a home screen widget, Wear OS and notifications.
+phone, its widgets, the watch and notifications, on Android and iOS.
 
-Status: design phase. The proof of concept (commit `4face31`) proved the protocol on a Red AXS bike.
+Status: Android, Wear OS, iPhone and Apple Watch are built (milestones 1 to 3); next is the store release
+(milestone 4, [roadmap](roadmap.md)). The proof of concept (commit `4face31`) proved the protocol on a Red
+AXS bike.
 
 ## Audience
 
@@ -25,8 +27,13 @@ Red AXS bike, but the code and design stay public-ready:
 | Quick Settings tile | 1 |
 | Wear OS complication | 2 |
 | Wear OS tile | 2 |
+| Foldable and tablet layouts | 2.5 |
+| iPhone and iPad app | 3 |
+| iPhone widgets (home screen, Lock Screen, StandBy) | 3 |
+| Live Activity while a refresh runs | 3 |
+| Apple Watch app, complications and Smart Stack | 3 |
 
-Wear reads the phone's data; the watch does not scan for components itself.
+The watches read the phone's data; they don't scan for components themselves.
 
 ## Core model
 
@@ -70,5 +77,5 @@ screens link into it, but the main screens stay clean.
 ## More
 
 - Product details: [0010](decisions/0010-product-details.md), Wear: [0013](decisions/0013-wear.md), foldables and tablets: [0014](decisions/0014-large-screens.md), onboarding, notifications and data:
-  [0011](decisions/0011-onboarding-alerts-and-data.md), rotating status titles: [0015](decisions/0015-status-titles.md), edge to edge: [0016](decisions/0016-edge-to-edge.md)
+  [0011](decisions/0011-onboarding-alerts-and-data.md), rotating status titles: [0015](decisions/0015-status-titles.md), edge to edge: [0016](decisions/0016-edge-to-edge.md), iOS: [0017](decisions/0017-ios.md)
 - [Architecture](architecture.md) · [Design process](design-process.md) · [Roadmap](roadmap.md)
