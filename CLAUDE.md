@@ -65,6 +65,8 @@ ported. Don't build new features on the POC.
   fooled us ("Back" matched "background", "Front derailleur" matched Diagnostics text). Screenshots
   use `XCUIScreen.main` (the app's own capture is offset in landscape).
   `./gradlew :app:ios:linkDebugFrameworkIosSimulatorArm64` checks the Kotlin half (and its Metro graph).
+  Each target has a `PrivacyInfo.xcprivacy`; after adding a dependency or a file, defaults or clock
+  API, `scripts/ios-privacy-scan` lists the required-reason APIs each Release binary uses.
 - Android on an emulator: `ANDROID_SERIAL=<serial> scripts/android-walk "Get started" "=Back" shot:bike`
   taps by text through adb (`=` for an exact match), scrolls and takes screenshots. Emulators are
   shared too: start your own on an unusual port (`emulator -avd <name> -port 5580`).
