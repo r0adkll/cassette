@@ -16,7 +16,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 RES = ROOT / "app/android/src"
-ASSETS = ROOT / "app/ios/Cassette/Sources/Assets.xcassets"
+# The iPhone app's catalog and the Apple Watch app's (which masks the square to a circle).
+CATALOGS = {
+    ROOT / "app/ios/Cassette/Sources/Assets.xcassets": "ios",
+    ROOT / "app/ios/Cassette/Watch/Assets.xcassets": "watchos",
+}
 A = "{http://schemas.android.com/apk/res/android}"
 
 ICONS = {
@@ -65,25 +69,26 @@ def svg(source_set: str) -> str:
 
 
 def main() -> None:
-    for name, source_set in ICONS.items():
-        out = ASSETS / f"{name}.appiconset"
-        out.mkdir(parents=True, exist_ok=True)
-        subprocess.run(
-            ["rsvg-convert", "--background-color", "white", "-o", str(out / f"{name}.png")],
-            input=svg(source_set).encode(),
-            check=True,
+    for assets, platform in CATALOGS.items():
+        for name, source_set in ICONS.items():
+            out = assets / f"{name}.appiconset"
+            out.mkdir(parents=True, exist_ok=True)
+            subprocess.run(
+                ["rsvg-convert", "--background-color", "white", "-o", str(out / f"{name}.png")],
+                input=svg(source_set).encode(),
+                check=True,
+            )
+            contents = {
+                "images": [
+                    {"filename": f"{name}.png", "idiom": "universal", "platform": platform, "size": "1024x1024"}
+                ],
+                "info": {"author": "xcode", "version": 1},
+            }
+            (out / "Contents.json").write_text(json.dumps(contents, indent=2) + "\n")
+            print(f"Wrote {out}")
+        (assets / "Contents.json").write_text(
+            json.dumps({"info": {"author": "xcode", "version": 1}}, indent=2) + "\n"
         )
-        contents = {
-            "images": [
-                {"filename": f"{name}.png", "idiom": "universal", "platform": "ios", "size": "1024x1024"}
-            ],
-            "info": {"author": "xcode", "version": 1},
-        }
-        (out / "Contents.json").write_text(json.dumps(contents, indent=2) + "\n")
-        print(f"Wrote {out}")
-    (ASSETS / "Contents.json").write_text(
-        json.dumps({"info": {"author": "xcode", "version": 1}}, indent=2) + "\n"
-    )
 
 
 if __name__ == "__main__":

@@ -69,6 +69,8 @@ include(":protocol")
 
 include(":surfaces:tile")
 
+include(":surfaces:watchkit")
+
 include(":surfaces:wear:phone")
 
 include(":surfaces:wear:sync")

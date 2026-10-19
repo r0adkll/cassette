@@ -26,6 +26,16 @@ ported. Don't build new features on the POC.
   the island, expanded, the Lock Screen to Done). `ImageRenderer` can't draw timer views, so the
   `w-activity-*` renders draw the ring statically. Its starts and ends are in the capture log
   (`Library/Application Support/capture-log.jsonl` in the app's data container).
+- Apple Watch (decision 0017): `Watch/` (app) and `WatchWidgets/` (complications) share `Snapshot/`
+  with the widgets (`Shared/` is the app's and the widgets', for the Live Activity). The iPhone app embeds the watch app, so every Xcode build of it needs Xcode's
+  watchOS platform (`xcodebuild -downloadPlatform watchOS`). The `CassetteRenders` scheme runs only
+  the widget and watch renders (`w-watch-*.png`, at a 46 mm watch's size) and doesn't need it.
+  ImageRenderer draws no `ScrollView`, so screens it renders leave scrolling to their caller.
+  End to end on Simulators: create a watch Simulator, `xcrun simctl pair <watch> <iphone>`, run
+  `scripts/ios-uitest` on the iPhone (it ends on the sample bike), build the `CassetteWatch` scheme
+  for the watch, `simctl install` and launch both apps; the phone's `widgets.json` then shows up
+  in the watch's App Group (`get_app_container <watch> com.r0adkll.cassette.debug.watchkitapp
+  group.com.r0adkll.cassette.debug`).
 - Widgets: debug builds have `WidgetPreviewActivity`, which hosts every widget at fixed sizes without a
   launcher. Once: `adb shell appwidget grantbind --package com.r0adkll.cassette.debug`; then
   `adb shell am start -n com.r0adkll.cassette.debug/com.r0adkll.cassette.app.debug.WidgetPreviewActivity`.

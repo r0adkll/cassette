@@ -167,14 +167,15 @@ final class CassetteUITests: XCTestCase {
     _ text: String, scrolling: Bool = false, file: StaticString = #filePath, line: UInt = #line
   ) {
     let target = element(text)
-    expect(text, file: file, line: line)
     if scrolling {
+      // Compose lists are lazy: a row below the fold doesn't exist until it's scrolled to.
       var swipes = 0
-      while !target.isHittable && swipes < 6 {
+      while !(target.exists && target.isHittable) && swipes < 8 {
         app.swipeUp()
         swipes += 1
       }
     }
+    expect(text, file: file, line: line)
     target.tap()
   }
 

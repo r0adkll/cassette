@@ -30,6 +30,7 @@ kotlin {
       implementation(project(":features:onboarding:ui"))
       implementation(project(":features:settings:impl"))
       implementation(project(":features:settings:ui"))
+      implementation(project(":surfaces:watchkit"))
       implementation(project(":surfaces:wear:sync"))
       implementation(project(":surfaces:widgetkit"))
       implementation(libs.circuit.foundation)

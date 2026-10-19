@@ -21,6 +21,12 @@ All notable changes to Cassette are documented here. The format follows
   opens the bike. Its starts and ends go into the capture log.
 - Diagnostics → Demo refresh: the sample bike answers a refresh without Bluetooth, to see the Live
   Activity (or the Quick Settings tile refreshing) without a bike.
+- An Apple Watch app (decision 0017): a page per bike in its status colour, paged with the crown, the
+  components as thick bars, and Refresh, which asks the iPhone to listen and counts down on the
+  watch. Complications for the weakest battery (circular and corner) and the bike's status
+  (circular, rectangular and inline), and a Smart Stack card that rises when the bike wakes with
+  something low. On iOS, Diagnostics shows the Apple Watch: whether one is paired and has Cassette,
+  the last update sent and the last refresh it asked for.
 - Settings → Notifications asks again, or opens the system settings, while notifications are off.
 - Settings → About: the installed version, who made Cassette and its source code, Report a bug (a
   GitHub issue with the version filled in), the privacy policy and terms of service, and the

@@ -31,35 +31,6 @@ struct BikeWidget: Widget {
   }
 }
 
-/// The widget's edit menu: which bike. None picked (or a deleted bike) is the default bike.
-struct PickBike: WidgetConfigurationIntent {
-  static let title: LocalizedStringResource = "Bike"
-  static let description = IntentDescription("Which bike the widget shows.")
-
-  @Parameter(title: "Bike") var bike: BikeEntity?
-}
-
-struct BikeEntity: AppEntity {
-  static let typeDisplayRepresentation: TypeDisplayRepresentation = "Bike"
-  static let defaultQuery = BikeQuery()
-
-  /// The bike's id, as text (AppIntents' identifiers).
-  var id: String
-  var name: String
-
-  var displayRepresentation: DisplayRepresentation { DisplayRepresentation(title: "\(name)") }
-}
-
-struct BikeQuery: EntityQuery {
-  func entities(for identifiers: [String]) async throws -> [BikeEntity] {
-    try await suggestedEntities().filter { identifiers.contains($0.id) }
-  }
-
-  func suggestedEntities() async throws -> [BikeEntity] {
-    (SnapshotStore.load()?.bikes ?? []).map { BikeEntity(id: String($0.id), name: $0.name) }
-  }
-}
-
 struct BikeEntry: TimelineEntry {
   var date: Date
   var bike: WidgetBike?

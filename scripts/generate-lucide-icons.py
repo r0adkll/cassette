@@ -37,10 +37,12 @@ ANDROID_ICONS = {
     ],
 }
 
-# Template SVGs for the iOS widget extension's asset catalog (decision 0017), tinted by SwiftUI.
+# Template SVGs for the asset catalog the widgets and the Apple Watch share (decision 0017), tinted
+# by SwiftUI.
 IOS_ICONS = {
-    ROOT / "app/ios/Cassette/Widgets/Assets.xcassets": [
+    ROOT / "app/ios/Cassette/Snapshot/Assets.xcassets": [
         "circle-check", "battery-low", "battery-warning", "history", "circle-help", "check", "bluetooth-off",
+        "refresh-cw", "list", "smartphone",
     ],
 }
 

@@ -58,6 +58,8 @@ object Cassette {
     graph.central.start()
     graph.widgets.start(scope, reloadWidgets)
     graph.refreshActivity.start(scope, showRefresh)
+    // Also before launch ends: a message from the watch wakes the app in the background.
+    graph.watch.start(scope)
     IosReminders({ graph.alerts }, scope).register()
     IosNotifier.registerCategories()
     UNUserNotificationCenter.currentNotificationCenter().delegate = notifications
