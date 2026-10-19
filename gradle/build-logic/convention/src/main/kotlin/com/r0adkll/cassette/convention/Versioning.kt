@@ -34,27 +34,20 @@ fun Project.configureVersions(formFactor: FormFactor) {
 }
 
 /**
- * `MMmmppRRTF`: major, minor, patch, then RR, the rc number or 99 for a final release (as in
- * Campfire), so 1.0.0-rc3 < 1.0.0 < 1.0.1-rc1. T is the build type and F the form factor, so a
- * version's phone and Wear bundles, and its release and internal builds, never share a code. Play's
- * ceiling (2,100,000,000) allows majors up to 20.
+ * `MMmmppTF`: major, minor and patch (as in Campfire, without its rc digits), then T, the build
+ * type, and F, the form factor, so a version's phone and Wear bundles, and its release and internal
+ * builds, never share a code.
  */
 fun versionCode(versionName: String, buildType: String, formFactor: FormFactor): Int {
   val match =
     SEMVER.matchEntire(versionName)
-      ?: error("cassette.version '$versionName' isn't major.minor.patch[-rcN]")
-  val (major, minor, patch, rc) = match.destructured
-  require(major.toInt() <= 20) { "Version codes only fit majors up to 20" }
+      ?: error("cassette.version '$versionName' isn't major.minor.patch")
+  val (major, minor, patch) = match.destructured
   require(minor.toInt() < 100 && patch.toInt() < 100) { "Minor and patch must be under 100" }
-  require(rc.isEmpty() || rc.toInt() in 1..98) { "The rc number must be 1 to 98" }
   val buildTypeDigit =
     BUILD_TYPE_DIGITS[buildType] ?: error("No version code digit for the '$buildType' build type")
-  val version =
-    major.toInt() * 1_000_000 +
-      minor.toInt() * 10_000 +
-      patch.toInt() * 100 +
-      (rc.toIntOrNull() ?: 99)
+  val version = major.toInt() * 10_000 + minor.toInt() * 100 + patch.toInt()
   return version * 100 + buildTypeDigit * 10 + formFactor.digit
 }
 
-private val SEMVER = """(\d+)\.(\d+)\.(\d+)(?:-rc(\d+))?""".toRegex()
+private val SEMVER = """(\d+)\.(\d+)\.(\d+)""".toRegex()
