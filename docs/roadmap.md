@@ -87,8 +87,10 @@ versioning, what ships in Diagnostics) comes first, and 0008's "sideload only" c
   Diagnostics itself stays ([0005](decisions/0005-diagnostics.md)).
 - **iPad.** The iOS app targets iPhone and iPad (XcodeGen's default; `TARGETED_DEVICE_FAMILY` isn't set).
   Keep it (iPad screenshots and an iPad review pass) or ship iPhone only at first.
-- **Versioning.** Both apps hardcode 0.1.0. Pick the first public version, how it's set (tags?), and cut
-  CHANGELOG's `[Unreleased]` into it.
+- **Versioning.** Every app's version is `cassette.version` in gradle.properties (#56): Android release
+  codes derive from it, Drop builds count commits (#57), iOS build numbers are the commit count. Still
+  to pick: the first public version, whether releases are tagged, and cutting CHANGELOG's
+  `[Unreleased]` into it.
 - **Languages.** English only, with strings in Kotlin; fine for v1, but say so in both consoles.
 - **Backups.** The phone app doesn't set `allowBackup` or `dataExtractionRules` (on by default), Wear sets
   `allowBackup="true"`. Decide what the database and settings do on a new phone.
@@ -105,12 +107,10 @@ versioning, what ships in Diagnostics) comes first, and 0008's "sideload only" c
 
 ### Google Play
 
-- The release build's label is "Cassette (dev)": `app_name` in `app/android/src/main` is the debug one.
-  Move "(dev)" to the debug source set, as Wear does.
+- ~~The release build's label~~: "Cassette", with "(dev)" only on debug and internal builds (#56).
 - Release signing: an upload key and Play App Signing. The phone and Wear apps must keep one signing key
   for the Data Layer ([0013](decisions/0013-wear.md)).
-- Version codes: Drop's `versionCodeFromCommits` also sets release's, so the phone and Wear bundles (one
-  package) would share a code, which Play rejects. Offset Wear's.
+- ~~Version codes~~: release's are `MMmmpp0F`, so the phone and Wear bundles never share one (#56, #57).
 - AABs (`bundleRelease`) and a Play upload from CI (the Play/Fastlane tooling 0008 adopted), alongside the
   Drop job.
 - Play Console: the app, the Wear form factor opt-in, internal testing track first.
