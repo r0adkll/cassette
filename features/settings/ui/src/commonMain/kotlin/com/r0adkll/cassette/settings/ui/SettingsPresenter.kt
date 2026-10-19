@@ -94,8 +94,11 @@ sealed interface SettingsEvent : CircuitUiEvent {
 
   data class SetThemeMode(val mode: ThemeMode) : SettingsEvent
 
-  /** On a phone: the category's screen (Diagnostics and Licences open their own). */
+  /** On a phone: the category's screen (Diagnostics opens its own). */
   data class OpenCategory(val category: SettingsCategory) : SettingsEvent
+
+  /** About → Open-source licences. */
+  data object OpenLicences : SettingsEvent
 
   /** On a wide window: the category beside the list. */
   data class SelectCategory(val category: SettingsCategory) : SettingsEvent
@@ -167,10 +170,10 @@ class SettingsPresenter(
           navigator.goTo(
             when (event.category) {
               SettingsCategory.Diagnostics -> DiagnosticsScreen()
-              SettingsCategory.Licences -> LicencesScreen
               else -> SettingsScreen(event.category)
             }
           )
+        SettingsEvent.OpenLicences -> navigator.goTo(LicencesScreen)
         is SettingsEvent.SelectCategory -> selected = event.category
       }
     }

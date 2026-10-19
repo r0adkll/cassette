@@ -316,6 +316,68 @@ object LucideIcons {
     }
   }
 
+  /** Lucide `bug`. */
+  val Bug: ImageVector by lazy {
+    lucide("Bug") {
+      stroke("m8 2 1.88 1.88")
+      stroke("M14.12 3.88 16 2")
+      stroke("M9 7.13v-1a3.003 3.003 0 1 1 6 0v1")
+      stroke("M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6")
+      stroke("M12 20v-9")
+      stroke("M6.53 9C4.6 8.8 3 7.1 3 5")
+      stroke("M6 13H2")
+      stroke("M3 21c0-2.1 1.7-3.9 3.8-4")
+      stroke("M20.97 5c0 2.1-1.6 3.8-3.5 4")
+      stroke("M22 13h-4")
+      stroke("M17.2 17c2.1.1 3.8 1.9 3.8 4")
+    }
+  }
+
+  /** Lucide `code`. */
+  val Code: ImageVector by lazy {
+    lucide("Code") {
+      stroke("M16 18 L22 12 L16 6")
+      stroke("M8 6 L2 12 L8 18")
+    }
+  }
+
+  /** Lucide `external-link`. */
+  val ExternalLink: ImageVector by lazy {
+    lucide("ExternalLink") {
+      stroke("M15 3h6v6")
+      stroke("M10 14 21 3")
+      stroke("M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6")
+    }
+  }
+
+  /** Lucide `globe`. */
+  val Globe: ImageVector by lazy {
+    lucide("Globe") {
+      stroke("M2.0 12.0a10.0 10.0 0 1 0 20.0 0a10.0 10.0 0 1 0 -20.0 0Z")
+      stroke("M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20")
+      stroke("M2 12h20")
+    }
+  }
+
+  /** Lucide `scale`. */
+  val Scale: ImageVector by lazy {
+    lucide("Scale") {
+      stroke("m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z")
+      stroke("m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z")
+      stroke("M7 21h10")
+      stroke("M12 3v18")
+      stroke("M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2")
+    }
+  }
+
+  /** Lucide `user`. */
+  val User: ImageVector by lazy {
+    lucide("User") {
+      stroke("M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2")
+      stroke("M8.0 7.0a4.0 4.0 0 1 0 8.0 0a4.0 4.0 0 1 0 -8.0 0Z")
+    }
+  }
+
   /** Lucide `refresh-cw`. */
   val RefreshCw: ImageVector by lazy {
     lucide("RefreshCw") {

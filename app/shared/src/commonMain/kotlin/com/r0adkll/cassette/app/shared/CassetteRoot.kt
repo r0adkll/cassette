@@ -13,7 +13,9 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.r0adkll.cassette.bikes.api.BikeRepository
+import com.r0adkll.cassette.common.compose.AppInfo
 import com.r0adkll.cassette.common.compose.AppUpdates
+import com.r0adkll.cassette.common.compose.LocalAppInfo
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
 import com.r0adkll.cassette.common.compose.LocalPermissionController
 import com.r0adkll.cassette.common.compose.LocalScreenLayout
@@ -48,6 +50,7 @@ fun CassetteRoot(
   bikes: BikeRepository,
   permissions: PermissionController,
   updates: AppUpdates,
+  appInfo: AppInfo,
   launchLink: List<Screen>?,
   newLinks: Flow<List<Screen>>,
   systemBars: @Composable (dark: Boolean, mode: ThemeMode) -> Unit = { _, _ -> },
@@ -71,6 +74,7 @@ fun CassetteRoot(
         CompositionLocalProvider(
           LocalPermissionController provides permissions,
           LocalAppUpdates provides updates,
+          LocalAppInfo provides appInfo,
           LocalScreenLayout provides currentScreenLayout(),
         ) {
           CircuitCompositionLocals(circuit) {

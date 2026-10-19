@@ -13,7 +13,7 @@ ICONS = [
     "activity", "app-window", "arrow-left", "battery-low", "battery-medium", "battery-warning", "bell", "bell-off", "bell-ring",
     "bike", "bluetooth", "bluetooth-off", "bluetooth-searching", "check", "chevron-down", "chevron-left", "chevron-right", "circle-check",
     "circle-help", "cpu", "download", "file-text", "history", "image-plus", "info", "layout-grid", "mountain",
-    "panel-top", "pin", "radio", "shield",
+    "panel-top", "pin", "radio", "shield", "bug", "code", "external-link", "globe", "scale", "user",
     "refresh-cw", "route", "scan-line", "settings", "share-2", "signal", "smile", "sun-moon", "trash-2",
     "x",
 ]

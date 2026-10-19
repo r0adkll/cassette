@@ -30,7 +30,8 @@ enum class SettingsCategory {
   Appearance,
   Updates,
   Diagnostics,
-  Licences,
+  /** Version, who made it, help, the legal pages and licences. */
+  About,
 }
 
 /**
@@ -49,6 +50,7 @@ enum class SettingsCategory {
  */
 @Parcelize data class DiagnosticsScreen(val inPane: Boolean = false) : ParcelableScreen
 
+/** Third-party notices, from Settings → About. */
 @Parcelize data object LicencesScreen : ParcelableScreen
 
 @Parcelize data object LiveAdvertsScreen : ParcelableScreen

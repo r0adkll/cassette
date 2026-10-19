@@ -4,6 +4,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.window.ComposeUIViewController
 import com.r0adkll.cassette.alerts.impl.IosNotifier
 import com.r0adkll.cassette.app.shared.CassetteRoot
+import com.r0adkll.cassette.common.compose.AppInfo
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
 import com.r0adkll.cassette.common.screens.DeepLinks
 import com.r0adkll.cassette.core.BikeId
@@ -15,6 +16,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import platform.Foundation.NSBundle
 import platform.Foundation.NSCalendar
 import platform.Foundation.NSCalendarUnitDay
 import platform.Foundation.NSDate
@@ -84,6 +86,7 @@ object Cassette {
         permissions = graph.permissions,
         // TestFlight updates the app: App updates stays hidden.
         updates = LocalAppUpdates.current,
+        appInfo = appInfo(),
         launchLink = null,
         newLinks = links.receiveAsFlow(),
         systemBars = { _, mode ->
@@ -99,6 +102,14 @@ object Cassette {
         },
       )
     }
+  }
+
+  private fun appInfo(): AppInfo {
+    val bundle = NSBundle.mainBundle
+    return AppInfo(
+      version = bundle.objectForInfoDictionaryKey("CFBundleShortVersionString") as? String ?: "",
+      build = bundle.objectForInfoDictionaryKey("CFBundleVersion") as? String ?: "",
+    )
   }
 
   /** Taps open the notification's link; the pre-ride nudge's action snoozes it. */
