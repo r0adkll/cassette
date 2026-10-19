@@ -111,6 +111,13 @@ fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
         onClick = { sink(DiagnosticsEvent.LoadSampleBike) },
       )
       SettingsRow(
+        "Demo refresh",
+        subtitle =
+          "The sample bike answers over 30 s, no Bluetooth needed: shows the Live Activity",
+        icon = LucideIcons.RefreshCw,
+        onClick = { sink(DiagnosticsEvent.DemoRefresh) },
+      )
+      SettingsRow(
         "Simulate a low battery",
         subtitle = "Front derailleur reads low, as if the bike just woke: tests notifications",
         icon = LucideIcons.BellRing,

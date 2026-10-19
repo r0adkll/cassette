@@ -105,7 +105,7 @@ class RefreshActivityTest {
     vararg bikes: BikeOverview,
     default: Long? = 1,
     ready: Boolean = true,
-  ) = refreshActivityState(run, bikes.toList(), default?.let(::BikeId), ready)
+  ) = refreshActivityState(run.copy(bluetoothReady = ready), bikes.toList(), default?.let(::BikeId))
 
   @Test
   fun listensUntilSomethingAnswers() {

@@ -58,6 +58,9 @@ final class CassetteUITests: XCTestCase {
     tap("Front derailleur")
     expect("Firmware")
     shot("09-component")
+    button("Back").tap()
+
+    demoRefreshLiveActivity()
   }
 
   /// An iPad in landscape is a large window: the bike rail beside the dashboard (decision 0014).
@@ -100,6 +103,40 @@ final class CassetteUITests: XCTestCase {
     tap("Settings")
     expect("Settings.")
     shot("t07-rail-settings")
+  }
+
+  /// The refresh's Live Activity (iteration 16) through Diagnostics' demo refresh, where the
+  /// sample bike answers without Bluetooth: the Dynamic Island, then the Lock Screen to Done. The
+  /// end of the phone walk-through, from the bike screen (tests share the app's data, so it can't
+  /// be a test of its own).
+  private func demoRefreshLiveActivity() {
+    tap("Settings")
+    tap("Diagnostics")
+    expect("scan (Core Bluetooth, FE51)")
+    tap("Demo refresh", scrolling: true)
+
+    // Leave the app: the activity moves to the Dynamic Island.
+    XCUIDevice.shared.press(.home)
+    sleep(3)
+    shot("a01-island-listening")
+    sleep(6)
+    shot("a02-island-reading")
+    // A long press on the island expands it.
+    let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+    springboard.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.025))
+      .press(forDuration: 1.2)
+    sleep(1)
+    shot("a03-island-expanded")
+    XCUIDevice.shared.press(.home)
+
+    // The Lock Screen, while it reads and once it's done (the meter answers at 30 s).
+    let lock = NSSelectorFromString("pressLockButton")
+    guard XCUIDevice.shared.responds(to: lock) else { return }
+    XCUIDevice.shared.perform(lock)
+    sleep(3)
+    shot("a04-lock-reading")
+    sleep(22)
+    shot("a05-lock-done")
   }
 
   // MARK: Helpers

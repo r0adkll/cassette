@@ -15,17 +15,17 @@ struct RefreshActivityWidget: Widget {
       // The island is always black: the dark palette in light mode too.
       let palette = Palette(dark: true)
       return DynamicIsland {
+        // The corners beside the camera are narrow: the step and headline on the left, the ring on
+        // the right; the columns and the buttons take the full width below.
         DynamicIslandExpandedRegion(.leading) {
           IslandExpandedLeading(state: state, palette: palette)
         }
         DynamicIslandExpandedRegion(.trailing) {
-          RefreshDial(state: state, palette: palette, size: 64, line: 5, time: 20, count: nil)
+          RefreshDial(state: state, palette: palette, size: 52, line: 4, time: 17, count: nil)
             .padding(.trailing, 4)
         }
         DynamicIslandExpandedRegion(.bottom) {
-          RefreshColumns(state: state, palette: palette, code: 11, spacing: 6)
-            .frame(height: 38)
-            .padding(.horizontal, 4)
+          IslandExpandedBottom(state: state, palette: palette)
         }
       } compactLeading: {
         IslandMark(state: state, palette: palette, size: 22)
@@ -127,12 +127,28 @@ struct IslandExpandedLeading: View {
 
   var body: some View {
     VStack(alignment: .leading, spacing: 4) {
-      RefreshLabel(state: state, palette: palette, size: 12)
+      // Only the step ("READING"): the bike's name doesn't fit beside the camera.
+      RefreshLabel(state: state, palette: palette, size: 12, short: true)
       Text(state.headline)
         .font(.condensed(28))
         .foregroundStyle(palette.text)
         .lineLimit(1)
-        .minimumScaleFactor(0.7)
+        .minimumScaleFactor(0.6)
+    }
+    .padding(.leading, 4)
+  }
+}
+
+/// The expanded island's full-width foot: the columns, then Stop and Add 60 s while it scans, or
+/// what it found.
+struct IslandExpandedBottom: View {
+  var state: RefreshState
+  var palette: Palette
+
+  var body: some View {
+    VStack(alignment: .leading, spacing: 6) {
+      RefreshColumns(state: state, palette: palette, code: 11, spacing: 6)
+        .frame(height: 28)
       if state.scanning {
         HStack(spacing: 6) {
           Button(intent: StopRefreshIntent()) { Pill(text: "STOP", filled: false, palette: palette) }
@@ -141,15 +157,14 @@ struct IslandExpandedLeading: View {
           }
         }
         .buttonStyle(.plain)
-        .padding(.top, 2)
       } else {
         Text(state.detail)
           .font(.barlow(13))
           .foregroundStyle(palette.muted)
-          .lineLimit(2)
+          .lineLimit(1)
       }
     }
-    .padding(.leading, 4)
+    .padding(.horizontal, 4)
   }
 }
 
@@ -198,13 +213,16 @@ struct RefreshLabel: View {
   var state: RefreshState
   var palette: Palette
   var size: CGFloat
+  /// The step alone, without the bike's name.
+  var short = false
 
   var body: some View {
+    let text = short ? (state.label.components(separatedBy: " · ").last ?? state.label) : state.label
     HStack(spacing: size * 0.6) {
       Circle()
         .fill(state.scanning ? Color.cassetteRed : endTone(state, palette))
         .frame(width: size * 0.58, height: size * 0.58)
-      Text(state.label)
+      Text(text)
         .font(.condensed(size))
         .kerning(size * 0.16)
         .foregroundStyle(palette.muted)
@@ -368,7 +386,7 @@ struct Pill: View {
       .font(.condensed(13))
       .kerning(1.5)
       .padding(.horizontal, 14)
-      .frame(height: 30)
+      .frame(height: 26)
       .foregroundStyle(filled ? Color(hex: 0x0A0A0B) : palette.text)
       .background {
         if filled {

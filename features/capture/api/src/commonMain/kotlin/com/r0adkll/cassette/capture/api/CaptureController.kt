@@ -4,6 +4,7 @@ import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOf
 
 /** Getting readings from bikes: the open-app refresh and the background scan (decision 0009). */
 interface CaptureController {
@@ -29,6 +30,13 @@ interface CaptureController {
   val latestRefresh: StateFlow<RefreshRun?>
     get() = NoRefresh
 
+  /**
+   * Diagnostics' demo refresh (decision 0005): a refresh with no Bluetooth in which the sample bike
+   * answers on a schedule, published like a real one, so the Live Activity can be seen on a
+   * Simulator. Without the sample bike it ends at once.
+   */
+  fun demoRefresh(): Flow<RefreshProgress> = flowOf(RefreshProgress.NotReady)
+
   /** Ends the running refresh early: it finishes as [RefreshProgress.Done] with `stopped` set. */
   fun stopRefresh() {}
 
@@ -51,6 +59,9 @@ interface SharedRefresh {
 
   /** Starts a refresh, or joins the running one, and returns how it ended (done or not ready). */
   suspend fun run(): RefreshProgress
+
+  /** [CaptureController.demoRefresh] in the same lasting scope, so leaving Diagnostics keeps it. */
+  suspend fun demo(): RefreshProgress = RefreshProgress.NotReady
 }
 
 sealed interface RefreshProgress {
@@ -70,11 +81,15 @@ sealed interface RefreshProgress {
   }
 }
 
-/** One refresh: when it started, its latest progress, and when it ended (null while it runs). */
+/**
+ * One refresh: when it started, its latest progress, when it ended (null while it runs), and
+ * whether Bluetooth was on at its last step (always, for Diagnostics' demo, which doesn't use it).
+ */
 data class RefreshRun(
   val startedAt: Instant,
   val progress: RefreshProgress,
   val endedAt: Instant? = null,
+  val bluetoothReady: Boolean = true,
 )
 
 private val NoRefresh: StateFlow<RefreshRun?> = MutableStateFlow(null)

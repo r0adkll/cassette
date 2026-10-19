@@ -290,6 +290,62 @@ class CaptureTest {
   }
 
   @Test
+  fun theDemoRefreshHasOnlyTheSampleBikeAnswer() = runTest {
+    val road = bikeWithHub()
+    val earlier = (now - 2.minutes).toEpochMilliseconds()
+    db.bikeQueries.insert("Sample bike", BikeType.Road.name, null, -1, earlier, earlier)
+    val sample = db.bikeQueries.lastInsertedId().executeAsOne()
+    listOf(ComponentKind.REAR_DERAILLEUR, ComponentKind.LEFT_SHIFTER, ComponentKind.POWER_METER)
+      .forEach { kind ->
+        db.componentQueries.insert(
+          sample,
+          "sample:$kind",
+          null,
+          kind.name,
+          null,
+          null,
+          null,
+          null,
+          earlier,
+          earlier,
+        )
+        val component = db.componentQueries.lastInsertedId().executeAsOne()
+        db.batterySampleQueries.insert(component, earlier, null, 78, "OK", ReadMethod.Hub.name)
+      }
+    val controller =
+      DefaultCaptureController(
+        FakeScanner(),
+        recorder,
+        refresher,
+        db,
+        InMemorySettings(),
+        captureLog,
+        alerts,
+        clock,
+      )
+    val started = now
+
+    controller.demoRefresh().test {
+      assertEquals(0, assertIs<RefreshProgress.Scanning>(awaitItem()).componentsHeard)
+      // The derailleur first, then the shifter, then the meter, which ends it.
+      now = started + kotlin.time.Duration.parse("6s")
+      var item = awaitItem()
+      assertEquals(1, assertIs<RefreshProgress.Scanning>(item).componentsHeard)
+      now = started + kotlin.time.Duration.parse("15s")
+      item = awaitItem()
+      assertEquals(2, assertIs<RefreshProgress.Scanning>(item).componentsHeard)
+      now = started + kotlin.time.Duration.parse("30s")
+      while (item !is RefreshProgress.Done) item = awaitItem()
+      assertEquals(3, item.componentsHeard)
+      awaitComplete()
+    }
+    assertNotNull(controller.latestRefresh.value?.endedAt)
+    // The road bike's components were never touched.
+    val rd = db.componentQueries.selectForBike(road).executeAsList().single()
+    assertNull(db.batterySampleQueries.latestForComponent(rd.id).executeAsOneOrNull())
+  }
+
+  @Test
   fun backgroundCaptureNeedsABike() = runTest {
     val scanner = FakeScanner()
     val controller =

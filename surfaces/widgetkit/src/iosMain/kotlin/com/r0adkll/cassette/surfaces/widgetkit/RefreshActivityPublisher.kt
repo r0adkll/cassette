@@ -8,7 +8,10 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -42,16 +45,19 @@ class RefreshActivityPublisher(
           run,
           overviews,
           default ->
-          refreshActivityState(run, overviews, default, capture.isReady)
+          refreshActivityState(run, overviews, default)
         }
         .filterNotNull()
         .distinctUntilChanged()
-        .collect { state ->
+        .collectLatest { state ->
           val previous = last
           val sameRun = previous?.startedAt == state.startedAt
           // An ended activity stays ended; the last refresh's end isn't replayed at launch either.
-          if (sameRun && previous.ended) return@collect
-          if (!sameRun && state.ended) return@collect
+          if (sameRun && previous.ended) return@collectLatest
+          if (!sameRun && state.ended) return@collectLatest
+          // The end can arrive before the bike data holding the last answer: wait for it, since a
+          // newer state replaces this one.
+          if (state.ended) delay(SETTLE)
           val failure = apply(RefreshActivityCodec.encode(state))
           // Not started: leave this refresh alone rather than retrying every second.
           last = if (failure != null && !sameRun) state.copy(ended = true) else state
@@ -68,4 +74,8 @@ class RefreshActivityPublisher(
 
   private suspend fun log(detail: String, ok: Boolean) =
     log.append(CaptureEvent.LiveActivity(clock.now().toEpochMilliseconds(), detail, ok))
+
+  private companion object {
+    val SETTLE = 1.seconds
+  }
 }

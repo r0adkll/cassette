@@ -21,6 +21,11 @@ ported. Don't build new features on the POC.
   which renders every widget and state to `app/ios/Cassette/build/uitest-screens/w-*.png`. The app
   writes their snapshot to the App Group: `xcrun simctl get_app_container <udid>
   com.r0adkll.cassette.debug group.com.r0adkll.cassette.debug` shows `widgets.json`.
+- iOS Live Activity: Diagnostics → Demo refresh runs a refresh the sample bike answers without
+  Bluetooth, so a Simulator shows the real activity; the phone UI test ends with it (`a01`–`a05`:
+  the island, expanded, the Lock Screen to Done). `ImageRenderer` can't draw timer views, so the
+  `w-activity-*` renders draw the ring statically. Its starts and ends are in the capture log
+  (`Library/Application Support/capture-log.jsonl` in the app's data container).
 - Widgets: debug builds have `WidgetPreviewActivity`, which hosts every widget at fixed sizes without a
   launcher. Once: `adb shell appwidget grantbind --package com.r0adkll.cassette.debug`; then
   `adb shell am start -n com.r0adkll.cassette.debug/com.r0adkll.cassette.app.debug.WidgetPreviewActivity`.

@@ -85,7 +85,6 @@ fun refreshActivityState(
   run: RefreshRun,
   overviews: List<BikeOverview>,
   defaultBikeId: BikeId?,
-  bluetoothReady: Boolean,
 ): RefreshActivityState? {
   fun BikeOverview.answered() = components.count { c ->
     c.latest?.let { it.at >= run.startedAt } == true
@@ -115,7 +114,7 @@ fun refreshActivityState(
       progress is RefreshProgress.Done && heard == total -> RefreshPhase.Done
       progress is RefreshProgress.Done && heard > 0 -> RefreshPhase.Partial
       progress is RefreshProgress.Done -> RefreshPhase.Silent
-      !bluetoothReady -> RefreshPhase.NotReady
+      !run.bluetoothReady -> RefreshPhase.NotReady
       heard == 0 -> RefreshPhase.Listening
       else -> RefreshPhase.Reading
     }

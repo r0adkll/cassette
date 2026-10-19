@@ -14,6 +14,7 @@ import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.capture.api.CaptureEvent
 import com.r0adkll.cassette.capture.api.CaptureLog
 import com.r0adkll.cassette.capture.api.DiagnosticsSharer
+import com.r0adkll.cassette.capture.api.SharedRefresh
 import com.r0adkll.cassette.capture.api.WearAction
 import com.r0adkll.cassette.common.screens.DiagnosticsScreen
 import com.r0adkll.cassette.common.screens.HubTablesScreen
@@ -82,6 +83,9 @@ sealed interface DiagnosticsEvent : CircuitUiEvent {
 
   data object LoadSampleBike : DiagnosticsEvent
 
+  /** Reloads the sample bike and runs a refresh in which it answers, without Bluetooth. */
+  data object DemoRefresh : DiagnosticsEvent
+
   /** Records a low reading and runs the alerts as if the bike just woke. */
   data object SimulateLowBattery : DiagnosticsEvent
 
@@ -97,6 +101,7 @@ class DiagnosticsPresenter(
   private val settings: CassetteSettings,
   private val bikes: BikeRepository,
   private val capture: CaptureController,
+  private val sharedRefresh: SharedRefresh,
   private val developerTools: DeveloperTools,
   private val log: CaptureLog,
   private val sharer: DiagnosticsSharer,
@@ -170,6 +175,12 @@ class DiagnosticsPresenter(
           scope.launch {
             developerTools.loadSampleBike()
             capture.ensureBackgroundCapture("sample bike loaded")
+          }
+        DiagnosticsEvent.DemoRefresh ->
+          scope.launch {
+            developerTools.loadSampleBike()
+            // In the refresh's own scope: leaving Diagnostics, or the app, keeps it going.
+            sharedRefresh.demo()
           }
         DiagnosticsEvent.RemoveBike ->
           if (!confirmRemove) confirmRemove = true

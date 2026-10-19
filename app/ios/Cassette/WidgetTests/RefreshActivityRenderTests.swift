@@ -64,19 +64,19 @@ final class RefreshActivityRenderTests: XCTestCase {
       attach("w-activity-minimal-\(name)", minimal)
 
       let expanded = VStack(spacing: 8) {
+        // The island's regions: leading and trailing beside the camera, bottom across.
         HStack(alignment: .top) {
           IslandExpandedLeading(state: state, palette: palette)
+            .frame(width: 130, alignment: .leading)
           Spacer(minLength: 8)
-          RefreshDial(state: state, palette: palette, size: 64, line: 5, time: 20, count: nil)
+          RefreshDial(state: state, palette: palette, size: 52, line: 4, time: 17, count: nil)
             .padding(.trailing, 4)
         }
-        RefreshColumns(state: state, palette: palette, code: 11, spacing: 6)
-          .frame(height: 38)
-          .padding(.horizontal, 4)
+        IslandExpandedBottom(state: state, palette: palette)
       }
       .padding(.horizontal, 18)
       .padding(.vertical, 14)
-      .frame(width: 371, height: 160)
+      .frame(width: 371)
       .background(RoundedRectangle(cornerRadius: 44, style: .continuous).fill(.black))
       .padding(10)
       .background(Color(hex: 0x3A4652))
