@@ -228,6 +228,68 @@ class CaptureTest {
   }
 
   @Test
+  fun stopAndMoreReachTheRunningRefreshAndItsRunIsPublished() = runTest {
+    bikeWithHub()
+    val controller =
+      DefaultCaptureController(
+        FakeScanner(),
+        recorder,
+        refresher,
+        db,
+        InMemorySettings(),
+        captureLog,
+        alerts,
+        clock,
+      )
+    val started = now
+
+    controller.refresh().test {
+      awaitItem()
+      awaitItem()
+      assertEquals(started, controller.latestRefresh.value?.startedAt)
+      assertNull(controller.latestRefresh.value?.endedAt)
+
+      // The Live Activity's Add 60 s, then its Stop.
+      controller.addRefreshTime()
+      var item = awaitItem()
+      while (item is RefreshProgress.Scanning && item.totalSeconds == 60) item = awaitItem()
+      assertEquals(120, assertIs<RefreshProgress.Scanning>(item).totalSeconds)
+      controller.stopRefresh()
+      while (item is RefreshProgress.Scanning) item = awaitItem()
+      assertTrue(assertIs<RefreshProgress.Done>(item).stopped)
+      awaitComplete()
+    }
+    val run = assertNotNull(controller.latestRefresh.value)
+    assertTrue(assertIs<RefreshProgress.Done>(run.progress).stopped)
+    assertEquals(now, run.endedAt)
+  }
+
+  @Test
+  fun aRefreshCancelledByItsCollectorEndsItsRun() = runTest {
+    bikeWithHub()
+    val controller =
+      DefaultCaptureController(
+        FakeScanner(),
+        recorder,
+        refresher,
+        db,
+        InMemorySettings(),
+        captureLog,
+        alerts,
+        clock,
+      )
+
+    controller.refresh().test {
+      awaitItem()
+      cancelAndIgnoreRemainingEvents()
+    }
+
+    val run = assertNotNull(controller.latestRefresh.value)
+    assertTrue(assertIs<RefreshProgress.Done>(run.progress).stopped)
+    assertNotNull(run.endedAt)
+  }
+
+  @Test
   fun backgroundCaptureNeedsABike() = runTest {
     val scanner = FakeScanner()
     val controller =

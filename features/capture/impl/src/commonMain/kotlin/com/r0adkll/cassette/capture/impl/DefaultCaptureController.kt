@@ -5,6 +5,7 @@ import com.r0adkll.cassette.capture.api.CaptureController
 import com.r0adkll.cassette.capture.api.CaptureEvent
 import com.r0adkll.cassette.capture.api.CaptureLog
 import com.r0adkll.cassette.capture.api.RefreshProgress
+import com.r0adkll.cassette.capture.api.RefreshRun
 import com.r0adkll.cassette.capture.api.Sighting
 import com.r0adkll.cassette.data.ble.AdvertScanner
 import com.r0adkll.cassette.data.ble.ArmResult
@@ -22,6 +23,10 @@ import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.first
@@ -47,6 +52,20 @@ class DefaultCaptureController(
 
   override fun refresh(): Flow<RefreshProgress> = refresh(emptyFlow())
 
+  private val _latestRefresh = MutableStateFlow<RefreshRun?>(null)
+  override val latestRefresh: StateFlow<RefreshRun?> = _latestRefresh.asStateFlow()
+
+  /** Stop and Add 60 s from outside the refresh's collector; dropped when none is running. */
+  private val controls = MutableSharedFlow<Control>(extraBufferCapacity = 4)
+
+  override fun stopRefresh() {
+    controls.tryEmit(Control.Stop)
+  }
+
+  override fun addRefreshTime() {
+    controls.tryEmit(Control.More)
+  }
+
   override fun refresh(more: Flow<Unit>): Flow<RefreshProgress> {
     if (!scanner.isReady) return flow { emit(RefreshProgress.NotReady) }
     return channelFlow {
@@ -54,38 +73,64 @@ class DefaultCaptureController(
       val heardIds = mutableSetOf<Long>()
       val bikeIds = mutableSetOf<Long>()
       var hubRead = false
+      var stopped = false
       var length = REFRESH_LENGTH
       val batches = Channel<AxsReading>(Channel.UNLIMITED)
 
+      fun publish(progress: RefreshProgress, ended: Boolean = false) {
+        _latestRefresh.value = RefreshRun(started, progress, clock.now().takeIf { ended })
+      }
+
+      fun addTime() {
+        val elapsed = clock.now() - started
+        length = minOf(length + REFRESH_LENGTH, elapsed + RefreshProgress.MaxSecondsLeft.seconds)
+      }
+
       launch { scanner.live().collect { batches.send(it) } }
+      launch { more.collect { addTime() } }
       launch {
-        more.collect {
-          val elapsed = clock.now() - started
-          length = minOf(length + REFRESH_LENGTH, elapsed + RefreshProgress.MaxSecondsLeft.seconds)
+        controls.collect {
+          when (it) {
+            Control.Stop -> stopped = true
+            Control.More -> addTime()
+          }
         }
       }
 
-      while (clock.now() - started < length) {
-        // Drain whatever arrived in the last second.
-        val batch = buildList {
-          while (true) add(batches.tryReceive().getOrNull() ?: break)
-        }
-        if (batch.isNotEmpty()) {
-          val heard = recorder.record(batch)
-          heard.forEach {
-            heardIds += it.component.id.value
-            bikeIds += it.bike.id.value
+      try {
+        while (clock.now() - started < length && !stopped) {
+          // Drain whatever arrived in the last second.
+          val batch = buildList {
+            while (true) add(batches.tryReceive().getOrNull() ?: break)
           }
-          if (refresher.refresh(heard, CaptureMode.Live).hubRead) hubRead = true
-          // The app is open: battery alerts only; the pre-ride nudge is for background wakes.
-          alerts.onCaptured(heard.map { it.bike.id }.toSet(), woke = emptySet())
+          if (batch.isNotEmpty()) {
+            val heard = recorder.record(batch)
+            heard.forEach {
+              heardIds += it.component.id.value
+              bikeIds += it.bike.id.value
+            }
+            if (refresher.refresh(heard, CaptureMode.Live).hubRead) hubRead = true
+            // The app is open: battery alerts only; the pre-ride nudge is for background wakes.
+            alerts.onCaptured(heard.map { it.bike.id }.toSet(), woke = emptySet())
+          }
+          if (stopped) break
+          val left = (length - (clock.now() - started)).inWholeSeconds.toInt().coerceAtLeast(0)
+          val scanning =
+            RefreshProgress.Scanning(left, heardIds.size, length.inWholeSeconds.toInt())
+          publish(scanning)
+          send(scanning)
+          if (hubRead && everythingReadSince(bikeIds, started.toEpochMilliseconds())) break
+          delay(1.seconds)
         }
-        val left = (length - (clock.now() - started)).inWholeSeconds.toInt().coerceAtLeast(0)
-        send(RefreshProgress.Scanning(left, heardIds.size, length.inWholeSeconds.toInt()))
-        if (hubRead && everythingReadSince(bikeIds, started.toEpochMilliseconds())) break
-        delay(1.seconds)
+        val done = RefreshProgress.Done(heardIds.size, hubRead, stopped)
+        publish(done, ended = true)
+        send(done)
+      } finally {
+        // Cancelled by its collector (the bike screen's Stop): ended early all the same.
+        if (_latestRefresh.value?.let { it.startedAt == started && it.endedAt == null } == true) {
+          publish(RefreshProgress.Done(heardIds.size, hubRead, stopped = true), ended = true)
+        }
       }
-      send(RefreshProgress.Done(heardIds.size, hubRead))
       // Stops the live scan.
       channel.close()
     }
@@ -161,6 +206,11 @@ class DefaultCaptureController(
     val cutoff = (clock.now() - ASLEEP_AFTER).toEpochMilliseconds()
     val woke = bikes.filter { seenBefore[it.value]?.let { seen -> seen < cutoff } ?: true }.toSet()
     alerts.onCaptured(bikes, woke)
+  }
+
+  private enum class Control {
+    Stop,
+    More,
   }
 
   private companion object {

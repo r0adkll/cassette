@@ -119,6 +119,15 @@ object LucideIcons {
     }
   }
 
+  /** Lucide `bluetooth-off`. */
+  val BluetoothOff: ImageVector by lazy {
+    lucide("BluetoothOff") {
+      stroke("m17 17-5 5V12l-5 5")
+      stroke("m2 2 20 20")
+      stroke("M14.5 9.5 17 7l-5-5v4.5")
+    }
+  }
+
   /** Lucide `bluetooth-searching`. */
   val BluetoothSearching: ImageVector by lazy {
     lucide("BluetoothSearching") {

@@ -2,13 +2,15 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-/// Cassette's widgets (decision 0017, iteration 15). They read the snapshot the app writes to the
-/// App Group; the app reloads them whenever it writes one.
+/// Cassette's widgets (decision 0017, iteration 15) and the refresh's Live Activity (iteration 16).
+/// The widgets read the snapshot the app writes to the App Group; the app reloads them whenever it
+/// writes one, and starts, updates and ends the Live Activity itself.
 @main
 struct CassetteWidgets: WidgetBundle {
   var body: some Widget {
     BikeWidget()
     AllBikesWidget()
+    RefreshActivityWidget()
   }
 }
 

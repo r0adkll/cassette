@@ -49,15 +49,23 @@ object Cassette {
   /**
    * At every launch, including the ones iOS makes in the background for the Bluetooth scan: the
    * central manager has to exist before launch finishes for iOS to restore it. [reloadWidgets] is
-   * WidgetKit's reload, which only Swift can call.
+   * WidgetKit's reload and [showRefresh] starts, updates or ends the refresh's Live Activity
+   * (returning null, or why ActivityKit refused): only Swift can call either.
    */
-  fun didFinishLaunching(reloadWidgets: () -> Unit) {
+  fun didFinishLaunching(reloadWidgets: () -> Unit, showRefresh: (String) -> String?) {
     graph.central.start()
     graph.widgets.start(scope, reloadWidgets)
+    graph.refreshActivity.start(scope, showRefresh)
     IosReminders({ graph.alerts }, scope).register()
     IosNotifier.registerCategories()
     UNUserNotificationCenter.currentNotificationCenter().delegate = notifications
   }
+
+  /** The Live Activity's Stop. */
+  fun stopRefresh() = graph.captureController.stopRefresh()
+
+  /** The Live Activity's Add 60 s. */
+  fun addRefreshTime() = graph.captureController.addRefreshTime()
 
   /** Leaving the app: the bike screen picks a new status title (decision 0015). */
   fun didEnterBackground() = graph.statusTitles.appBackgrounded()
