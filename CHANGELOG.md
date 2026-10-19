@@ -12,6 +12,9 @@ All notable changes to Cassette are documented here. The format follows
   scan with state restoration, and the three notifications with "Snooze until tomorrow". On iOS,
   Settings → Capture says how iOS lets Cassette listen and when the bike was last heard, and a
   permission turned off points to its place in the Settings app.
+- iPhone widgets (decision 0017): a bike's status block, its components as bars or thick bars, and
+  every bike at once on the home screen; the bike's status and bars on the Lock Screen, and in
+  StandBy. Each widget picks its bike, and taps open the bike or the component.
 - Settings → Notifications asks again, or opens the system settings, while notifications are off.
 - Back, close, settings and add-bike buttons float over the screen, so scrolling no longer takes them
   off screen. On iOS they're Liquid Glass (a frosted material before iOS 26).

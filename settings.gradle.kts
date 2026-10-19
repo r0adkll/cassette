@@ -75,5 +75,7 @@ include(":surfaces:wear:sync")
 
 include(":surfaces:widget")
 
+include(":surfaces:widgetkit")
+
 // The proof of concept, kept installable (and its diagnostics usable) until features are ported.
 include(":poc")

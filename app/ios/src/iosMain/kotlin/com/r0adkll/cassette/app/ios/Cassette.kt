@@ -48,10 +48,12 @@ object Cassette {
 
   /**
    * At every launch, including the ones iOS makes in the background for the Bluetooth scan: the
-   * central manager has to exist before launch finishes for iOS to restore it.
+   * central manager has to exist before launch finishes for iOS to restore it. [reloadWidgets] is
+   * WidgetKit's reload, which only Swift can call.
    */
-  fun didFinishLaunching() {
+  fun didFinishLaunching(reloadWidgets: () -> Unit) {
     graph.central.start()
+    graph.widgets.start(scope, reloadWidgets)
     IosReminders({ graph.alerts }, scope).register()
     IosNotifier.registerCategories()
     UNUserNotificationCenter.currentNotificationCenter().delegate = notifications

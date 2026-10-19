@@ -12,6 +12,7 @@ import com.r0adkll.cassette.data.db.createNativeDriver
 import com.r0adkll.cassette.settings.api.CassetteSettings
 import com.r0adkll.cassette.settings.impl.SettingsFile
 import com.r0adkll.cassette.surfaces.wear.sync.ConnectedWatches
+import com.r0adkll.cassette.surfaces.widgetkit.WidgetPublisher
 import com.slack.circuit.foundation.Circuit
 import com.slack.circuit.runtime.presenter.Presenter
 import com.slack.circuit.runtime.ui.Ui
@@ -39,6 +40,7 @@ interface IosAppGraph {
   val statusTitles: StatusTitles
   val bikeRepository: BikeRepository
   val permissions: IosPermissionController
+  val widgets: WidgetPublisher
 
   @Provides
   @SingleIn(AppScope::class)

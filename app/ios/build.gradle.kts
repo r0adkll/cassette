@@ -31,6 +31,7 @@ kotlin {
       implementation(project(":features:settings:impl"))
       implementation(project(":features:settings:ui"))
       implementation(project(":surfaces:wear:sync"))
+      implementation(project(":surfaces:widgetkit"))
       implementation(libs.circuit.foundation)
       implementation(libs.circuitx.gesture.navigation)
       implementation(libs.circuit.codegen.annotations)
