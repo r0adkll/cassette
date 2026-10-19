@@ -1,0 +1,90 @@
+#!/usr/bin/env python3
+"""Walks the Android app on an emulator through adb, without touching the desktop.
+
+    ANDROID_SERIAL=emulator-5580 scripts/android-walk STEP...
+
+Each STEP is one of:
+    TEXT          tap the first node whose text or content description starts with TEXT
+                  (case-insensitive; "Back" also matches "background", so prefer =TEXT)
+    =TEXT         tap the node whose text or content description is exactly TEXT
+    shot:NAME     save a screenshot to $WALK_DIR/NAME.png (default build/android-walk)
+    swipe         scroll the content up (swipe:right scrolls a wide window's right-hand pane)
+    back          the system back key
+    wait          wait 4 seconds (a cold start, an animation)
+
+Emulators are shared with other sessions: start your own on an unusual port and pass its serial.
+"""
+
+import os
+import re
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+SERIAL = os.environ.get("ANDROID_SERIAL")
+if not SERIAL:
+    sys.exit("Set ANDROID_SERIAL to your own emulator's serial (adb devices)")
+OUT = Path(os.environ.get("WALK_DIR", "build/android-walk"))
+OUT.mkdir(parents=True, exist_ok=True)
+
+
+def adb(*args: str) -> str:
+    return subprocess.run(["adb", "-s", SERIAL, *args], capture_output=True, text=True).stdout
+
+
+def size() -> tuple[int, int]:
+    w, h = re.search(r"(\d+)x(\d+)", adb("shell", "wm", "size").splitlines()[-1]).groups()
+    return int(w), int(h)
+
+
+def tap(label: str) -> None:
+    exact = label.startswith("=")
+    want = label.lstrip("=").lower()
+    for _ in range(10):
+        adb("shell", "uiautomator", "dump", "/sdcard/walk.xml")
+        for node in re.findall(r"<node [^>]*>", adb("shell", "cat", "/sdcard/walk.xml")):
+            names = [
+                re.search(r'text="([^"]*)"', node).group(1).lower(),
+                re.search(r'content-desc="([^"]*)"', node).group(1).lower(),
+            ]
+            if any(n == want if exact else n.startswith(want) for n in names if n):
+                x1, y1, x2, y2 = map(
+                    int, re.search(r'bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"', node).groups()
+                )
+                adb("shell", "input", "tap", str((x1 + x2) // 2), str((y1 + y2) // 2))
+                time.sleep(1.5)
+                print("tapped", label)
+                return
+        time.sleep(1)
+    sys.exit(f"Not found: {label}")
+
+
+def shot(name: str) -> None:
+    png = subprocess.run(
+        ["adb", "-s", SERIAL, "exec-out", "screencap", "-p"], capture_output=True
+    ).stdout
+    # A foldable prints a multiple-displays warning before the image.
+    (OUT / f"{name}.png").write_bytes(png[png.find(b"\x89PNG") :])
+    print("saved", OUT / f"{name}.png")
+
+
+def swipe(right_pane: bool) -> None:
+    w, h = size()
+    x = str(w * 3 // 4 if right_pane else w // 2)
+    adb("shell", "input", "swipe", x, str(h * 3 // 4), x, str(h // 4), "400")
+    time.sleep(1)
+
+
+for step in sys.argv[1:]:
+    if step.startswith("shot:"):
+        shot(step[5:])
+    elif step in ("swipe", "swipe:right"):
+        swipe(step == "swipe:right")
+    elif step == "back":
+        adb("shell", "input", "keyevent", "KEYCODE_BACK")
+        time.sleep(1.5)
+    elif step == "wait":
+        time.sleep(4)
+    else:
+        tap(step)
