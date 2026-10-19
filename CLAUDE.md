@@ -17,6 +17,10 @@ ported. Don't build new features on the POC.
 - `./gradlew :common:compose:jvmTest`: renders the gallery to `common/compose/build/gallery/*.png` in every
   status state, light and dark. Feature UI modules render their screens to `build/screens/` the same way
   (e.g. `:features:bikes:ui:jvmTest`). Use them to check UI without a device; CI uploads both.
+- iOS widgets (decision 0017): `IOS_SIMULATOR=<udid> scripts/ios-uitest` also runs the widget test,
+  which renders every widget and state to `app/ios/Cassette/build/uitest-screens/w-*.png`. The app
+  writes their snapshot to the App Group: `xcrun simctl get_app_container <udid>
+  com.r0adkll.cassette.debug group.com.r0adkll.cassette.debug` shows `widgets.json`.
 - Widgets: debug builds have `WidgetPreviewActivity`, which hosts every widget at fixed sizes without a
   launcher. Once: `adb shell appwidget grantbind --package com.r0adkll.cassette.debug`; then
   `adb shell am start -n com.r0adkll.cassette.debug/com.r0adkll.cassette.app.debug.WidgetPreviewActivity`.

@@ -76,6 +76,11 @@ sealed interface CaptureEvent {
   @Serializable
   @SerialName("wear")
   data class Wear(override val at: Long, val action: WearAction, val detail: String) : CaptureEvent
+
+  /** iOS widgets (decision 0017): their snapshot written to the App Group, or why it wasn't. */
+  @Serializable
+  @SerialName("widgets")
+  data class Widgets(override val at: Long, val detail: String, val ok: Boolean) : CaptureEvent
 }
 
 @Serializable

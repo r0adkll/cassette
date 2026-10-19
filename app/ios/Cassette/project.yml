@@ -11,10 +11,16 @@ settings:
     SWIFT_VERSION: "5.0"
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
+    # The app's id; the widget extension and the App Group are named after it.
+    APP_BUNDLE_ID: com.r0adkll.cassette
     # The Gradle build phase reads and writes outside the sandbox.
     ENABLE_USER_SCRIPT_SANDBOXING: NO
     # CassetteKit is built for arm64 Simulators only (iosSimulatorArm64).
     EXCLUDED_ARCHS[sdk=iphonesimulator*]: x86_64
+  configs:
+    # Local builds sit beside TestFlight's on the same phone, each with its own App Group.
+    Debug:
+      APP_BUNDLE_ID: com.r0adkll.cassette.debug
 targets:
   Cassette:
     type: application
@@ -25,11 +31,15 @@ targets:
       properties:
         # The pre-ride nudge, like Android's high-importance channel.
         com.apple.developer.usernotifications.time-sensitive: true
+        # The widgets' snapshot (decision 0017).
+        com.apple.security.application-groups: [group.$(APP_BUNDLE_ID)]
     info:
       path: Sources/Info.plist
       properties:
         CFBundleDisplayName: Cassette
         UILaunchScreen: {}
+        # Where WidgetPublisher writes the widgets' snapshot.
+        CassetteAppGroup: group.$(APP_BUNDLE_ID)
         # fetch: the daily not-seen reminders run as a background app refresh.
         UIBackgroundModes: [bluetooth-central, fetch]
         BGTaskSchedulerPermittedIdentifiers: [com.r0adkll.cassette.reminders]
@@ -48,18 +58,18 @@ targets:
         ITSAppUsesNonExemptEncryption: false
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.r0adkll.cassette
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
         # Drawn from the Android icon by scripts/generate-ios-icon.py.
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         FRAMEWORK_SEARCH_PATHS: $(SRCROOT)/../build/xcode-frameworks/$(CONFIGURATION)/$(SDK_NAME)
         OTHER_LDFLAGS: [$(inherited), -framework, CassetteKit, -lsqlite3]
       configs:
-        # Local builds sit beside TestFlight's on the same phone.
         Debug:
-          PRODUCT_BUNDLE_IDENTIFIER: com.r0adkll.cassette.debug
           ASSETCATALOG_COMPILER_APPICON_NAME: AppIconDebug
+    dependencies:
+      - target: CassetteWidgets
     scheme:
-      testTargets: [CassetteUITests]
+      testTargets: [CassetteUITests, CassetteWidgetsTests]
     preBuildScripts:
       - name: Build CassetteKit
         basedOnDependencyAnalysis: false
@@ -80,3 +90,49 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.r0adkll.cassette.uitests
         GENERATE_INFOPLIST_FILE: YES
         TEST_TARGET_NAME: Cassette
+  # WidgetKit widgets (decision 0017, iteration 15): SwiftUI over the App Group's snapshot.
+  CassetteWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widgets
+      - path: ../../../common/compose/src/commonMain/composeResources/font/barlow_condensed_bold.ttf
+        buildPhase: resources
+      - path: ../../../common/compose/src/commonMain/composeResources/font/barlow_medium.ttf
+        buildPhase: resources
+      - path: ../../../common/compose/src/commonMain/composeResources/font/barlow_semibold.ttf
+        buildPhase: resources
+    entitlements:
+      path: Widgets.entitlements
+      properties:
+        com.apple.security.application-groups: [group.$(APP_BUNDLE_ID)]
+    info:
+      path: Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: Cassette
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+        UIAppFonts: [barlow_condensed_bold.ttf, barlow_medium.ttf, barlow_semibold.ttf]
+        CassetteAppGroup: group.$(APP_BUNDLE_ID)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID).widgets
+  # Renders every widget, family and state to PNGs (scripts/ios-uitest exports them), like the
+  # Kotlin screen renders: the widget views without the extension's entry point.
+  CassetteWidgetsTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: WidgetTests
+      - path: Widgets
+        excludes: [CassetteWidgets.swift, Info.plist]
+      - path: ../../../common/compose/src/commonMain/composeResources/font/barlow_condensed_bold.ttf
+        buildPhase: resources
+      - path: ../../../common/compose/src/commonMain/composeResources/font/barlow_medium.ttf
+        buildPhase: resources
+      - path: ../../../common/compose/src/commonMain/composeResources/font/barlow_semibold.ttf
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.r0adkll.cassette.widgettests
+        GENERATE_INFOPLIST_FILE: YES
