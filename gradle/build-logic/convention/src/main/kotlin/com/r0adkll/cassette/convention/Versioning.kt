@@ -13,41 +13,62 @@ enum class FormFactor(val digit: Int) {
   Wear(1),
 }
 
-/** The second to last digit, so no two build types of one version share a code. */
-private val BUILD_TYPE_DIGITS = mapOf("release" to 0, "internal" to 1, "debug" to 2)
+/** The second to last digit of a Drop build's code, for its build type. */
+private val DROP_BUILD_TYPE_DIGITS = mapOf("internal" to 1, "debug" to 2)
 
 /**
  * Sets the app's version name from `cassette.version` (gradle.properties) and each variant's
- * version code from it with [versionCode]. Drop orders Builds by run, so internal builds of one
- * version can share a code.
+ * version code: release's from the version ([releaseVersionCode]), the Drop builds' (debug and
+ * internal, under the `.debug` id) from the commit count ([dropVersionCode]), so each Build of a
+ * version has its own code.
  */
 fun Project.configureVersions(formFactor: FormFactor) {
   val versionName = providers.gradleProperty("cassette.version").get()
+  // First-parent only, as Drop counts: a pull request's merge commit never out-counts the main
+  // commit its merge produces. Only run when a Drop build's code is needed.
+  val commitCount =
+    providers
+      .exec { commandLine("git", "rev-list", "--count", "--first-parent", "HEAD") }
+      .standardOutput
+      .asText
+      .map { it.trim().toInt() }
   extensions.configure<ApplicationExtension> { defaultConfig.versionName = versionName }
   extensions.configure<ApplicationAndroidComponentsExtension> {
     onVariants { variant ->
-      val buildType = variant.buildType ?: error("${variant.name} has no build type")
-      val code = versionCode(versionName, buildType, formFactor)
+      val code =
+        when (val buildType = variant.buildType) {
+          "release" -> providers.provider { releaseVersionCode(versionName, formFactor) }
+          else -> commitCount.map { dropVersionCode(it, buildType.orEmpty(), formFactor) }
+        }
       variant.outputs.forEach { it.versionCode.set(code) }
     }
   }
 }
 
 /**
- * `MMmmppTF`: major, minor and patch (as in Campfire, without its rc digits), then T, the build
- * type, and F, the form factor, so a version's phone and Wear bundles, and its release and internal
- * builds, never share a code.
+ * `MMmmpp0F`: major, minor and patch (as in Campfire, without its rc digits), a 0, then F, the form
+ * factor, so a version's phone and Wear bundles never share a code and every code of a version is
+ * below the next version's.
  */
-fun versionCode(versionName: String, buildType: String, formFactor: FormFactor): Int {
+fun releaseVersionCode(versionName: String, formFactor: FormFactor): Int {
   val match =
     SEMVER.matchEntire(versionName)
       ?: error("cassette.version '$versionName' isn't major.minor.patch")
   val (major, minor, patch) = match.destructured
   require(minor.toInt() < 100 && patch.toInt() < 100) { "Minor and patch must be under 100" }
-  val buildTypeDigit =
-    BUILD_TYPE_DIGITS[buildType] ?: error("No version code digit for the '$buildType' build type")
   val version = major.toInt() * 10_000 + minor.toInt() * 100 + patch.toInt()
-  return version * 100 + buildTypeDigit * 10 + formFactor.digit
+  return version * 100 + formFactor.digit
+}
+
+/**
+ * `<commits>TF`: the first-parent commit count, then T, the build type, and F, the form factor.
+ * Drop builds have their own id, so these never meet release's codes.
+ */
+fun dropVersionCode(commitCount: Int, buildType: String, formFactor: FormFactor): Int {
+  val buildTypeDigit =
+    DROP_BUILD_TYPE_DIGITS[buildType]
+      ?: error("No version code digit for the '$buildType' build type")
+  return commitCount * 100 + buildTypeDigit * 10 + formFactor.digit
 }
 
 private val SEMVER = """(\d+)\.(\d+)\.(\d+)""".toRegex()

@@ -36,9 +36,10 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Changed
 
-- Android version codes come from the version name (`cassette.version`), with the build type and form
-  factor as the last two digits, in place of the commit count, so the phone and Wear apps never share
-  one. The new codes are higher than the old ones, so Drop Builds still update.
+- Android release version codes come from the version name (`cassette.version`), with the form factor
+  as the last digit, so the phone and Wear apps never share one. Drop builds keep counting commits,
+  now with the build type and form factor as the last two digits. Builds installed from Drop between
+  the two schemes (codes 10010 and 10011) need one reinstall.
 
 ### Fixed
 
