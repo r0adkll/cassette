@@ -12,6 +12,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,17 +34,21 @@ class DefaultSharedRefresh(
   private val _progress = MutableStateFlow<RefreshProgress?>(null)
   override val progress: StateFlow<RefreshProgress?> = _progress.asStateFlow()
 
-  override suspend fun run(): RefreshProgress {
-    val refresh = lock.withLock {
-      running?.takeIf { it.isActive } ?: scope.async { refreshNow() }.also { running = it }
+  override suspend fun run(): RefreshProgress = start { capture.refresh() }
+
+  override suspend fun demo(): RefreshProgress = start { capture.demoRefresh() }
+
+  private suspend fun start(refresh: () -> Flow<RefreshProgress>): RefreshProgress {
+    val job = lock.withLock {
+      running?.takeIf { it.isActive } ?: scope.async { refreshNow(refresh()) }.also { running = it }
     }
-    return refresh.await()
+    return job.await()
   }
 
-  private suspend fun refreshNow(): RefreshProgress {
+  private suspend fun refreshNow(refresh: Flow<RefreshProgress>): RefreshProgress {
     var last: RefreshProgress = RefreshProgress.NotReady
     try {
-      capture.refresh().collect {
+      refresh.collect {
         last = it
         _progress.value = it.takeIf { p ->
           p is RefreshProgress.Scanning || p is RefreshProgress.NotReady

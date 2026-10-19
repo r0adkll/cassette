@@ -123,9 +123,6 @@ func agoText(_ elapsed: TimeInterval) -> String {
   return "\(days) days ago"
 }
 
-extension Date {
-  init(epochMillis: Int64) { self.init(timeIntervalSince1970: Double(epochMillis) / 1_000) }
-}
 
 /// The App Group file the app writes (`WidgetPublisher`).
 enum SnapshotStore {

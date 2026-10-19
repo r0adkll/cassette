@@ -81,6 +81,11 @@ sealed interface CaptureEvent {
   @Serializable
   @SerialName("widgets")
   data class Widgets(override val at: Long, val detail: String, val ok: Boolean) : CaptureEvent
+
+  /** The iOS Live Activity during a refresh (decision 0017): started, ended, or why it couldn't. */
+  @Serializable
+  @SerialName("live_activity")
+  data class LiveActivity(override val at: Long, val detail: String, val ok: Boolean) : CaptureEvent
 }
 
 @Serializable

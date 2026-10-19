@@ -15,6 +15,12 @@ All notable changes to Cassette are documented here. The format follows
 - iPhone widgets (decision 0017): a bike's status block, its components as bars or thick bars, and
   every bike at once on the home screen; the bike's status and bars on the Lock Screen, and in
   StandBy. Each widget picks its bike, and taps open the bike or the component.
+- A Live Activity on the iPhone while a refresh runs (decision 0017): on the Lock Screen, in the
+  Dynamic Island and in StandBy, the scan counts down in a red ring and each component fills in as it
+  answers, then the result stays for five minutes. The expanded island has Stop and Add 60 s; a tap
+  opens the bike. Its starts and ends go into the capture log.
+- Diagnostics → Demo refresh: the sample bike answers a refresh without Bluetooth, to see the Live
+  Activity (or the Quick Settings tile refreshing) without a bike.
 - Settings → Notifications asks again, or opens the system settings, while notifications are off.
 - Back, close, settings and add-bike buttons float over the screen, so scrolling no longer takes them
   off screen. On iOS they're Liquid Glass (a frosted material before iOS 26).

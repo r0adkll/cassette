@@ -146,6 +146,11 @@ class BikePresenter(
                   when (progress) {
                     is RefreshProgress.Scanning ->
                       RefreshButton.Scanning(progress.secondsLeft, progress.totalSeconds)
+                    // Stopped from the Live Activity: back to ready, as Stop here does.
+                    is RefreshProgress.Done if progress.stopped -> {
+                      refreshStarted = null
+                      RefreshButton.Idle
+                    }
                     is RefreshProgress.Done ->
                       RefreshButton.Done((clock.now() - started).inWholeSeconds.toInt())
                     RefreshProgress.NotReady -> {

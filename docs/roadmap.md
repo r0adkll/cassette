@@ -66,7 +66,9 @@ Bluetooth spike on the bike (2026-10-18; its findings are in 0017, and the spike
 6. Liquid Glass buttons and actions, and the iOS-only screens: mockups, then the components.
 7. WidgetKit widgets, then the Live Activity, then the Apple Watch app, each with its mockups first.
    Widgets are built (iteration 15): home screen, all bikes, Lock Screen and StandBy, rendered by
-   the widget test; not yet seen on a home screen or an iPhone.
+   the widget test; not yet seen on a home screen or an iPhone. The Live Activity is built
+   (iteration 16): Lock Screen, Dynamic Island and StandBy, rendered by the widget test; not yet
+   seen on an iPhone.
 
 Checked without a device: the Simulator UI test (`scripts/ios-uitest`) and iOS screen renders.
 
@@ -77,6 +79,9 @@ Waiting on an iPhone and the bike (deferred to a later phase, 2026-10-18):
 - Notifications posting, the snooze action and taps opening the bike; the reminders' refresh.
 - The widgets on a home screen and the Lock Screen: their reloads after a background capture, the
   bike picker, taps, and the tinted, clear and StandBy looks.
+- The Live Activity during a real refresh: the Dynamic Island drawn by the system, the ring's
+  countdown, Stop and Add 60 s from the island, how long the scan keeps going with the phone locked,
+  StandBy and its night mode.
 - A ride test with the app (Diagnostics' ride tests and capture log, in place of the spike), the
   identifiers across days and a battery swap, and a hub read from a background discovery; then
   background capture's tuning in 0017.

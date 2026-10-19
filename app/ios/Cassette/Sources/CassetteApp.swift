@@ -10,8 +10,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
     // Before launch ends, so iOS can restore the Bluetooth scan it relaunched the app for. The
-    // widgets reload whenever the app writes their snapshot.
-    Cassette.shared.didFinishLaunching(reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() })
+    // widgets reload whenever the app writes their snapshot; the refresh's Live Activity follows
+    // the running refresh, and its buttons reach it.
+    RefreshActivityController.endLeftovers()
+    RefreshControls.stop = { Cassette.shared.stopRefresh() }
+    RefreshControls.more = { Cassette.shared.addRefreshTime() }
+    Cassette.shared.didFinishLaunching(
+      reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() },
+      showRefresh: { RefreshActivityController.show($0) })
     return true
   }
 }

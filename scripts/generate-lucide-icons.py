@@ -11,7 +11,7 @@ from pathlib import Path
 VERSION = "0.460.0"
 ICONS = [
     "activity", "app-window", "arrow-left", "battery-low", "battery-medium", "battery-warning", "bell", "bell-off", "bell-ring",
-    "bike", "bluetooth", "bluetooth-searching", "check", "chevron-down", "chevron-left", "chevron-right", "circle-check",
+    "bike", "bluetooth", "bluetooth-off", "bluetooth-searching", "check", "chevron-down", "chevron-left", "chevron-right", "circle-check",
     "circle-help", "cpu", "download", "file-text", "history", "image-plus", "info", "layout-grid", "mountain",
     "panel-top", "pin", "radio", "shield",
     "refresh-cw", "route", "scan-line", "settings", "share-2", "signal", "smile", "sun-moon", "trash-2",
@@ -40,7 +40,7 @@ ANDROID_ICONS = {
 # Template SVGs for the iOS widget extension's asset catalog (decision 0017), tinted by SwiftUI.
 IOS_ICONS = {
     ROOT / "app/ios/Cassette/Widgets/Assets.xcassets": [
-        "circle-check", "battery-low", "battery-warning", "history", "circle-help",
+        "circle-check", "battery-low", "battery-warning", "history", "circle-help", "check", "bluetooth-off",
     ],
 }
 

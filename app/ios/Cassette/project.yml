@@ -25,7 +25,8 @@ targets:
   Cassette:
     type: application
     platform: iOS
-    sources: [Sources]
+    # Shared: the Live Activity's attributes and intents, also built into the extension.
+    sources: [Sources, Shared]
     entitlements:
       path: Cassette.entitlements
       properties:
@@ -40,6 +41,8 @@ targets:
         UILaunchScreen: {}
         # Where WidgetPublisher writes the widgets' snapshot.
         CassetteAppGroup: group.$(APP_BUNDLE_ID)
+        # The refresh's Live Activity (iteration 16).
+        NSSupportsLiveActivities: true
         # fetch: the daily not-seen reminders run as a background app refresh.
         UIBackgroundModes: [bluetooth-central, fetch]
         BGTaskSchedulerPermittedIdentifiers: [com.r0adkll.cassette.reminders]
@@ -96,6 +99,7 @@ targets:
     platform: iOS
     sources:
       - path: Widgets
+      - path: Shared
       - path: ../../../common/compose/src/commonMain/composeResources/font/barlow_condensed_bold.ttf
         buildPhase: resources
       - path: ../../../common/compose/src/commonMain/composeResources/font/barlow_medium.ttf
@@ -126,6 +130,7 @@ targets:
       - path: WidgetTests
       - path: Widgets
         excludes: [CassetteWidgets.swift, Info.plist]
+      - path: Shared
       - path: ../../../common/compose/src/commonMain/composeResources/font/barlow_condensed_bold.ttf
         buildPhase: resources
       - path: ../../../common/compose/src/commonMain/composeResources/font/barlow_medium.ttf
