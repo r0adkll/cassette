@@ -34,8 +34,15 @@ All notable changes to Cassette are documented here. The format follows
 - Back, close, settings and add-bike buttons float over the screen, so scrolling no longer takes them
   off screen. On iOS they're Liquid Glass (a frosted material before iOS 26).
 
+### Changed
+
+- Android version codes come from the version name (`cassette.version`), with the build type and form
+  factor as the last two digits, in place of the commit count, so the phone and Wear apps never share
+  one. The new codes are higher than the old ones, so Drop Builds still update.
+
 ### Fixed
 
+- The Android release build is called "Cassette"; only debug and internal builds say "(dev)".
 - In-app updates work again in the builds Drop ships: since the R8 `internal` build, they were switched
   off because that build isn't debuggable.
 - On a tablet, Settings sits at the foot of the bike rail again instead of floating halfway down it,

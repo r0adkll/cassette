@@ -1,3 +1,6 @@
+import com.r0adkll.cassette.convention.FormFactor
+import com.r0adkll.cassette.convention.configureVersions
+
 plugins {
   id("cassette.android.application")
   id("cassette.di")
@@ -10,8 +13,6 @@ android {
 
   defaultConfig {
     applicationId = "com.r0adkll.cassette"
-    versionCode = 1
-    versionName = "0.1.0"
   }
 
   // The internal key (decision 0008): CI signs every Build it uploads to Drop with it, so they can
@@ -59,12 +60,13 @@ android {
   buildFeatures { compose = true }
 }
 
+// The version name is `cassette.version`; each build type's code is derived from it.
+configureVersions(FormFactor.Phone)
+
 // Builds from CI go to Drop; the debug and internal builds get its SDK (in-app updates), release
 // the no-op.
 drop {
   serverUrl = "https://drop.thescavengers.software"
-  // Only grows, and a pull request's Build never outranks the main Build its merge produces.
-  versionCodeFromCommits = true
   enableFor { it.buildType == "debug" || it.buildType == "internal" }
 }
 
