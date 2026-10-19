@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Renders docs/images/social-banner.html to docs/images/social-banner.png (1280 × 640), the
+# repository's social preview. Upload it in GitHub: Settings → General → Social preview.
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+chrome="${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
+
+"$chrome" --headless=new --disable-gpu --hide-scrollbars --allow-file-access-from-files \
+  --window-size=1280,640 --force-device-scale-factor=1 \
+  --screenshot="$root/docs/images/social-banner.png" \
+  "file://$root/docs/images/social-banner.html" 2>/dev/null
+echo "docs/images/social-banner.png"
