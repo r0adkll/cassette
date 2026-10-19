@@ -8,6 +8,9 @@ dependencies {
   compileOnly(libs.compose.gradlePlugin)
   compileOnly(libs.composeCompiler.gradlePlugin)
   implementation(libs.metro.gradlePlugin)
+
+  testImplementation(libs.android.gradlePlugin)
+  testImplementation(kotlin("test"))
 }
 
 gradlePlugin {

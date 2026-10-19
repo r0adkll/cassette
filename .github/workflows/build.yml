@@ -264,7 +264,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # Build numbers count first-parent commits, like Drop's version codes.
+          # Build numbers count first-parent commits, so every upload has a new one.
           fetch-depth: 0
 
       - name: App Store Connect key
@@ -298,7 +298,7 @@ jobs:
           ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         run: |
           brew install xcodegen
-          xcodegen generate --quiet --spec app/ios/Cassette/project.yml
+          scripts/xcodegen
           build="$(git rev-list --count --first-parent HEAD)"
           auth=(-allowProvisioningUpdates
             -authenticationKeyPath "$RUNNER_TEMP/AuthKey.p8"

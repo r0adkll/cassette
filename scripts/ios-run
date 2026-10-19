@@ -13,7 +13,7 @@ project=app/ios/Cassette/Cassette.xcodeproj
 derived=app/ios/Cassette/build
 bundle=com.r0adkll.cassette.debug
 
-xcodegen generate --quiet --spec app/ios/Cassette/project.yml
+scripts/xcodegen
 
 if [ "${1:-}" = "--device" ]; then
   if [ -z "${IOS_DEVICE:-}" ]; then

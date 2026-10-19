@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Generates the iOS Xcode project (decision 0017) with the version the Android apps build:
+# `cassette.version` from gradle.properties becomes MARKETING_VERSION for the app, its widgets and
+# the watch app. Build numbers stay the commit count (CI passes CURRENT_PROJECT_VERSION).
+#
+#   scripts/xcodegen    use this, not a bare `xcodegen generate`, which leaves the version empty
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+CASSETTE_VERSION=$(sed -n 's/^cassette\.version=//p' gradle.properties)
+: "${CASSETTE_VERSION:?cassette.version is missing from gradle.properties}"
+export CASSETTE_VERSION
+
+xcodegen generate --quiet --spec app/ios/Cassette/project.yml

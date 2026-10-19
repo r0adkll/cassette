@@ -52,7 +52,8 @@ ported. Don't build new features on the POC.
   -a com.google.android.wearable.app.DEBUG_SURFACE --es operation add-tile --ecn component
   com.r0adkll.cassette.debug/com.r0adkll.cassette.wear.tile.BikeTileService`, then `-a
   com.google.android.wearable.app.DEBUG_SYSUI --es operation show-tile --ei index 0`.
-- iOS (decision 0017): `xcodegen generate --spec app/ios/Cassette/project.yml`, then build the `Cassette`
+- iOS (decision 0017): `scripts/xcodegen` (not a bare `xcodegen generate`: it sets the version from
+  `cassette.version`), then build the `Cassette`
   scheme in Xcode or with `xcodebuild` (its build phase runs `:app:ios:embedAndSignAppleFrameworkForXcode`).
   Debug installs as `com.r0adkll.cassette.debug`. Bluetooth needs an iPhone; the Simulator shows the UI.
   `scripts/ios-run` does all of it on the Simulator (`--device` for a connected iPhone).

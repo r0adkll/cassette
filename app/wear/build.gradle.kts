@@ -1,3 +1,6 @@
+import com.r0adkll.cassette.convention.FormFactor
+import com.r0adkll.cassette.convention.configureVersions
+
 // The Wear OS app, tile and complications (decision 0013). The watch never scans: it shows the
 // phone's snapshot from the Wear Data Layer.
 plugins {
@@ -16,8 +19,6 @@ android {
     applicationId = "com.r0adkll.cassette"
     // Wear OS 4.
     minSdk = 33
-    versionCode = 1
-    versionName = "0.1.0"
   }
 
   // The same internal key as the phone app (decision 0008), so a CI-built watch app and phone app
@@ -65,12 +66,13 @@ android {
   testOptions { unitTests.isReturnDefaultValues = true }
 }
 
+// The phone app's version, with Wear's own codes: Play needs every bundle of a package distinct.
+configureVersions(FormFactor.Wear)
+
 // Drop (decisions 0008 and 0013): CI uploads the internal build as a Wear Build beside the phone's.
-// The plugin stamps it with its run and Channel and gives it the phone's commit-count version code;
-// the SDK isn't started, so nothing checks for updates on the watch yet.
+// The plugin stamps it with its run and Channel.
 drop {
   serverUrl = "https://drop.thescavengers.software"
-  versionCodeFromCommits = true
   enableFor { it.buildType == "debug" || it.buildType == "internal" }
 }
 
