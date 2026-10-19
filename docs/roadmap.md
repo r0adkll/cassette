@@ -1,12 +1,10 @@
 # Roadmap
 
-## M0: Design and spikes
+## M0: Design and spikes (done)
 
-- ~~Design iterations~~: done, direction and every v1 surface approved
-  ([0012](decisions/0012-visual-direction.md)).
-- CompanionDeviceManager spike on the POC ([0009](decisions/0009-background-capture.md)).
-- Ride tests: Batched 30 s profile, and one ride longer than 30 minutes.
-- `docs/protocol.md`: the AXS protocol as we understand it, in our own words, with sources.
+Design iterations (direction and every v1 surface approved, [0012](decisions/0012-visual-direction.md)) and
+`docs/protocol.md`, the AXS protocol in our own words with its sources. The CompanionDeviceManager spike and
+the longer ride tests carried over to the [loose ends](#loose-ends).
 
 ## M1: Android core (done)
 
@@ -47,7 +45,7 @@ tablet emulator (2026-10-18). Later: Settings opening beside the bike rail on la
 would need to live outside the bike screen), keeping the open Settings category when the phone is
 folded, and a "Raw data in diagnostics" link in the component sheet.
 
-## M3: iOS
+## M3: iOS (done)
 
 An iPhone app sharing everything up to the screens ([0017](decisions/0017-ios.md)), from a Core
 Bluetooth spike on the bike (2026-10-18; its findings are in 0017, and the spike is deleted):
@@ -72,9 +70,67 @@ Bluetooth spike on the bike (2026-10-18; its findings are in 0017, and the spike
    and the Smart Stack card, fed over WatchConnectivity; rendered by the watch render test, not
    yet run on a watch.
 
-Checked without a device: the Simulator UI test (`scripts/ios-uitest`) and iOS screen renders.
+Checked without a device: the Simulator UI test (`scripts/ios-uitest`) and iOS screen renders. What still
+needs an iPhone, a watch and the bike moved to M4's [on hardware](#on-hardware).
 
-Waiting on an iPhone and the bike (deferred to a later phase, 2026-10-18):
+## M4: Store release
+
+Cassette on Google Play (phone and Wear) and the App Store (iPhone and Apple Watch). Gathered from an audit
+of the repo on 2026-10-19; nothing here is started. A decision record for the release (listings, signing,
+versioning, what ships in Diagnostics) comes first, and 0008's "sideload only" changes with it.
+
+### Decisions
+
+- **Developer tools in store builds.** Diagnostics → Developer ("Load sample bike", "Demo refresh") shows in
+  every build. Store review can flag demo content, but a reviewer without an AXS bike needs a way to see the
+  app; the sample bike is that way today. Gate them, or keep them and explain them in the review notes.
+  Diagnostics itself stays ([0005](decisions/0005-diagnostics.md)).
+- **iPad.** The iOS app targets iPhone and iPad (XcodeGen's default; `TARGETED_DEVICE_FAMILY` isn't set).
+  Keep it (iPad screenshots and an iPad review pass) or ship iPhone only at first.
+- **Versioning.** Both apps hardcode 0.1.0. Pick the first public version, how it's set (tags?), and cut
+  CHANGELOG's `[Unreleased]` into it.
+- **Languages.** English only, with strings in Kotlin; fine for v1, but say so in both consoles.
+- **Backups.** The phone app doesn't set `allowBackup` or `dataExtractionRules` (on by default), Wear sets
+  `allowBackup="true"`. Decide what the database and settings do on a new phone.
+
+### Both stores
+
+- Listing text that says unofficial and not affiliated with SRAM in the description, not only in the app;
+  SRAM and AXS in a listing can trigger impersonation or IP review. No SRAM marks in screenshots.
+- Screenshots and listing art from the screen renders or devices: phone, tablet or iPad, Wear, Apple Watch.
+- Privacy answers: no data collected, no tracking (no analytics, crash reporting or network client). The
+  privacy policy and terms pages exist; add a support URL (App Store Connect requires one).
+- Content rating questionnaires.
+- Review notes: how to try the app without a bike, why it scans in the background.
+
+### Google Play
+
+- The release build's label is "Cassette (dev)": `app_name` in `app/android/src/main` is the debug one.
+  Move "(dev)" to the debug source set, as Wear does.
+- Release signing: an upload key and Play App Signing. The phone and Wear apps must keep one signing key
+  for the Data Layer ([0013](decisions/0013-wear.md)).
+- Version codes: Drop's `versionCodeFromCommits` also sets release's, so the phone and Wear bundles (one
+  package) would share a code, which Play rejects. Offset Wear's.
+- AABs (`bundleRelease`) and a Play upload from CI (the Play/Fastlane tooling 0008 adopted), alongside the
+  Drop job.
+- Play Console: the app, the Wear form factor opt-in, internal testing track first.
+- Rebuild the release manifests and check them: no `REQUEST_INSTALL_PACKAGES` or `INTERNET` (Drop's no-op),
+  no debug-only components.
+
+### App Store
+
+- The App Store Connect app and API key, which turn on the TestFlight job; then a build installed from
+  TestFlight.
+- Privacy manifests (`PrivacyInfo.xcprivacy`) for the app, widgets, watch app and watch complications:
+  no tracking, no data collected, and the required-reason APIs (file timestamps from DataStore/Okio,
+  UserDefaults in `IosCentral`).
+- iPhone landscape is allowed; check the shared screens in it (or lock to portrait).
+- Review notes for `bluetooth-central` in the background and the time-sensitive notification entitlement.
+- dSYMs for the Kotlin framework, so crashes from App Store builds can be read.
+
+### On hardware
+
+Before submitting, on an iPhone and an Apple Watch with the bike (deferred from M3, 2026-10-18):
 
 - The Bluetooth prompt (the Simulator reports Bluetooth as allowed without asking), adding a bike, a
   refresh, live adverts and hub reads.
@@ -87,7 +143,23 @@ Waiting on an iPhone and the bike (deferred to a later phase, 2026-10-18):
 - A ride test with the app (Diagnostics' ride tests and capture log, in place of the spike), the
   identifiers across days and a battery swap, and a hub read from a background discovery; then
   background capture's tuning in 0017.
-- The first TestFlight build installed from TestFlight.
 - The Apple Watch app on a watch paired to the iPhone: the snapshot arriving, the complications on
   faces (tinted too) and in the Smart Stack, its rise when the bike wakes, and Refresh from the watch
   with the phone locked.
+- The Play release build (R8, release key) on the Pixel and the watch, phone and Wear from Play's internal
+  track.
+
+## Loose ends
+
+Not needed for M4; picked up when they fit.
+
+- Background capture on Android: the CompanionDeviceManager spike
+  ([0009](decisions/0009-background-capture.md), still proposed), the Batched 30 s scan profile and a ride
+  longer than 30 minutes.
+- Wear: automatic updates on the charger (M2, iteration 9 B).
+- Large screens (M2.5): Settings beside the bike rail, keeping the open Settings category when the phone
+  folds, and a "Raw data in diagnostics" link in the component sheet.
+- iOS: the glass buttons' look during push and pop transitions, and on a physical iPhone (0017).
+- Android-only wording (Drop, App updates) still lives in shared Settings code, hidden on iOS by a flag;
+  move it behind `LocalAppPlatform` if it grows.
+- `:poc` goes once its capture and diagnostics are ported.
