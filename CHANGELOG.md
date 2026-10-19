@@ -43,6 +43,8 @@ All notable changes to Cassette are documented here. The format follows
 ### Fixed
 
 - The Android release build is called "Cassette"; only debug and internal builds say "(dev)".
+- The iPhone app, its widgets and the watch app carry the real version and build number (they all
+  said 1.0 (1)): the version from `cassette.version`, shared with Android, and CI's build number.
 - In-app updates work again in the builds Drop ships: since the R8 `internal` build, they were switched
   off because that build isn't debuggable.
 - On a tablet, Settings sits at the foot of the bike rail again instead of floating halfway down it,

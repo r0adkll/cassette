@@ -13,7 +13,7 @@ build=app/ios/Cassette/build
 result=$build/uitests.xcresult
 screens=$build/uitest-screens
 
-xcodegen generate --quiet --spec app/ios/Cassette/project.yml
+scripts/xcodegen
 xcrun simctl bootstatus "$IOS_SIMULATOR" -b >/dev/null
 # A fresh install, so the test starts from the welcome screen.
 xcrun simctl uninstall "$IOS_SIMULATOR" com.r0adkll.cassette.debug || true

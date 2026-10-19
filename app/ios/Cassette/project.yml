@@ -1,5 +1,5 @@
-# The iPhone app (decision 0017). Generate the Xcode project with
-# `xcodegen generate --spec app/ios/Cassette/project.yml`; the .xcodeproj isn't committed.
+# The iPhone app (decision 0017). Generate the Xcode project with `scripts/xcodegen`, which sets
+# CASSETTE_VERSION; the .xcodeproj isn't committed.
 name: Cassette
 options:
   deploymentTarget:
@@ -10,7 +10,8 @@ settings:
     DEVELOPMENT_TEAM: N6RWL4DC5S
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "0.1.0"
+    # `cassette.version` from gradle.properties, as on Android.
+    MARKETING_VERSION: "${CASSETTE_VERSION}"
     CURRENT_PROJECT_VERSION: "1"
     # The app's id; the widget extension and the App Group are named after it.
     APP_BUNDLE_ID: com.r0adkll.cassette
@@ -39,6 +40,9 @@ targets:
       path: Sources/Info.plist
       properties:
         CFBundleDisplayName: Cassette
+        # XcodeGen writes 1.0 and 1 otherwise, ignoring the settings.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}
         # Where WidgetPublisher writes the widgets' snapshot.
         CassetteAppGroup: group.$(APP_BUNDLE_ID)
@@ -118,6 +122,9 @@ targets:
       path: Widgets/Info.plist
       properties:
         CFBundleDisplayName: Cassette
+        # XcodeGen writes 1.0 and 1 otherwise, ignoring the settings.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
         UIAppFonts: [barlow_condensed_bold.ttf, barlow_medium.ttf, barlow_semibold.ttf]
@@ -174,6 +181,9 @@ targets:
       path: Watch/Info.plist
       properties:
         CFBundleDisplayName: Cassette
+        # XcodeGen writes 1.0 and 1 otherwise, ignoring the settings.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         WKApplication: true
         WKCompanionAppBundleIdentifier: $(APP_BUNDLE_ID)
         WKRunsIndependentlyOfCompanionApp: false
@@ -210,6 +220,9 @@ targets:
       path: WatchWidgets/Info.plist
       properties:
         CFBundleDisplayName: Cassette
+        # XcodeGen writes 1.0 and 1 otherwise, ignoring the settings.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
         UIAppFonts: [barlow_condensed_bold.ttf, barlow_medium.ttf, barlow_semibold.ttf]
