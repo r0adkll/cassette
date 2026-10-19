@@ -10,6 +10,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.DisposableEffect
 import androidx.lifecycle.lifecycleScope
 import com.r0adkll.cassette.app.shared.CassetteRoot
+import com.r0adkll.cassette.common.compose.AppInfo
 import com.r0adkll.cassette.common.screens.DeepLinks
 import com.r0adkll.drop.ui.DropUpdateSheet
 import com.slack.circuit.runtime.screen.Screen
@@ -35,6 +36,8 @@ class MainActivity : ComponentActivity() {
 
     // A restored activity keeps its back stack; only a fresh start follows the launching link.
     val launchLink = if (savedInstanceState == null) intent.link() else null
+    val pkg = packageManager.getPackageInfo(packageName, 0)
+    val appInfo = AppInfo(version = pkg.versionName.orEmpty(), build = "${pkg.longVersionCode}")
     setContent {
       CassetteRoot(
         circuit = app.graph.circuit,
@@ -42,6 +45,7 @@ class MainActivity : ComponentActivity() {
         bikes = app.graph.bikeRepository,
         permissions = permissions,
         updates = updates,
+        appInfo = appInfo,
         launchLink = launchLink,
         newLinks = newLinks.receiveAsFlow(),
         systemBars = { dark, _ ->

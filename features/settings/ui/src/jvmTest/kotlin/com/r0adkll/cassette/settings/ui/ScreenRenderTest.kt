@@ -8,11 +8,13 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Density
+import com.r0adkll.cassette.common.compose.AppInfo
 import com.r0adkll.cassette.common.compose.AppPermission
 import com.r0adkll.cassette.common.compose.AppPlatform
 import com.r0adkll.cassette.common.compose.AppUpdates
 import com.r0adkll.cassette.common.compose.AvailableBuild
 import com.r0adkll.cassette.common.compose.FixedPermissionController
+import com.r0adkll.cassette.common.compose.LocalAppInfo
 import com.r0adkll.cassette.common.compose.LocalAppPlatform
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
 import com.r0adkll.cassette.common.compose.LocalPermissionController
@@ -137,6 +139,8 @@ class ScreenRenderTest {
           state.copy(category = Updates),
           UpdateStatus.Failed("Sign in to Drop to check"),
         ),
+        Shot("phone-about", RenderSize.Phone, state.copy(category = About), ready),
+        Shot("fold-about", RenderSize.Fold, state.copy(selected = About), ready),
       )
     for (dark in listOf(true, false)) {
       for (shot in screens) {
@@ -173,6 +177,7 @@ class ScreenRenderTest {
           off,
         ),
         Shot("tablet-notifications", RenderSize.Tablet, state.copy(selected = Notifications), off),
+        Shot("about", RenderSize.Phone, state.copy(category = About), off),
       )
     for (dark in listOf(true, false)) {
       for (shot in screens) {
@@ -230,6 +235,7 @@ class ScreenRenderTest {
             LocalScreenLayout provides currentScreenLayout(),
             LocalAppUpdates provides updates,
             LocalAppPlatform provides platform,
+            LocalAppInfo provides AppInfo(version = "0.1.0", build = "40"),
             LocalPermissionController provides shot.permissions,
           ) {
             Box(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) { content() }
@@ -276,5 +282,6 @@ class ScreenRenderTest {
     val Updates = SettingsCategory.Updates
     val Appearance = SettingsCategory.Appearance
     val Capture = SettingsCategory.Capture
+    val About = SettingsCategory.About
   }
 }

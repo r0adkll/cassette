@@ -27,8 +27,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.r0adkll.cassette.common.compose.AppInfo
 import com.r0adkll.cassette.common.compose.AppPermission
 import com.r0adkll.cassette.common.compose.AppPlatform
+import com.r0adkll.cassette.common.compose.LocalAppInfo
 import com.r0adkll.cassette.common.compose.LocalAppPlatform
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
 import com.r0adkll.cassette.common.compose.LocalPermissionController
@@ -112,10 +114,9 @@ fun SettingsUi(state: SettingsUiState, modifier: Modifier = Modifier) {
   }
   val sink = state.eventSink
   when (val category = state.category) {
-    // Diagnostics and Licences open their own screens, so only a wide window lands on them here.
+    // Diagnostics opens its own screen, so only a wide window lands on it here.
     null,
-    SettingsCategory.Diagnostics,
-    SettingsCategory.Licences -> CategoryList(state, modifier)
+    SettingsCategory.Diagnostics -> CategoryList(state, modifier)
     else ->
       TitledScreen(category.title(), onBack = { sink(SettingsEvent.Back) }, modifier) {
         CategoryBody(category, state)
@@ -131,7 +132,7 @@ private fun CategoryList(state: SettingsUiState, modifier: Modifier) {
   TitledScreen("Settings.", onBack = { state.eventSink(SettingsEvent.Back) }, modifier) {
     Panel {
       categories.forEachIndexed { i, category ->
-        val info = state.info(category, update, LocalAppPlatform.current)
+        val info = state.info(category, update, LocalAppPlatform.current, LocalAppInfo.current)
         SettingsRow(
           info.label,
           subtitle = info.summary,
@@ -191,7 +192,7 @@ internal fun WideSettings(
           modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 10.dp),
         )
         categories.forEach { category ->
-          val info = state.info(category, update, LocalAppPlatform.current)
+          val info = state.info(category, update, LocalAppPlatform.current, LocalAppInfo.current)
           CategoryItem(
             info.icon,
             info.label,
@@ -296,7 +297,7 @@ private fun ColumnScope.CategoryBody(
     }
     SettingsCategory.Appearance ->
       ThemeChoices(state.themeMode, onSelect = { sink(SettingsEvent.SetThemeMode(it)) })
-    SettingsCategory.Licences -> LicencesList()
+    SettingsCategory.About -> AboutBody(onLicences = { sink(SettingsEvent.OpenLicences) })
     // Opens as its own screen on a phone, and in the pane on a wide window.
     SettingsCategory.Diagnostics -> Unit
   }
@@ -393,6 +394,7 @@ private fun SettingsUiState.info(
   category: SettingsCategory,
   update: UpdateStatus,
   platform: AppPlatform,
+  appInfo: AppInfo,
 ): CategoryInfo =
   when (category) {
     SettingsCategory.Bikes -> CategoryInfo(LucideIcons.Pin, "Bikes", opensFirstLabel)
@@ -431,8 +433,12 @@ private fun SettingsUiState.info(
           AppPlatform.Ios -> "Raw adverts, hub tables, ride tests"
         },
       )
-    SettingsCategory.Licences ->
-      CategoryInfo(LucideIcons.FileText, "Licences", "Barlow, JetBrains Mono, Lucide")
+    SettingsCategory.About ->
+      CategoryInfo(
+        LucideIcons.Info,
+        "About",
+        "Version ${appInfo.version} · help, privacy, licences",
+      )
   }
 
 /** App updates shows only on builds that update themselves (Drop's). */
@@ -447,7 +453,7 @@ private fun SettingsCategory.title(): String =
     SettingsCategory.Appearance -> "Appearance."
     SettingsCategory.Updates -> "App updates."
     SettingsCategory.Diagnostics -> "Diagnostics."
-    SettingsCategory.Licences -> "Licences."
+    SettingsCategory.About -> "About."
   }
 
 private fun SettingsCategory.blurb(platform: AppPlatform): String? =
@@ -473,7 +479,9 @@ private fun SettingsCategory.blurb(platform: AppPlatform): String? =
       }
     // The update hero says it all.
     SettingsCategory.Updates -> null
-    SettingsCategory.Licences -> "Third-party fonts and icons Cassette ships."
+    SettingsCategory.About ->
+      "Cassette is an unofficial battery monitor for SRAM AXS. It isn't made or endorsed by SRAM, " +
+        "and what it reads stays on your phone."
     SettingsCategory.Diagnostics -> null
   }
 

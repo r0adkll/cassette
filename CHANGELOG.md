@@ -16,6 +16,9 @@ All notable changes to Cassette are documented here. The format follows
   every bike at once on the home screen; the bike's status and bars on the Lock Screen, and in
   StandBy. Each widget picks its bike, and taps open the bike or the component.
 - Settings → Notifications asks again, or opens the system settings, while notifications are off.
+- Settings → About: the installed version, who made Cassette and its source code, Report a bug (a
+  GitHub issue with the version filled in), the privacy policy and terms of service, and the
+  open-source licences, which move here from their own category.
 - Back, close, settings and add-bike buttons float over the screen, so scrolling no longer takes them
   off screen. On iOS they're Liquid Glass (a frosted material before iOS 26).
 
