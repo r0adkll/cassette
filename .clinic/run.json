@@ -61,6 +61,7 @@
     },
     {
       "command" : "scripts/ios-run",
+      "device" : "ios",
       "icon" : "iphone.gen3",
       "id" : "ios-simulator",
       "name" : "iOS (Simulator)"
