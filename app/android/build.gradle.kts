@@ -18,6 +18,10 @@ android {
   // The internal key (decision 0008): CI signs every Build it uploads to Drop with it, so they can
   // update each other. Without it (local builds) the debug build keeps the debug key.
   val keystore = providers.environmentVariable("CASSETTE_KEYSTORE").orNull
+  // The upload key (M4): Play re-signs with the app signing key it holds, the same for the phone
+  // and
+  // Wear apps. scripts/release-signing-wizard makes it. Without it, release builds are unsigned.
+  val uploadKeystore = providers.environmentVariable("CASSETTE_UPLOAD_KEYSTORE").orNull
   signingConfigs {
     if (keystore != null)
       create("internal") {
@@ -25,6 +29,13 @@ android {
         storePassword = providers.environmentVariable("CASSETTE_KEYSTORE_PASSWORD").get()
         keyAlias = providers.environmentVariable("CASSETTE_KEY_ALIAS").get()
         keyPassword = providers.environmentVariable("CASSETTE_KEY_PASSWORD").get()
+      }
+    if (uploadKeystore != null)
+      create("upload") {
+        storeFile = file(uploadKeystore)
+        storePassword = providers.environmentVariable("CASSETTE_UPLOAD_KEYSTORE_PASSWORD").get()
+        keyAlias = providers.environmentVariable("CASSETTE_UPLOAD_KEY_ALIAS").get()
+        keyPassword = providers.environmentVariable("CASSETTE_UPLOAD_KEY_PASSWORD").get()
       }
   }
 
@@ -39,6 +50,7 @@ android {
       isMinifyEnabled = true
       isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      if (uploadKeystore != null) signingConfig = signingConfigs.getByName("upload")
     }
 
     // What CI uploads to Drop: the release build's R8 optimisation, under the debug build's id, key

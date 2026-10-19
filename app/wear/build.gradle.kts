@@ -24,6 +24,8 @@ android {
   // The same internal key as the phone app (decision 0008), so a CI-built watch app and phone app
   // can talk. Without it (local builds) both keep the debug key.
   val keystore = providers.environmentVariable("CASSETTE_KEYSTORE").orNull
+  // The phone app's upload key (M4); Play signs both apps with one app signing key.
+  val uploadKeystore = providers.environmentVariable("CASSETTE_UPLOAD_KEYSTORE").orNull
   signingConfigs {
     if (keystore != null)
       create("internal") {
@@ -31,6 +33,13 @@ android {
         storePassword = providers.environmentVariable("CASSETTE_KEYSTORE_PASSWORD").get()
         keyAlias = providers.environmentVariable("CASSETTE_KEY_ALIAS").get()
         keyPassword = providers.environmentVariable("CASSETTE_KEY_PASSWORD").get()
+      }
+    if (uploadKeystore != null)
+      create("upload") {
+        storeFile = file(uploadKeystore)
+        storePassword = providers.environmentVariable("CASSETTE_UPLOAD_KEYSTORE_PASSWORD").get()
+        keyAlias = providers.environmentVariable("CASSETTE_UPLOAD_KEY_ALIAS").get()
+        keyPassword = providers.environmentVariable("CASSETTE_UPLOAD_KEY_PASSWORD").get()
       }
   }
 
@@ -44,6 +53,7 @@ android {
       isMinifyEnabled = true
       isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+      if (uploadKeystore != null) signingConfig = signingConfigs.getByName("upload")
     }
 
     // The watch side of the phone's internal build: R8 like release, with the debug build's id, key
