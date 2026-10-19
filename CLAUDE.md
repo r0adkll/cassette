@@ -40,7 +40,16 @@ ported. Don't build new features on the POC.
   `IOS_SIMULATOR=<udid> scripts/ios-uitest` runs the XCUITest walk-through (first run to the sample
   bike) from a fresh install and saves a screenshot per step to `app/ios/Cassette/build/uitest-screens/`.
   Simulators are shared between sessions: create your own (`xcrun simctl create`) and pass its UDID.
+  An iPad Simulator runs the tablet walk-through instead (landscape, the bike rail). In tests, match
+  buttons by their exact label and assert on something only the target screen shows: prefix matches
+  fooled us ("Back" matched "background", "Front derailleur" matched Diagnostics text). Screenshots
+  use `XCUIScreen.main` (the app's own capture is offset in landscape).
   `./gradlew :app:ios:linkDebugFrameworkIosSimulatorArm64` checks the Kotlin half (and its Metro graph).
+- Android on an emulator: `ANDROID_SERIAL=<serial> scripts/android-walk "Get started" "=Back" shot:bike`
+  taps by text through adb (`=` for an exact match), scrolls and takes screenshots. Emulators are
+  shared too: start your own on an unusual port (`emulator -avd <name> -port 5580`).
+- Drive app UI only through XCUITest or adb, never by clicking or typing on the desktop: other apps
+  (and other sessions' Simulators) are on the same screen.
 - `scripts/ktfmt` checks formatting in under a second (`--format` fixes it), build-logic included. It is
   the only formatter: CI and the pre-push hook (`./gradlew bootstrap`) use it, and there is no Gradle
   ktfmt task. In the IDE, use the ktfmt plugin set to Google style.
@@ -63,6 +72,16 @@ ported. Don't build new features on the POC.
   twice if the check still fails; ktfmt occasionally needs a second pass).
 - **Design system:** screens use `:common:compose` (`CassetteTheme`, components, `LucideIcons`); Material 3
   is the fallback layer only. Visual rules are in `docs/decisions/0012-visual-direction.md`.
+- **Top bars float:** a screen's back, close, settings and add-bike buttons go in a `FloatingTopBar` of
+  `TopBarButton`s laid over its scroll column; the column keeps `TopBarButtonSize` free at the top (text
+  beside the buttons stays there and scrolls), and the bar pads by the system bars as the column does
+  (decision 0017). `TopBarButton` is glass on iOS, the solid circle on Android.
+- **iOS differences:** wording and rows that differ go through `LocalAppPlatform`; add an iOS render to
+  the screen's `jvmTest` so iOS text is checked without a Simulator. Native UIKit views laid over Compose
+  (`UIKitView`, `placedAsOverlay`) get no touches in CMP 1.12, so Compose owns the tap, and they ignore
+  Compose's transitions, so only the active screen shows them (`LocalTopBarShown`).
+- **Decision records:** number them from main's newest record just before opening the PR; parallel
+  branches have taken the same number.
 - **Third-party assets:** fonts (OFL) and Lucide (ISC) licences live in `thirdparty/licenses/`.
 - **Commits** keep their `Co-Authored-By` attribution lines.
 
