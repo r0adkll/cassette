@@ -44,7 +44,6 @@ All notable changes to Cassette are documented here. The format follows
   as the last digit, so the phone and Wear apps never share one. Drop builds keep counting commits,
   now with the build type and form factor as the last two digits. Builds installed from Drop between
   the two schemes (codes 10010 and 10011) need one reinstall.
-<<<<<<< HEAD
 - Settings switches animate as each platform's do: Material 3's on Android, and on iOS one sized
   and moving like the system's, whose thumb slides on a spring and stretches while pressed. A press
   anywhere on the row shows on the switch.

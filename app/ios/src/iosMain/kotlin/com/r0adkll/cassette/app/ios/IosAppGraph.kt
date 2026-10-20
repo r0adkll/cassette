@@ -88,7 +88,7 @@ internal fun appFile(name: String): String {
 
 /**
  * Application Support/Diagnostics: like [appFile], but kept out of iCloud and device backups
- * (decision 0018), as what it holds is about this phone. The folder carries the flag, since its
+ * (decision 0019), as what it holds is about this phone. The folder carries the flag, since its
  * files get rewritten. A file from before it existed moves in.
  */
 @OptIn(ExperimentalForeignApi::class)

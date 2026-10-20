@@ -24,7 +24,7 @@ Commits keep their `Co-Authored-By` attribution lines. Unlike Campfire, Cassette
 
 Internal builds go out through Drop (our build distribution platform) at
 https://drop.thescavengers.software. Store releases on Google Play and the App Store, with their listings
-in `fastlane/`, are [0018](0018-store-release.md); this was sideload only until then.
+in `fastlane/`, are [0019](0019-store-release.md); this was sideload only until then.
 
 - CI uploads the `internal` build type: the release build's R8 optimisation and resource shrinking, under
   the debug build's application id (`com.r0adkll.cassette.debug`) and dev icon, so it updates the debug

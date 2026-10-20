@@ -77,5 +77,5 @@ screens link into it, but the main screens stay clean.
 ## More
 
 - Product details: [0010](decisions/0010-product-details.md), Wear: [0013](decisions/0013-wear.md), foldables and tablets: [0014](decisions/0014-large-screens.md), onboarding, notifications and data:
-  [0011](decisions/0011-onboarding-alerts-and-data.md), rotating status titles: [0015](decisions/0015-status-titles.md), edge to edge: [0016](decisions/0016-edge-to-edge.md), iOS: [0017](decisions/0017-ios.md), store release: [0018](decisions/0018-store-release.md)
+  [0011](decisions/0011-onboarding-alerts-and-data.md), rotating status titles: [0015](decisions/0015-status-titles.md), edge to edge: [0016](decisions/0016-edge-to-edge.md), iOS: [0017](decisions/0017-ios.md), ride tests: [0018](decisions/0018-ride-tests.md), store release: [0019](decisions/0019-store-release.md)
 - [Architecture](architecture.md) · [Design process](design-process.md) · [Roadmap](roadmap.md)

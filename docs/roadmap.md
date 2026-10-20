@@ -76,19 +76,19 @@ needs an iPhone, a watch and the bike moved to M4's [on hardware](#on-hardware).
 ## M4: Store release
 
 Cassette on Google Play (phone and Wear) and the App Store (iPhone, iPad and Apple Watch), from an audit of
-the repo on 2026-10-19. The release's decisions are in [0018](decisions/0018-store-release.md).
+the repo on 2026-10-19. The release's decisions are in [0019](decisions/0019-store-release.md).
 
 ### Decisions
 
 - ~~Developer tools in store builds~~: kept, so reviewers without AXS components can use the sample bike
-  (0018).
-- ~~iPad~~: ships, as do Android tablets and foldables, each with screenshot sets (0018).
+  (0019).
+- ~~iPad~~: ships, as do Android tablets and foldables, each with screenshot sets (0019).
 - **Versioning.** Every app's version is `cassette.version` in gradle.properties (#56): Android release
   codes derive from it, Drop builds count commits (#57), iOS build numbers are the commit count. Still
   to pick: the first public version, whether releases are tagged, and cutting CHANGELOG's
   `[Unreleased]` into it.
 - **Languages.** English only, with strings in Kotlin; fine for v1, but say so in both consoles.
-- ~~Backups~~: automatic, everything but the capture log; none on Wear (0018).
+- ~~Backups~~: automatic, everything but the capture log; none on Wear (0019).
 
 ### Both stores
 

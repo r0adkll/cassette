@@ -1,4 +1,4 @@
-# 0018: Store release
+# 0019: Store release
 
 Date: 2026-10-20 · Status: accepted; the first version and languages still open
 
