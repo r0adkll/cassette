@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Backups (decision 0018): the database (bikes, components, their history) and settings go to a
+  new phone, by cloud backup and by device transfer. The capture log stays: it's about this phone.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="file" path="capture-log.jsonl" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="file" path="capture-log.jsonl" />
+    </device-transfer>
+</data-extraction-rules>

@@ -25,7 +25,8 @@ ported. Don't build new features on the POC.
   Bluetooth, so a Simulator shows the real activity; the phone UI test ends with it (`a01`–`a05`:
   the island, expanded, the Lock Screen to Done). `ImageRenderer` can't draw timer views, so the
   `w-activity-*` renders draw the ring statically. Its starts and ends are in the capture log
-  (`Library/Application Support/capture-log.jsonl` in the app's data container).
+  (`Library/Application Support/Diagnostics/capture-log.jsonl` in the app's data container, a folder
+  kept out of backups).
 - Apple Watch (decision 0017): `Watch/` (app) and `WatchWidgets/` (complications) share `Snapshot/`
   with the widgets (`Shared/` is the app's and the widgets', for the Live Activity). The iPhone app embeds the watch app, so every Xcode build of it needs Xcode's
   watchOS platform (`xcodebuild -downloadPlatform watchOS`). The `CassetteRenders` scheme runs only

@@ -44,6 +44,7 @@ All notable changes to Cassette are documented here. The format follows
   as the last digit, so the phone and Wear apps never share one. Drop builds keep counting commits,
   now with the build type and form factor as the last two digits. Builds installed from Drop between
   the two schemes (codes 10010 and 10011) need one reinstall.
+<<<<<<< HEAD
 - Settings switches animate as each platform's do: Material 3's on Android, and on iOS one sized
   and moving like the system's, whose thumb slides on a spring and stretches while pressed. A press
   anywhere on the row shows on the switch.
@@ -58,6 +59,9 @@ All notable changes to Cassette are documented here. The format follows
 - Android's background scan has two profiles, Low power and Batched 30 s (decision 0009); Balanced and
   First + lost are gone, and a phone set to either goes back to Low power. The scan profile chips left
   Diagnostics: a ride test chooses the profile for its ride.
+- Backups (decision 0019): your bikes, their history and your settings go to a new phone with Android's
+  backup and device transfer, as they already did with iCloud. The capture log stays on the phone
+  (on iOS it moves to a `Diagnostics` folder kept out of backups), and the Wear app isn't backed up.
 
 ### Fixed
 

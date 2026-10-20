@@ -88,8 +88,7 @@ the repo on 2026-10-19. The release's decisions are in [0018](decisions/0018-sto
   to pick: the first public version, whether releases are tagged, and cutting CHANGELOG's
   `[Unreleased]` into it.
 - **Languages.** English only, with strings in Kotlin; fine for v1, but say so in both consoles.
-- **Backups.** The phone app doesn't set `allowBackup` or `dataExtractionRules` (on by default), Wear sets
-  `allowBackup="true"`. Decide what the database and settings do on a new phone.
+- ~~Backups~~: automatic, everything but the capture log; none on Wear (0018).
 
 ### Both stores
 
@@ -142,7 +141,7 @@ Before submitting, on an iPhone and an Apple Watch with the bike (deferred from 
   countdown, Stop and Add 60 s from the island, how long the scan keeps going with the phone locked,
   StandBy and its night mode.
 - A ride test with the app (Diagnostics' ride tests and capture log, in place of the spike), the
-  identifiers across days and a battery swap, and a hub read from a background discovery; then
+  identifiers across days, a battery swap and a restore to a new iPhone, and a hub read from a background discovery; then
   background capture's tuning in 0017.
 - The Apple Watch app on a watch paired to the iPhone: the snapshot arriving, the complications on
   faces (tinted too) and in the Smart Stack, its rise when the bike wakes, and Refresh from the watch
