@@ -35,6 +35,11 @@ https://drop.thescavengers.software. Play/Fastlane tooling is adopted but unused
   only in repository secrets (`CASSETTE_KEYSTORE_BASE64`, `CASSETTE_KEYSTORE_PASSWORD`, `CASSETTE_KEY_ALIAS`,
   `CASSETTE_KEY_PASSWORD`), with its owner's copy kept outside the repo. Local builds keep the debug key,
   so an adb install and a Drop build can't update each other.
+- Release builds for Play are signed with an upload key; Play App Signing holds the app signing key, one
+  for the phone and Wear apps. `scripts/release-signing-wizard` makes the key (kept in 1Password, and in
+  `~/.cassette/release.env` for local builds) and sets `CASSETTE_UPLOAD_KEYSTORE_BASE64`,
+  `CASSETTE_UPLOAD_KEYSTORE_PASSWORD`, `CASSETTE_UPLOAD_KEY_ALIAS` and `CASSETTE_UPLOAD_KEY_PASSWORD`.
+  Without `CASSETTE_UPLOAD_KEYSTORE`, release builds are unsigned.
 - The required check ("Test and build") is unit tests and a debug compile, without secrets. The internal
   build and its uploads run in a separate "Internal build" job once that passes, and isn't required, so a
   slow or broken R8 run doesn't block a merge.
