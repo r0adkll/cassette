@@ -82,7 +82,7 @@ the repo on 2026-10-19. The release's decisions are in [0018](decisions/0018-sto
 
 - ~~Developer tools in store builds~~: kept, so reviewers without AXS components can use the sample bike
   (0018).
-- ~~iPad~~: ships, with its own screenshot set (0018).
+- ~~iPad~~: ships, as do Android tablets and foldables, each with screenshot sets (0018).
 - **Versioning.** Every app's version is `cassette.version` in gradle.properties (#56): Android release
   codes derive from it, Drop builds count commits (#57), iOS build numbers are the commit count. Still
   to pick: the first public version, whether releases are tagged, and cutting CHANGELOG's

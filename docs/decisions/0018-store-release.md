@@ -15,8 +15,9 @@ internal builds, and the stores are added beside it.
   (`fastlane/metadata/ios/review_information/notes.txt`, and Play's App access). The sample bike
   carries a month of history so its charts and estimates show; it stays named "Sample bike" in the
   app, and its keys never match a real component.
-- **iPad ships.** The iOS app keeps iPhone and iPad; the tablet layouts ([0014](0014-large-screens.md))
-  carry over, and the listing has an iPad set.
+- **Tablets ship.** Android tablets and foldables, and the iPad (the iOS app keeps iPhone and iPad),
+  with the large-screen layouts ([0014](0014-large-screens.md)). The listings have 7" and 10" tablet
+  sets on Play and an iPad set on the App Store.
 - **Listings** live in `fastlane/` for supply and deliver, text and images, rebuilt by
   `scripts/store-assets` (`fastlane/README.md`). They say Cassette is unofficial and not affiliated with
   SRAM, keep SRAM and AXS out of the app names and App Store keywords, and show no SRAM names or marks.
