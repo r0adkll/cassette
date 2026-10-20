@@ -109,8 +109,9 @@ versioning, what ships in Diagnostics) comes first, and 0008's "sideload only" c
   Move "(dev)" to the debug source set, as Wear does.
 - Release signing: an upload key and Play App Signing, which signs the phone and Wear apps with one key,
   as the Data Layer needs ([0013](decisions/0013-wear.md)). Release builds take the upload key from
-  the environment; `scripts/release-signing-wizard` makes it and sets the CI secrets. Still to do:
-  run it, and create the listing in the Play Console.
+  the environment; `scripts/release-signing-wizard` makes it and sets the CI secrets. The key and
+  secrets exist (2026-10-19; both bundles checked against its fingerprint). Still to do: create the
+  listing in the Play Console.
 - Version codes: Drop's `versionCodeFromCommits` also sets release's, so the phone and Wear bundles (one
   package) would share a code, which Play rejects. Offset Wear's.
 - AABs (`bundleRelease`) and a Play upload from CI (the Play/Fastlane tooling 0008 adopted), alongside the
