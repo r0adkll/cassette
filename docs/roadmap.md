@@ -75,18 +75,14 @@ needs an iPhone, a watch and the bike moved to M4's [on hardware](#on-hardware).
 
 ## M4: Store release
 
-Cassette on Google Play (phone and Wear) and the App Store (iPhone and Apple Watch). Gathered from an audit
-of the repo on 2026-10-19; nothing here is started. A decision record for the release (listings, signing,
-versioning, what ships in Diagnostics) comes first, and 0008's "sideload only" changes with it.
+Cassette on Google Play (phone and Wear) and the App Store (iPhone, iPad and Apple Watch), from an audit of
+the repo on 2026-10-19. The release's decisions are in [0018](decisions/0018-store-release.md).
 
 ### Decisions
 
-- **Developer tools in store builds.** Diagnostics → Developer ("Load sample bike", "Demo refresh") shows in
-  every build. Store review can flag demo content, but a reviewer without an AXS bike needs a way to see the
-  app; the sample bike is that way today. Gate them, or keep them and explain them in the review notes.
-  Diagnostics itself stays ([0005](decisions/0005-diagnostics.md)).
-- **iPad.** The iOS app targets iPhone and iPad (XcodeGen's default; `TARGETED_DEVICE_FAMILY` isn't set).
-  Keep it (iPad screenshots and an iPad review pass) or ship iPhone only at first.
+- ~~Developer tools in store builds~~: kept, so reviewers without AXS components can use the sample bike
+  (0018).
+- ~~iPad~~: ships, with its own screenshot set (0018).
 - **Versioning.** Every app's version is `cassette.version` in gradle.properties (#56): Android release
   codes derive from it, Drop builds count commits (#57), iOS build numbers are the commit count. Still
   to pick: the first public version, whether releases are tagged, and cutting CHANGELOG's
