@@ -1,0 +1,41 @@
+<!doctype html>
+<!--
+  A captioned store screenshot: a headline on red, the screen under it, cropped at the bottom. Everything is sized in vw, so one page fits Play's 1080 × 1920 and each iPhone size.
+  scripts/store-assets renders it with ?shot=<image>&caption=<text> at the target window size.
+  The headline stays in the top 20% of the height (Play's limit for taglines).
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: "Barlow Condensed"; font-weight: 700; src: url("../../common/compose/src/commonMain/composeResources/font/barlow_condensed_bold.ttf"); }
+
+  html, body { margin: 0; height: 100%; }
+  body { overflow: hidden; position: relative; background: #E4002B; }
+  .band {
+    position: absolute; inset: 0 0 auto 0; height: 33.3vw; box-sizing: border-box;
+    color: #fff; padding: 0 7.4vw;
+    display: flex; align-items: center;
+  }
+  h1 {
+    font-family: "Barlow Condensed"; font-weight: 700; font-size: 7.6vw; line-height: 0.95;
+    letter-spacing: -0.01em; margin: 0; text-wrap: balance;
+  }
+  .screen {
+    position: absolute; left: 8.3vw; right: 8.3vw; top: 38vw; bottom: 0; overflow: hidden;
+    border-radius: 5vw 5vw 0 0; border: 0.75vw solid #1C1C1F; border-bottom: 0;
+    background: #0A0A0B; box-shadow: 0 3vw 8vw rgba(0, 0, 0, 0.6);
+  }
+  .screen img { width: 100%; display: block; }
+</style>
+</head>
+<body>
+  <div class="band"><h1 id="caption"></h1></div>
+  <div class="screen"><img id="shot" alt=""></div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    document.getElementById("caption").textContent = params.get("caption");
+    document.getElementById("shot").src = params.get("shot");
+  </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+# Store listings only, for now: text and images, no builds (README.md here). The Play bundle and
+# App Store build lanes come with the release CI job.
+
+platform :android do
+  desc "Uploads the Play listing (text and images) from metadata/android"
+  lane :listing do
+    upload_to_play_store(
+      package_name: "com.r0adkll.cassette",
+      metadata_path: "fastlane/metadata/android",
+      skip_upload_aab: true,
+      skip_upload_apk: true,
+      skip_upload_changelogs: true,
+    )
+  end
+end
+
+platform :ios do
+  desc "Uploads the App Store listing (text and screenshots) from metadata/ios and screenshots/ios"
+  lane :listing do
+    upload_to_app_store(
+      app_identifier: "com.r0adkll.cassette",
+      metadata_path: "fastlane/metadata/ios",
+      screenshots_path: "fastlane/screenshots/ios",
+      skip_binary_upload: true,
+      overwrite_screenshots: true,
+      submit_for_review: false,
+      run_precheck_before_submit: false,
+    )
+  end
+end

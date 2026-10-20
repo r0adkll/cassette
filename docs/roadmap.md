@@ -97,13 +97,15 @@ versioning, what ships in Diagnostics) comes first, and 0008's "sideload only" c
 
 ### Both stores
 
-- Listing text that says unofficial and not affiliated with SRAM in the description, not only in the app;
-  SRAM and AXS in a listing can trigger impersonation or IP review. No SRAM marks in screenshots.
-- Screenshots and listing art from the screen renders or devices: phone, tablet or iPad, Wear, Apple Watch.
+- ~~Listing text~~: in `fastlane/metadata` for supply and deliver; the descriptions say unofficial and
+  not affiliated with SRAM, and SRAM and AXS stay out of the names and App Store keywords.
+- ~~Screenshots and listing art~~: `scripts/store-assets` builds them all into `fastlane/` (its
+  README). The iPad set is portrait: its Simulator doesn't rotate.
 - Privacy answers: no data collected, no tracking (no analytics, crash reporting or network client). The
-  privacy policy and terms pages exist; add a support URL (App Store Connect requires one).
+  privacy policy and terms pages exist; the support URL is the GitHub issues page.
 - Content rating questionnaires.
-- Review notes: how to try the app without a bike, why it scans in the background.
+- ~~Review notes~~: `fastlane/metadata/ios/review_information/notes.txt` (the sample bike, background
+  Bluetooth, time-sensitive notifications); the same steps go in Play's App access.
 
 ### Google Play
 
@@ -127,7 +129,8 @@ versioning, what ships in Diagnostics) comes first, and 0008's "sideload only" c
 - ~~Privacy manifests~~: one per target, no tracking and nothing collected; the app declares file
   timestamps (C617.1) and user defaults (CA92.1).
 - iPhone landscape is allowed; check the shared screens in it (or lock to portrait).
-- Review notes for `bluetooth-central` in the background and the time-sensitive notification entitlement.
+- ~~Review notes~~ for `bluetooth-central` in the background and the time-sensitive notification
+  entitlement (above).
 - dSYMs for the Kotlin framework, so crashes from App Store builds can be read.
 
 ### On hardware

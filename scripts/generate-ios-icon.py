@@ -4,7 +4,7 @@
 The Android adaptive icon (a 108-unit foreground over a background colour) becomes a full-bleed
 1024 px square: iOS masks the corners itself. Only the middle 72 units are drawn, which is what a
 launcher shows of an adaptive icon. Release builds get AppIcon, debug builds AppIconDebug (the
-near-black debug icon), as on Android.
+near-black debug icon), as on Android. It also draws Play's 512 px listing icon into `fastlane/`.
 
 Needs rsvg-convert (`brew install librsvg`). Re-run after changing the Android icon.
 """
@@ -21,6 +21,7 @@ CATALOGS = {
     ROOT / "app/ios/Cassette/Sources/Assets.xcassets": "ios",
     ROOT / "app/ios/Cassette/Watch/Assets.xcassets": "watchos",
 }
+PLAY_ICON = ROOT / "fastlane/metadata/android/en-US/images/icon.png"
 A = "{http://schemas.android.com/apk/res/android}"
 
 ICONS = {
@@ -89,6 +90,14 @@ def main() -> None:
         (assets / "Contents.json").write_text(
             json.dumps({"info": {"author": "xcode", "version": 1}}, indent=2) + "\n"
         )
+    # Play's listing icon: the release icon at 512 px, full bleed (Play rounds the corners).
+    PLAY_ICON.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        ["rsvg-convert", "-w", "512", "-h", "512", "-o", str(PLAY_ICON)],
+        input=svg("main").encode(),
+        check=True,
+    )
+    print(f"Wrote {PLAY_ICON}")
 
 
 if __name__ == "__main__":

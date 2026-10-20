@@ -1,0 +1,1 @@
+Battery levels for SRAM AXS components

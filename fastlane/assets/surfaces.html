@@ -1,0 +1,93 @@
+<!doctype html>
+<!--
+  The listings' widget and watch shots on red under a headline, sized in vw like caption.html.
+  iPhone: the widget test's renders (captures/widgets, drawn by the real SwiftUI views, cut from
+  their backdrop into cut/ by scripts/store-assets). Play: the Android widgets from the debug
+  build's widget preview (captures/android-widgets, cut the same way) and the Wear captures.
+  Rendered with ?slide=widgets|watch|android-widgets|wear&caption=<text>.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: "Barlow Condensed"; font-weight: 700; src: url("../../common/compose/src/commonMain/composeResources/font/barlow_condensed_bold.ttf"); }
+
+  html, body { margin: 0; height: 100%; }
+  body { overflow: hidden; position: relative; background: #E4002B; }
+  .band {
+    position: absolute; inset: 0 0 auto 0; height: 33.3vw; box-sizing: border-box;
+    color: #fff; padding: 0 7.4vw; display: flex; align-items: center;
+  }
+  h1 {
+    font-family: "Barlow Condensed"; font-weight: 700; font-size: 7.6vw; line-height: 0.95;
+    letter-spacing: -0.01em; margin: 0; text-wrap: balance;
+  }
+  .slide {
+    position: absolute; inset: 33.3vw 8vw 8vw 8vw; display: none;
+    flex-direction: column; justify-content: center; align-items: center; gap: 6vw;
+  }
+  img { display: block; filter: drop-shadow(0 2vw 4vw rgba(0, 0, 0, 0.35)); }
+  .row { display: flex; gap: 4vw; align-items: center; }
+
+  /* Widgets: the Live Activity, a medium widget, then a small one beside a Lock Screen one. */
+  #widgets .wide { width: 84vw; }
+  #widgets .small { width: 40vw; }
+  #widgets .lock { width: 40vw; border-radius: 4vw; }
+
+  /* Android widgets: the medium one, then the small and large ones side by side. */
+  #android-widgets .wide { width: 84vw; }
+  #android-widgets .small { width: 40vw; }
+
+  /* Apple Watch: a bike's page in a watch-shaped bezel, then a complication and the Smart Stack. */
+  #watch .face {
+    width: 56vw; padding: 4vw; border-radius: 10vw; background: #0A0A0B;
+    filter: drop-shadow(0 2vw 4vw rgba(0, 0, 0, 0.35));
+  }
+  #watch .face img { width: 100%; filter: none; }
+  #watch .circle { width: 22vw; border-radius: 50%; }
+  #watch .stack { width: 62vw; border-radius: 6vw; }
+
+  /* Wear OS: the emulator captures (captures/wear) in plain circles, the round screen they come from. */
+  #wear img { border-radius: 50%; }
+  #wear .big { width: 62vw; }
+  #wear .small { width: 38vw; }
+</style>
+</head>
+<body>
+  <div class="band"><h1 id="caption"></h1></div>
+  <div class="slide" id="widgets">
+    <img class="wide" src="cut/w-activity-lock-reading-4-dark.png" alt="">
+    <img class="wide" src="cut/w-medium-low-dark.png" alt="">
+    <div class="row">
+      <img class="small" src="cut/w-small-good-dark.png" alt="">
+      <img class="lock" src="captures/widgets/w-lock-rectangular-low.png" alt="">
+    </div>
+  </div>
+  <div class="slide" id="watch">
+    <div class="face"><img src="cut/w-watch-page-low.png" alt=""></div>
+    <div class="row">
+      <img class="circle" src="captures/widgets/w-watch-circle-low.png" alt="">
+      <img class="stack" src="captures/widgets/w-watch-stack-low.png" alt="">
+    </div>
+  </div>
+  <div class="slide" id="android-widgets">
+    <img class="wide" src="cut/android-medium.png" alt="">
+    <div class="row">
+      <img class="small" src="cut/android-small.png" alt="">
+      <img class="small" src="cut/android-large.png" alt="">
+    </div>
+  </div>
+  <div class="slide" id="wear">
+    <img class="big" src="captures/wear/02-bike-low.png" alt="">
+    <div class="row">
+      <img class="small" src="captures/wear/01-bikes-low.png" alt="">
+      <img class="small" src="captures/wear/05-tile.png" alt="">
+    </div>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    document.getElementById("caption").textContent = params.get("caption");
+    document.getElementById(params.get("slide")).style.display = "flex";
+  </script>
+</body>
+</html>

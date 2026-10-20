@@ -21,6 +21,10 @@ All notable changes to Cassette are documented here. The format follows
   opens the bike. Its starts and ends go into the capture log.
 - Diagnostics → Demo refresh: the sample bike answers a refresh without Bluetooth, to see the Live
   Activity (or the Quick Settings tile refreshing) without a bike.
+- The sample bike comes with a month of history (its derailleurs charged 12 days ago), so its charts
+  and estimates show, and its components show their serials.
+- Store listings for Google Play and the App Store under `fastlane/`, with `scripts/store-assets` to
+  rebuild their images.
 - An Apple Watch app (decision 0017): a page per bike in its status colour, paged with the crown, the
   components as thick bars, and Refresh, which asks the iPhone to listen and counts down on the
   watch. Complications for the weakest battery (circular and corner) and the bike's status

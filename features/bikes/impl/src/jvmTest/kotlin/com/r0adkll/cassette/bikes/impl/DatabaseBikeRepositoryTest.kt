@@ -142,7 +142,12 @@ class DatabaseBikeRepositoryTest {
         val detail = awaitItem()!!
         assertEquals("Sample bike", detail.bike.name)
         assertEquals(78, detail.latest?.percent)
-        assertEquals(listOf(92, 78), detail.history.map { it.percent })
+        // The read at 1 s, then the sample's month: charged 12 days ago, at 78% today.
+        val history = detail.history.map { it.percent }
+        assertEquals(listOf(92, 62), history.take(2))
+        assertEquals(listOf(37, 98), history.subList(18, 20))
+        assertEquals(78, history.last())
+        assertEquals(32, history.size)
         cancelAndIgnoreRemainingEvents()
       }
   }
