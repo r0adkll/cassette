@@ -1,0 +1,96 @@
+name: Release
+
+# The Play release bundles (decision 0019): the phone and Wear apps, signed with the upload key
+# (scripts/release-signing-wizard), their manifests and signatures checked, kept as artifacts with
+# their R8 mappings. Run it from the Actions tab on the branch or tag to release. Uploading to Play
+# waits for a service account, which needs the app in the Play Console first.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  play:
+    name: Play bundles
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: 'zulu'
+          java-version: 21
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      # Unlike the internal build, there's no unsigned fallback: Play only takes the upload key.
+      - name: Upload key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.CASSETTE_UPLOAD_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::No upload key in the repository secrets: run scripts/release-signing-wizard."
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
+          echo "CASSETTE_UPLOAD_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+
+      - name: Build
+        run: ./gradlew :app:android:bundleRelease :app:wear:bundleRelease
+        env:
+          CASSETTE_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.CASSETTE_UPLOAD_KEYSTORE_PASSWORD }}
+          CASSETTE_UPLOAD_KEY_ALIAS: ${{ secrets.CASSETTE_UPLOAD_KEY_ALIAS }}
+          CASSETTE_UPLOAD_KEY_PASSWORD: ${{ secrets.CASSETTE_UPLOAD_KEY_PASSWORD }}
+
+      # No network or install permissions, nothing debuggable, no debug components, the watch
+      # feature only on Wear.
+      - name: Check the manifests
+        run: scripts/check-release-manifests | tee "$RUNNER_TEMP/manifests.txt"
+
+      - name: Check the signatures
+        env:
+          CASSETTE_UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.CASSETTE_UPLOAD_KEYSTORE_PASSWORD }}
+          CASSETTE_UPLOAD_KEY_ALIAS: ${{ secrets.CASSETTE_UPLOAD_KEY_ALIAS }}
+        run: |
+          key=$(keytool -list -v -keystore "$CASSETTE_UPLOAD_KEYSTORE" -alias "$CASSETTE_UPLOAD_KEY_ALIAS" \
+            -storepass:env CASSETTE_UPLOAD_KEYSTORE_PASSWORD | sed -n 's/^.*SHA256: //p' | head -n1)
+          for bundle in app/android/build/outputs/bundle/release/android-release.aab \
+            app/wear/build/outputs/bundle/release/wear-release.aab; do
+            signer=$(keytool -printcert -jarfile "$bundle" | sed -n 's/^.*SHA256: //p' | head -n1)
+            if [ "$signer" != "$key" ]; then
+              echo "::error::$bundle isn't signed with the upload key ($signer)."
+              exit 1
+            fi
+          done
+          {
+            echo "## Play bundles"
+            echo
+            grep -E '^(phone|wear):' "$RUNNER_TEMP/manifests.txt" | sed 's/^/- /'
+            echo
+            echo "Signed with the upload key, SHA-256 \`$key\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the bundles
+        uses: actions/upload-artifact@v7
+        with:
+          name: play-bundles
+          path: |
+            app/android/build/outputs/bundle/release/android-release.aab
+            app/wear/build/outputs/bundle/release/wear-release.aab
+          if-no-files-found: error
+
+      # To retrace stack traces from Play (and to upload to the Play Console with each release).
+      - name: Upload the R8 mappings
+        uses: actions/upload-artifact@v7
+        with:
+          name: play-r8-mappings
+          path: |
+            app/android/build/outputs/mapping/release/mapping.txt
+            app/wear/build/outputs/mapping/release/mapping.txt
+          if-no-files-found: error

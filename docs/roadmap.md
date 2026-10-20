@@ -111,11 +111,13 @@ the repo on 2026-10-19. The release's decisions are in [0019](decisions/0019-sto
   secrets exist (2026-10-19; both bundles checked against its fingerprint). Still to do: create the
   listing in the Play Console.
 - ~~Version codes~~: release's are `MMmmpp0F`, so the phone and Wear bundles never share one (#56, #57).
-- AABs (`bundleRelease`) and a Play upload from CI (the Play/Fastlane tooling 0008 adopted), alongside the
-  Drop job.
+- ~~AABs~~: the Release workflow (`.github/workflows/release.yml`, run by hand) builds both bundles with
+  the upload key, checks them and keeps them with their R8 mappings. Still to do: the Play upload from
+  it (fastlane supply), once a service account exists.
 - Play Console: the app, the Wear form factor opt-in, internal testing track first.
-- Rebuild the release manifests and check them: no `REQUEST_INSTALL_PACKAGES` or `INTERNET` (Drop's no-op),
-  no debug-only components.
+- ~~Rebuild the release manifests and check them~~: `scripts/check-release-manifests`, run by the
+  Release workflow. Neither app asks for `INTERNET` or `REQUEST_INSTALL_PACKAGES`, nor ships a debug
+  component (2026-10-20).
 
 ### App Store
 

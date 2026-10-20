@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""Checks the phone and Wear apps' merged release manifests before they go to Play (decision 0019).
+
+Lists every permission and component, and fails on what a store build must not have: network or
+install permissions (the privacy answers say nothing leaves the phone, and Drop's no-op leaves
+none), anything debuggable or test-only, and the debug builds' own components.
+
+    ./gradlew :app:android:processReleaseMainManifest :app:wear:processReleaseMainManifest
+    scripts/check-release-manifests
+"""
+
+import sys
+import xml.etree.ElementTree as ET
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+A = "{http://schemas.android.com/apk/res/android}"
+MANIFESTS = {
+    "phone": ROOT / "app/android/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml",
+    "wear": ROOT / "app/wear/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml",
+}
+FORBIDDEN_PERMISSIONS = {
+    "android.permission.INTERNET",
+    "android.permission.REQUEST_INSTALL_PACKAGES",
+}
+# The debug source sets' components (WidgetPreviewActivity, SampleDataReceiver) and Drop's SDK.
+FORBIDDEN_COMPONENTS = (".debug.", "software.thescavengers.drop", "com.r0adkll.drop")
+COMPONENTS = ("activity", "activity-alias", "service", "receiver", "provider")
+
+
+def check(name: str, path: Path) -> list[str]:
+    if not path.exists():
+        return [f"{name}: no merged release manifest at {path.relative_to(ROOT)}"]
+    manifest = ET.parse(path).getroot()
+    application = manifest.find("application")
+    problems = []
+    print(f"{name}: {manifest.get('package')} {manifest.get(A + 'versionName')} ({manifest.get(A + 'versionCode')})")
+    # Play files a bundle under Wear by the watch feature: only the Wear app may declare it.
+    features = {feature.get(A + "name") for feature in manifest.iter("uses-feature")}
+    if ("android.hardware.type.watch" in features) != (name == "wear"):
+        problems.append(f"{name}: the watch feature is {'missing' if name == 'wear' else 'declared'}")
+    for permission in manifest.iter("uses-permission"):
+        permission_name = permission.get(A + "name")
+        print(f"  permission {permission_name}")
+        if permission_name in FORBIDDEN_PERMISSIONS:
+            problems.append(f"{name}: {permission_name}")
+    for kind in COMPONENTS:
+        for component in application.iter(kind):
+            component_name = component.get(A + "name")
+            exported = component.get(A + "exported", "false")
+            print(f"  {kind} {component_name}{' (exported)' if exported == 'true' else ''}")
+            if any(marker in component_name for marker in FORBIDDEN_COMPONENTS):
+                problems.append(f"{name}: {kind} {component_name}")
+    for flag in ("debuggable", "testOnly"):
+        if application.get(A + flag) == "true":
+            problems.append(f"{name}: android:{flag}")
+    return problems
+
+
+def main() -> int:
+    problems = [p for name, path in MANIFESTS.items() for p in check(name, path)]
+    if problems:
+        print("\nNot for a store build:", *problems, sep="\n  ")
+        return 1
+    print("\nThe release manifests are store-ready.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

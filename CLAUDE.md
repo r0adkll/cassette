@@ -14,6 +14,10 @@ ported. Don't build new features on the POC.
 
 - `./gradlew :app:android:assembleDebug`: the app. `assembleInternal` (here and in `:app:wear`) is the
   R8-optimised build CI uploads to Drop (same app id and key as debug); check R8 changes on a device with it.
+- Release: the Release workflow (run by hand) builds the Play bundles with the upload key
+  (`scripts/release-signing-wizard`). Locally: `set -a; source ~/.cassette/release.env; set +a`, then
+  `./gradlew :app:android:bundleRelease :app:wear:bundleRelease`; `scripts/check-release-manifests`
+  fails on network or install permissions and debug components in the release manifests.
 - `./gradlew :common:compose:jvmTest`: renders the gallery to `common/compose/build/gallery/*.png` in every
   status state, light and dark. Feature UI modules render their screens to `build/screens/` the same way
   (e.g. `:features:bikes:ui:jvmTest`). Use them to check UI without a device; CI uploads both.
