@@ -1,1 +1,1 @@
-Battery levels for SRAM AXS components. Unofficial, not affiliated with SRAM.
+Battery levels for SRAM AXS components

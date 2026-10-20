@@ -20,10 +20,3 @@ EVERYWHERE YOU LOOK
 
 HISTORY
 • 30-day, 90-day and 1-year charts for each component, marking charges and coin-cell swaps, beside its voltage, shift count and firmware.
-
-PRIVATE
-• No account, no ads, no analytics, no tracking. What Cassette reads stays on your devices.
-
-WORTH KNOWING
-• The Bluetooth protocol was worked out independently and has been tested on one road bike so far. Other wireless groupsets should work; anything Cassette doesn't recognise shows up in Diagnostics, where you can share a report.
-• Cassette is open source: github.com/r0adkll/cassette
