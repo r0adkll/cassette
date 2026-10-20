@@ -30,6 +30,9 @@ import com.r0adkll.cassette.common.compose.theme.StatusTone
 
 private val PanelShape = RoundedCornerShape(16.dp)
 
+/** The gap between a panel's children; row dividers sit in the middle of it. */
+internal val PanelSpacing = 8.dp
+
 /** A bordered surface for grouped content. [selected] outlines it in the text colour. */
 @Composable
 fun Panel(
@@ -51,7 +54,7 @@ fun Panel(
         )
         .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
         .padding(horizontal = 14.dp, vertical = 10.dp),
-    verticalArrangement = Arrangement.spacedBy(8.dp),
+    verticalArrangement = Arrangement.spacedBy(PanelSpacing),
     content = content,
   )
 }

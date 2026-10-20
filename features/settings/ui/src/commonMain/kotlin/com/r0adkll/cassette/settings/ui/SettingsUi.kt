@@ -397,7 +397,7 @@ private fun SettingsUiState.info(
   appInfo: AppInfo,
 ): CategoryInfo =
   when (category) {
-    SettingsCategory.Bikes -> CategoryInfo(LucideIcons.Pin, "Bikes", opensFirstLabel)
+    SettingsCategory.Bikes -> CategoryInfo(LucideIcons.Bike, "Bikes", opensFirstLabel)
     SettingsCategory.Capture ->
       CategoryInfo(
         LucideIcons.Bluetooth,

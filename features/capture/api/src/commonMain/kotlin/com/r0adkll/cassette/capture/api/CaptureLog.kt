@@ -31,6 +31,8 @@ sealed interface CaptureEvent {
     val label: String,
     val profile: String,
     val phoneBatteryPercent: Int?,
+    /** The everyday profile to put back when the test ends, if the test tried another one. */
+    val restoreProfile: String? = null,
   ) : CaptureEvent
 
   @Serializable

@@ -44,6 +44,20 @@ All notable changes to Cassette are documented here. The format follows
   as the last digit, so the phone and Wear apps never share one. Drop builds keep counting commits,
   now with the build type and form factor as the last two digits. Builds installed from Drop between
   the two schemes (codes 10010 and 10011) need one reinstall.
+- Settings switches animate as each platform's do: Material 3's on Android, and on iOS one sized
+  and moving like the system's, whose thumb slides on a spring and stretches while pressed. A press
+  anywhere on the row shows on the switch.
+- Settings lists App updates after Diagnostics, just above About.
+- About's Privacy policy row has no subtitle, like Terms of service.
+- About's Made by names The Scavenger's Software only.
+- Settings' Bikes category has a bike icon instead of the pin.
+- Ride tests are a guided flow (decision 0018): choose what to test, check what's ready, ride, then a
+  verdict in plain words (Kept up, Patchy or Lost the bike), the wakes across the ride, each component
+  by name, reads and phone battery, with the raw numbers under Details. Ride tests compares Low power
+  and Batched 30 s. A test that tries Batched 30 s puts Low power back when it stops.
+- Android's background scan has two profiles, Low power and Batched 30 s (decision 0009); Balanced and
+  First + lost are gone, and a phone set to either goes back to Low power. The scan profile chips left
+  Diagnostics: a ride test chooses the profile for its ride.
 
 ### Fixed
 
@@ -54,6 +68,8 @@ All notable changes to Cassette are documented here. The format follows
   off because that build isn't debuggable.
 - On a tablet, Settings sits at the foot of the bike rail again instead of floating halfway down it,
   and is now an outlined button to match Add bike.
+- The dividers between Settings and Diagnostics rows sit midway between them; they hugged the row
+  above.
 
 ### Changed
 

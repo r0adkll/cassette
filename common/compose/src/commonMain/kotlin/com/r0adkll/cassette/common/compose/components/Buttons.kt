@@ -1,5 +1,6 @@
 package com.r0adkll.cassette.common.compose.components
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -18,6 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,7 +35,10 @@ import com.r0adkll.cassette.common.compose.theme.CassetteRed
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import kotlinx.coroutines.delay
 
-/** The one primary action on a screen ("REFRESH NOW"), or an outlined secondary one. */
+/**
+ * The one primary action on a screen ("REFRESH NOW"), or an outlined secondary one. Not [enabled],
+ * it fades to the track colour and ignores taps (a form that isn't filled in yet).
+ */
 @Composable
 fun CassetteButton(
   text: String,
@@ -42,10 +47,21 @@ fun CassetteButton(
   primary: Boolean = true,
   icon: ImageVector? = null,
   trailing: String? = null,
+  enabled: Boolean = true,
 ) {
   val colors = CassetteTheme.colors
   val shape = RoundedCornerShape(26.dp)
-  val content = if (primary) colors.onInk else colors.text
+  val content by
+    animateColorAsState(
+      when {
+        !enabled -> colors.muted
+        primary -> colors.onInk
+        else -> colors.text
+      },
+      label = "content",
+    )
+  val container by
+    animateColorAsState(if (enabled) colors.ink else colors.track, label = "container")
   Row(
     modifier =
       modifier
@@ -53,10 +69,9 @@ fun CassetteButton(
         .height(52.dp)
         .clip(shape)
         .then(
-          if (primary) Modifier.background(colors.ink)
-          else Modifier.border(1.dp, colors.line, shape)
+          if (primary) Modifier.background(container) else Modifier.border(1.dp, colors.line, shape)
         )
-        .clickable(role = Role.Button, onClick = onClick)
+        .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
         .padding(horizontal = 22.dp),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement =

@@ -49,6 +49,48 @@ class RideSummaryTest {
     assertEquals(3, summary.phoneBatteryUsed)
     assertEquals(listOf("rd" to 3, "pm" to 1), summary.components.map { it.key to it.wakesHeardIn })
     assertNull(events.activeSession())
+    // A minute a slice: the wakes at 1:00, 1:30 and 4:00.
+    assertEquals(TIMELINE_BUCKETS, summary.timeline.size)
+    assertEquals(listOf(0, 2, 0, 0, 1), summary.timeline.take(5))
+    assertEquals(3, summary.timeline.sum())
+    // The 2.5 minute gap and the failed read.
+    assertEquals(RideVerdict.Patchy, summary.verdict)
+  }
+
+  @Test
+  fun keptUpWhenNeverQuietForLong() {
+    val wakes =
+      (1..20).map { CaptureEvent.Delivery(it * 30_000L, listOf(sighting("rd", it * 30_000L)), 0) }
+    val events =
+      listOf(CaptureEvent.SessionStarted(0, "Ride", "AllLowPower", null)) +
+        wakes +
+        CaptureEvent.SessionEnded(620_000, null)
+    assertEquals(RideVerdict.KeptUp, summarizeSessions(events, 0).single().verdict)
+  }
+
+  @Test
+  fun lostWithoutWakesOrWhenArmingFailed() {
+    val silent =
+      listOf(
+        CaptureEvent.SessionStarted(0, "Ride", "AllLowPower", null),
+        CaptureEvent.SessionEnded(600_000, null),
+      )
+    assertEquals(RideVerdict.Lost, summarizeSessions(silent, 0).single().verdict)
+
+    val unarmed =
+      listOf(
+        CaptureEvent.SessionStarted(0, "Ride", "AllLowPower", null),
+        CaptureEvent.Armed(
+          1,
+          "AllLowPower",
+          "Not armed: Bluetooth is off",
+          "ride test",
+          ok = false,
+        ),
+        CaptureEvent.Delivery(30_000, listOf(sighting("rd", 30_000)), 0),
+        CaptureEvent.SessionEnded(60_000, null),
+      )
+    assertEquals(RideVerdict.Lost, summarizeSessions(unarmed, 0).single().verdict)
   }
 
   @Test

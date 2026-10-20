@@ -1,19 +1,20 @@
 package com.r0adkll.cassette.common.compose.components
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -21,6 +22,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -81,14 +83,22 @@ fun SettingsSwitchRow(
   icon: ImageVector? = null,
   divider: Boolean = true,
 ) {
+  // Shared with the switch, so a press anywhere on the row shows on it too.
+  val interactions = remember { MutableInteractionSource() }
   RowLayout(
     title,
-    modifier.toggleable(checked, role = Role.Switch, onValueChange = onCheckedChange),
+    modifier.toggleable(
+      checked,
+      interactions,
+      indication = LocalIndication.current,
+      role = Role.Switch,
+      onValueChange = onCheckedChange,
+    ),
     subtitle,
     icon,
     divider,
   ) {
-    Toggle(checked, onCheckedChange = null)
+    Toggle(checked, onCheckedChange = null, interactionSource = interactions)
   }
 }
 
@@ -123,7 +133,14 @@ private fun RowLayout(
       }
       trailing()
     }
-    if (divider) HorizontalDivider(color = colors.line, thickness = 1.dp)
+    // Drawn in the middle of the panel's gap below, so it sits as far from the next row's text as
+    // from this one's.
+    if (divider)
+      HorizontalDivider(
+        Modifier.offset(y = PanelSpacing / 2),
+        color = colors.line,
+        thickness = 1.dp,
+      )
   }
 }
 
@@ -206,33 +223,6 @@ private fun Modifier.bleedHorizontally(amount: Dp) = layout { measurable, constr
       )
     )
   layout(constraints.maxWidth, placeable.height) { placeable.place(-extra / 2, 0) }
-}
-
-/**
- * An on/off switch in ink and track colours. A null [onCheckedChange] draws it only, for a row that
- * handles the tap ([SettingsSwitchRow]).
- */
-@Composable
-fun Toggle(checked: Boolean, onCheckedChange: ((Boolean) -> Unit)?, modifier: Modifier = Modifier) {
-  val colors = CassetteTheme.colors
-  Box(
-    modifier
-      .width(44.dp)
-      .height(26.dp)
-      .clip(RoundedCornerShape(13.dp))
-      .background(if (checked) colors.ink else colors.track)
-      .then(
-        if (onCheckedChange != null)
-          Modifier.clickable(role = Role.Switch) { onCheckedChange(!checked) }
-        else Modifier
-      )
-      .padding(3.dp),
-    contentAlignment = if (checked) Alignment.CenterEnd else Alignment.CenterStart,
-  ) {
-    Box(
-      Modifier.size(20.dp).clip(CircleShape).background(if (checked) colors.onInk else colors.muted)
-    )
-  }
 }
 
 /** A row of choices, one selected (filters, scan profiles). */

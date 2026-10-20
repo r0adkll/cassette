@@ -13,7 +13,6 @@ import com.r0adkll.cassette.capture.api.WearAction
 import com.r0adkll.cassette.common.compose.AppPlatform
 import com.r0adkll.cassette.common.compose.LocalAppPlatform
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
-import com.r0adkll.cassette.data.ble.ScanProfile
 import com.r0adkll.cassette.settings.api.CaptureHealth
 import com.r0adkll.cassette.surfaces.wear.sync.ConnectedWatch
 import java.io.File
@@ -56,7 +55,6 @@ class ScreenRenderTest {
               health =
                 CaptureHealth("Armed (AllLowPower) · app start", 3.hours.ago, 5.minutes.ago, 42),
               bluetoothReady = true,
-              profile = ScanProfile.AllLowPower,
               bike = null,
               now = now,
               confirmRemove = false,

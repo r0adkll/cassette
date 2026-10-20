@@ -35,7 +35,6 @@ internal fun AboutBody(onLicences: () -> Unit) {
     )
   }
   SettingsSection("Made by") {
-    LinkRow("Drew Heavner", "github.com/r0adkll", LucideIcons.User, AboutLinks.AUTHOR)
     LinkRow(
       "The Scavenger's Software",
       "thescavengers.software",
@@ -66,7 +65,7 @@ internal fun AboutBody(onLicences: () -> Unit) {
     )
   }
   SettingsSection("Legal") {
-    LinkRow("Privacy policy", "No accounts, no analytics", LucideIcons.Shield, AboutLinks.PRIVACY)
+    LinkRow("Privacy policy", null, LucideIcons.Shield, AboutLinks.PRIVACY)
     LinkRow("Terms of service", null, LucideIcons.Scale, AboutLinks.TERMS)
     SettingsRow(
       "Open-source licences",
@@ -106,7 +105,6 @@ private fun LinkRow(
 }
 
 internal object AboutLinks {
-  const val AUTHOR = "https://github.com/r0adkll"
   const val COMPANY = "https://thescavengers.software"
   const val SOURCE = "https://github.com/r0adkll/cassette"
   const val ISSUES = "$SOURCE/issues"

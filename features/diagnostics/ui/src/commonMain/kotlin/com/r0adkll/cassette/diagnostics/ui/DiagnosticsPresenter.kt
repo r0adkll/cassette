@@ -20,7 +20,6 @@ import com.r0adkll.cassette.common.screens.DiagnosticsScreen
 import com.r0adkll.cassette.common.screens.HubTablesScreen
 import com.r0adkll.cassette.common.screens.LiveAdvertsScreen
 import com.r0adkll.cassette.common.screens.RideTestsScreen
-import com.r0adkll.cassette.data.ble.ScanProfile
 import com.r0adkll.cassette.settings.api.CaptureHealth
 import com.r0adkll.cassette.settings.api.CassetteSettings
 import com.r0adkll.cassette.surfaces.wear.sync.ConnectedWatch
@@ -41,7 +40,6 @@ import kotlinx.coroutines.launch
 data class DiagnosticsUiState(
   val health: CaptureHealth,
   val bluetoothReady: Boolean,
-  val profile: ScanProfile,
   val bike: BikeOverview?,
   val now: Instant,
   val confirmRemove: Boolean,
@@ -79,8 +77,6 @@ sealed interface DiagnosticsEvent : CircuitUiEvent {
 
   data object Share : DiagnosticsEvent
 
-  data class SetProfile(val profile: ScanProfile) : DiagnosticsEvent
-
   data object LoadSampleBike : DiagnosticsEvent
 
   /** Reloads the sample bike and runs a refresh in which it answers, without Bluetooth. */
@@ -117,7 +113,6 @@ class DiagnosticsPresenter(
       settings.captureHealth
     }
       .collectAsRetainedState(CaptureHealth(null, null, null, 0))
-    val profile by remember { settings.scanProfile }.collectAsRetainedState(ScanProfile.AllLowPower)
     val bike by remember { bikes.observeOverview(null) }.collectAsRetainedState(null)
     var confirmRemove by remember { mutableStateOf(false) }
     val events by remember { log.events }.collectAsRetainedState(emptyList())
@@ -131,7 +126,6 @@ class DiagnosticsPresenter(
     return DiagnosticsUiState(
       health,
       capture.isReady,
-      profile,
       bike,
       clock.now(),
       confirmRemove,
@@ -158,11 +152,6 @@ class DiagnosticsPresenter(
           }
         DiagnosticsEvent.OpenHubTables ->
           bike?.let { navigator.goTo(HubTablesScreen(it.bike.id.value)) }
-        is DiagnosticsEvent.SetProfile ->
-          scope.launch {
-            settings.setScanProfile(event.profile)
-            capture.ensureBackgroundCapture("profile changed")
-          }
         DiagnosticsEvent.SimulateLowBattery ->
           bike?.let { overview ->
             scope.launch {

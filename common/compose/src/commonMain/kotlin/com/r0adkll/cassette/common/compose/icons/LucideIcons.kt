@@ -484,6 +484,43 @@ object LucideIcons {
     }
   }
 
+  /** Lucide `triangle-alert`. */
+  val TriangleAlert: ImageVector by lazy {
+    lucide("TriangleAlert") {
+      stroke("m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3")
+      stroke("M12 9v4")
+      stroke("M12 17h.01")
+    }
+  }
+
+  /** Lucide `circle-x`. */
+  val CircleX: ImageVector by lazy {
+    lucide("CircleX") {
+      stroke("M2.0 12.0a10.0 10.0 0 1 0 20.0 0a10.0 10.0 0 1 0 -20.0 0Z")
+      stroke("m15 9-6 6")
+      stroke("m9 9 6 6")
+    }
+  }
+
+  /** Lucide `square`. */
+  val Square: ImageVector by lazy {
+    lucide("Square") {
+      stroke(
+        "M5.0 3.0h14.0a2.0 2.0 0 0 1 2.0 2.0v14.0a2.0 2.0 0 0 1 -2.0 2.0h-14.0a2.0 2.0 0 0 1 -2.0 -2.0v-14.0a2.0 2.0 0 0 1 2.0 -2.0Z"
+      )
+    }
+  }
+
+  /** Lucide `smartphone`. */
+  val Smartphone: ImageVector by lazy {
+    lucide("Smartphone") {
+      stroke(
+        "M7.0 2.0h10.0a2.0 2.0 0 0 1 2.0 2.0v16.0a2.0 2.0 0 0 1 -2.0 2.0h-10.0a2.0 2.0 0 0 1 -2.0 -2.0v-16.0a2.0 2.0 0 0 1 2.0 -2.0Z"
+      )
+      stroke("M12 18h.01")
+    }
+  }
+
   /** Cassette's `bike-plus`: Lucide `bike` plus a +. */
   val BikePlus: ImageVector by lazy {
     lucide("BikePlus") {

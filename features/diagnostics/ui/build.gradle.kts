@@ -8,7 +8,9 @@ kotlin {
       implementation(project(":features:capture:api"))
       implementation(project(":features:alerts:api"))
       implementation(project(":surfaces:wear:sync"))
+      implementation(libs.navigationevent.compose)
     }
+    commonTest.dependencies { implementation(project(":features:settings:test")) }
     jvmTest.dependencies { implementation(compose.desktop.currentOs) }
   }
 }
