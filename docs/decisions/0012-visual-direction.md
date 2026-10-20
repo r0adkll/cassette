@@ -109,7 +109,7 @@ categories.
   launcher size).
 
 Defaults taken where nothing was decided: power-meter choice by signal strength; scan profile lives only in
-Diagnostics; no activity log on the bike screen yet.
+Diagnostics (since 2026-10-19, only in a ride test's setup, [0018](0018-ride-tests.md)); no activity log on the bike screen yet.
 
 ## Watch app updates (iteration 9, approved 2026-10-17)
 

@@ -28,8 +28,8 @@ enum class SettingsCategory {
   Capture,
   Notifications,
   Appearance,
-  Updates,
   Diagnostics,
+  Updates,
   /** Version, who made it, help, the legal pages and licences. */
   About,
 }
@@ -55,7 +55,17 @@ enum class SettingsCategory {
 
 @Parcelize data object LiveAdvertsScreen : ParcelableScreen
 
+/** Ride tests: the one recording, the profiles compared and past tests. */
 @Parcelize data object RideTestsScreen : ParcelableScreen
+
+/** A new ride test's setup: step 1 (what to test, the name) and 2 (the checks), then Start. */
+@Parcelize data object RideTestSetupScreen : ParcelableScreen
+
+/** The test that's recording; leaving it keeps the test running. */
+@Parcelize data object RideTestRecordingScreen : ParcelableScreen
+
+/** How the test that started at [startedAt] (epoch milliseconds) went. */
+@Parcelize data class RideTestResultScreen(val startedAt: Long) : ParcelableScreen
 
 /** The hub tables of [bikeId]'s hub, read on open. */
 @Parcelize data class HubTablesScreen(val bikeId: Long) : ParcelableScreen

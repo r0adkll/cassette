@@ -121,20 +121,10 @@ private fun ScanProfile.settings(): ScanSettings =
         ScanProfile.AllLowPower ->
           setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
             .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
-        ScanProfile.AllBalanced ->
-          setScanMode(ScanSettings.SCAN_MODE_BALANCED)
-            .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
         ScanProfile.Batched30s ->
           setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
             .setCallbackType(ScanSettings.CALLBACK_TYPE_ALL_MATCHES)
             .setReportDelay(30_000L)
-        ScanProfile.FirstAndLost ->
-          setScanMode(ScanSettings.SCAN_MODE_LOW_POWER)
-            .setCallbackType(
-              ScanSettings.CALLBACK_TYPE_FIRST_MATCH or ScanSettings.CALLBACK_TYPE_MATCH_LOST
-            )
-            .setMatchMode(ScanSettings.MATCH_MODE_AGGRESSIVE)
-            .setNumOfMatches(ScanSettings.MATCH_NUM_ONE_ADVERTISEMENT)
       }
     }
     .build()

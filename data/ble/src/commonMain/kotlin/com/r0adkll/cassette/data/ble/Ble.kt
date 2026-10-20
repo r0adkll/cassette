@@ -41,16 +41,15 @@ sealed interface ArmResult {
   data class Failed(val code: Int) : ArmResult
 }
 
-/** Background scan configurations; ride tests compare them (decision 0009). */
+/**
+ * Background scan configurations; ride tests compare them (decision 0009). A stored name that's no
+ * longer here (Balanced, First + lost) reads as [AllLowPower].
+ */
 enum class ScanProfile {
-  /** Every advert heard in the low-power window wakes the app. */
+  /** Every advert heard in the low-power window wakes the app. The default. */
   AllLowPower,
-  /** Scans more often: better coverage, more phone battery. */
-  AllBalanced,
   /** The controller holds results and wakes the app at most every 30 s. */
   Batched30s,
-  /** One wake when a component appears and one when it goes quiet. */
-  FirstAndLost,
 }
 
 /** Short, read-only GATT sessions: connect, read, disconnect. No pairing, no writes. */

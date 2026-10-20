@@ -15,7 +15,6 @@ import com.r0adkll.cassette.capture.api.CaptureEvent
 import com.r0adkll.cassette.common.compose.AppPlatform
 import com.r0adkll.cassette.common.compose.LocalAppPlatform
 import com.r0adkll.cassette.common.compose.components.CassetteButton
-import com.r0adkll.cassette.common.compose.components.ChoiceChips
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.SettingsRow
@@ -23,7 +22,6 @@ import com.r0adkll.cassette.common.compose.components.SettingsSection
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.screens.DiagnosticsScreen
-import com.r0adkll.cassette.data.ble.ScanProfile
 import com.slack.circuit.codegen.annotations.CircuitInject
 import dev.zacsweers.metro.AppScope
 import kotlin.time.Instant
@@ -88,21 +86,6 @@ fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
         divider = false,
       )
     }
-    // iOS sets the background scan's cadence itself, so there is nothing to choose.
-    if (!ios)
-      SettingsSection("Scan profile") {
-        Text(
-          "How the background scan listens; ride tests compare them (decision 0009).",
-          style = CassetteTheme.type.bodySmall,
-          color = colors.muted,
-        )
-        ChoiceChips(
-          options = ScanProfile.entries,
-          selected = state.profile,
-          label = { it.label },
-          onSelect = { sink(DiagnosticsEvent.SetProfile(it)) },
-        )
-      }
     SettingsSection("Developer") {
       SettingsRow(
         "Load sample bike",
@@ -183,12 +166,3 @@ private fun WearPanel(wear: WearDiagnostics, now: Instant, ios: Boolean) {
 
 private val CaptureEvent.Wear.instant: Instant
   get() = Instant.fromEpochMilliseconds(at)
-
-private val ScanProfile.label: String
-  get() =
-    when (this) {
-      ScanProfile.AllLowPower -> "Low power"
-      ScanProfile.AllBalanced -> "Balanced"
-      ScanProfile.Batched30s -> "Batched 30 s"
-      ScanProfile.FirstAndLost -> "First + lost"
-    }

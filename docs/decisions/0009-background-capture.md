@@ -46,7 +46,18 @@ address matches the scanned one and survives sleep, a battery swap and the next 
 latency with the screen off; GATT and the foreground service from a cold process; Bluetooth toggles and
 reboot (`adb shell cmd companiondevice simulate-device-event` helps iterate).
 
+## Scan profiles (2026-10-19)
+
+Two remain: **Low power** (the default; both validation rides used it) and **Batched 30 s** (the
+controller holds results and wakes the app at most every 30 s, which may cut the ~1,000 wakes an hour
+the power meter drives). Balanced only cost more battery, and First + lost overlapped the
+CompanionDeviceManager spike; a stored choice of either reads as Low power. There's no profile
+setting: a ride test can try Batched 30 s for one ride and puts Low power back when it stops
+([0018](0018-ride-tests.md)). If Batched 30 s keeps up on a few rides, it becomes the default.
+
+CompanionDeviceManager stays on the `spike/cdm` proof of concept (issue #2) and isn't ported.
+
 ## Open
 
 - CompanionDeviceManager spike results.
-- The default scan profile, and a ride longer than 30 minutes.
+- Batched 30 s on a ride, and a ride longer than 30 minutes.

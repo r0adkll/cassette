@@ -91,7 +91,7 @@ come from the same adaptive library (`windowPosture`: `isTabletop` and the hinge
   reports even when flat), so nothing sits on the fold, or down the middle on a tablet. Built in M2.5
   step 6; the welcome keeps the phone's wording for the three points.
 - **Settings, every size (10c, S3):** settings become categories: Bikes, Capture, Notifications,
-  Appearance (added after: System, Light or Dark as small previews), App updates, Diagnostics, Licences, each with a live summary ("2 of 3 on", a red dot when a build is
+  Appearance (added after: System, Light or Dark as small previews), Diagnostics, App updates (moved below Diagnostics, just above the last category), Licences, each with a live summary ("2 of 3 on", a red dot when a build is
   waiting). On a phone the category list opens one category screen at a time, with a sentence on what it
   covers; wide windows show the list and the open category side by side, and with the rail Settings
   opens beside the bike rail. Rows keep the approved anatomy: icon, title, subtitle, switches in the text

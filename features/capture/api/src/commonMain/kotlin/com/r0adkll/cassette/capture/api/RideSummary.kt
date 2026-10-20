@@ -25,7 +25,35 @@ data class RideSummary(
   val budgetExceeded: Int,
   val armFailures: List<String>,
   val phoneBatteryUsed: Int?,
-)
+  /** Wakes in each of [TIMELINE_BUCKETS] equal slices of the session, oldest first. */
+  val timeline: List<Int>,
+) {
+  /** How the test went, from the wakes and reads (thresholds in [RideVerdict]). */
+  val verdict: RideVerdict
+    get() =
+      when {
+        wakes == 0 || armFailures.isNotEmpty() -> RideVerdict.Lost
+        longestGapMillis > PATCHY_GAP_MILLIS || gattFailed > 0 || budgetExceeded > 0 ->
+          RideVerdict.Patchy
+        else -> RideVerdict.KeptUp
+      }
+}
+
+/**
+ * A ride test's outcome. Kept up: never quiet for more than 2 minutes and every background read
+ * worked; battery levels change far more slowly than that. Patchy: a longer quiet stretch (a stop
+ * long enough for the bike to sleep does this too), or reads that failed or ran out of time. Lost:
+ * no wakes at all, or the scan couldn't be armed.
+ */
+enum class RideVerdict {
+  KeptUp,
+  Patchy,
+  Lost,
+}
+
+const val TIMELINE_BUCKETS = 60
+
+private const val PATCHY_GAP_MILLIS = 2 * 60_000L
 
 data class ComponentActivity(
   val key: String,
@@ -101,5 +129,16 @@ private fun summarize(
       events.filterIsInstance<CaptureEvent.Armed>().filterNot { it.ok }.map { it.result },
     phoneBatteryUsed =
       start.phoneBatteryPercent?.let { begin -> end?.phoneBatteryPercent?.let { begin - it } },
+    timeline = timeline(wakeTimes, start.at, duration),
   )
+}
+
+private fun timeline(wakeTimes: List<Long>, startAt: Long, duration: Long): List<Int> {
+  val buckets = IntArray(TIMELINE_BUCKETS)
+  if (duration > 0)
+    for (at in wakeTimes) {
+      val slice = ((at - startAt) * TIMELINE_BUCKETS / duration).toInt()
+      buckets[slice.coerceIn(0, TIMELINE_BUCKETS - 1)]++
+    }
+  return buckets.toList()
 }
