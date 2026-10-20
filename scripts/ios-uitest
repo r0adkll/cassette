@@ -4,6 +4,8 @@
 #
 #   IOS_SIMULATOR=<udid> scripts/ios-uitest
 #
+# IOS_UITEST_ONLY=<target/class> runs one class (the store screenshots, fastlane/README.md).
+#
 # Simulators are shared with other sessions, so the UDID is required: use one you created.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -22,7 +24,8 @@ rm -rf "$result" "$screens"
 status=0
 xcodebuild -project app/ios/Cassette/Cassette.xcodeproj -scheme Cassette -configuration Debug \
   -destination "platform=iOS Simulator,id=$IOS_SIMULATOR" -derivedDataPath "$build" \
-  -resultBundlePath "$result" -quiet test || status=$?
+  -resultBundlePath "$result" -quiet ${IOS_UITEST_ONLY:+-only-testing:"$IOS_UITEST_ONLY"} test \
+  || status=$?
 
 mkdir -p "$screens"
 xcrun xcresulttool export attachments --path "$result" --output-path "$screens" >/dev/null

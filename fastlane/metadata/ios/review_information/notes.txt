@@ -1,0 +1,9 @@
+Cassette reads the batteries of SRAM AXS wireless bike components over Bluetooth. It is an independent, unofficial app; it doesn't connect to SRAM's services or use their code.
+
+Trying it without a bike: tap Get started, then Continue, close the "Wake your bike" step with the X, and open Settings → Diagnostics. Scroll to Developer and tap "Load sample bike", then go back twice. That adds a sample bike with real-looking data, so every screen, the widgets and the Apple Watch app can be seen. "Demo refresh" in the same place runs a refresh the sample bike answers, which shows the Live Activity.
+
+Background Bluetooth (bluetooth-central): the components only broadcast for a minute or two after the bike wakes (when the rider shakes it or shifts). Cassette scans for their service in the background so it catches that window and updates the batteries and widgets without the app being open. It connects to nothing but the bike's own components.
+
+Time-sensitive notifications: the pre-ride alert ("the bike just woke and a battery is low") is only useful in the minutes before a ride, so it is marked time sensitive. Other alerts are normal notifications.
+
+No account, no network service, no analytics or tracking.

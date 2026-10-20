@@ -12,6 +12,7 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.withContext
 
@@ -35,10 +36,11 @@ class DatabaseDeveloperTools(
         SAMPLE_COMPONENTS.forEach { c ->
           // Sample keys never match a real component, so capture can't attach to them, and loading
           // the sample never touches a bike the user added.
+          // The serial is only shown, never matched, so the sample can show a real-looking one.
           db.componentQueries.insert(
             bike,
             SAMPLE_KEY_PREFIX + c.key,
-            null,
+            c.key.toLongOrNull(),
             c.kind.name,
             c.modelId,
             c.deviceType,
@@ -48,14 +50,17 @@ class DatabaseDeveloperTools(
             seen,
           )
           val component = db.componentQueries.lastInsertedId().executeAsOne()
-          db.batterySampleQueries.insert(
-            component,
-            seen,
-            c.millivolts,
-            c.percent,
-            c.status?.name,
-            c.method.name,
-          )
+          // A month of daily reads before this one, so the charts and estimates have a history.
+          for (days in HISTORY_DAYS downTo 0) {
+            db.batterySampleQueries.insert(
+              component,
+              seen - days.days.inWholeMilliseconds,
+              c.millivolts?.let { c.millivoltsAt(days) },
+              c.percent?.let { c.percentAt(days) },
+              c.status?.name,
+              c.method.name,
+            )
+          }
         }
       }
     }
@@ -88,12 +93,40 @@ class DatabaseDeveloperTools(
     val percent: Long?,
     val status: BatteryStatus?,
     val method: ReadMethod,
-  )
+  ) {
+    private val charged =
+      kind == ComponentKind.REAR_DERAILLEUR || kind == ComponentKind.FRONT_DERAILLEUR
+
+    /**
+     * The voltage [days] before today: the derailleur packs were charged [CHARGED_DAYS_AGO] days
+     * ago and have fallen since, from a drained pack before; coin cells drift down a millivolt a
+     * day.
+     */
+    fun millivoltsAt(days: Int): Long =
+      when {
+        !charged -> millivolts!! + days
+        days > CHARGED_DAYS_AGO -> 7_600L + (days - CHARGED_DAYS_AGO - 1) * 20
+        else -> millivolts!! + days * (8_350 - millivolts) / CHARGED_DAYS_AGO
+      }
+
+    /**
+     * The percentage [days] before today, as [millivoltsAt]; the power meter loses one in three
+     * days.
+     */
+    fun percentAt(days: Int): Long =
+      when {
+        !charged -> percent!! + days / 3
+        days > CHARGED_DAYS_AGO -> 37L + (days - CHARGED_DAYS_AGO - 1) * 25 / 17
+        else -> percent!! + days * (98 - percent) / CHARGED_DAYS_AGO
+      }
+  }
 
   private companion object {
     /** Not a real hub serial (they're unsigned), so it can't collide with an added bike. */
     const val SAMPLE_HUB = -1L
     const val SAMPLE_KEY_PREFIX = "sample:"
+    const val HISTORY_DAYS = 30
+    const val CHARGED_DAYS_AGO = 12
 
     /** The validation bike (Red AXS) as read on 2026-10-16. */
     val SAMPLE_COMPONENTS =

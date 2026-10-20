@@ -1,0 +1,144 @@
+#!/usr/bin/env bash
+# Regenerates the store listing images under fastlane/: Play's (supply, metadata/android) and the
+# App Store's (deliver, screenshots/ios). Run it after a screen, the icon or a caption changes.
+#
+#   scripts/store-assets            renders the Android screens, then lays everything out
+#   scripts/store-assets --no-render  lays out from what's already in fastlane/assets
+#
+# Sources: Android screens come from StoreRenderTest (features/bikes/ui) into fastlane/assets/screens.
+# iOS, iPad, Apple Watch and Wear OS screens are device captures in fastlane/assets/captures,
+# retaken by hand (fastlane/README.md says how). Captions are in this file.
+# Needs Chrome, ImageMagick (magick) and rsvg-convert.
+set -euo pipefail
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+chrome="${CHROME:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
+assets="$root/fastlane/assets"
+play="$root/fastlane/metadata/android/en-US/images"
+ios="$root/fastlane/screenshots/ios/en-US"
+
+if [[ "${1:-}" != "--no-render" ]]; then
+  "$root/gradlew" -q -p "$root" :features:bikes:ui:jvmTest --tests '*StoreRenderTest*' --rerun
+  mkdir -p "$assets/screens"
+  cp "$root"/features/bikes/ui/build/store/*.png "$assets/screens/"
+fi
+
+# Chrome renders a page at width × height; the stores take no alpha, so it's flattened.
+shoot() { # <page url> <width> <height> <out>
+  local tmp="$4.tmp.png"
+  "$chrome" --headless=new --disable-gpu --hide-scrollbars --allow-file-access-from-files \
+    --window-size="$2,$3" --force-device-scale-factor=1 --virtual-time-budget=2000 \
+    --screenshot="$tmp" "$1" 2>/dev/null
+  magick "$tmp" -background '#0A0A0B' -alpha remove -alpha off "$4"
+  rm "$tmp"
+  echo "${4#"$root/"}"
+}
+
+# A captioned shot: caption.html with the screen and headline in its query.
+caption() { # <screen, relative to fastlane/assets> <caption> <width> <height> <out>
+  local query
+  query=$(python3 -c 'import sys, urllib.parse as u; print(u.urlencode({"shot": sys.argv[1], "caption": sys.argv[2]}))' "$1" "$2")
+  shoot "file://$assets/caption.html?$query" "$3" "$4" "$5"
+}
+
+# A slide of widgets or watch screens: surfaces.html with the slide and headline in its query.
+slide() { # <slide> <caption> <width> <height> <out>
+  local query
+  query=$(python3 -c 'import sys, urllib.parse as u; print(u.urlencode({"slide": sys.argv[1], "caption": sys.argv[2]}))' "$1" "$2")
+  shoot "file://$assets/surfaces.html?$query" "$3" "$4" "$5"
+}
+
+# A raw shot, flattened, at its own size.
+copy() { # <source> <out>
+  magick "$1" -background '#0A0A0B' -alpha remove -alpha off "$2"
+  echo "${2#"$root/"}"
+}
+
+reset() { rm -rf "$1"; mkdir -p "$1"; }
+
+# --- Google Play ---------------------------------------------------------------------------------
+
+python3 "$root/scripts/generate-ios-icon.py" >/dev/null
+echo "${play#"$root/"}/icon.png"
+shoot "file://$assets/feature-graphic.html" 1024 500 "$play/featureGraphic.png"
+
+# Widgets without their backdrop: its colour, read from a corner, made clear and trimmed, so each
+# widget's own rounded shape shows on the red (assets/cut is generated).
+reset "$assets/cut"
+cut() { # <source, relative to fastlane/assets> <name>
+  local backdrop
+  backdrop=$(magick "$assets/$1" -format '%[pixel:p{0,0}]' info:)
+  magick "$assets/$1" -alpha set -bordercolor "$backdrop" -border 1 -fuzz 2% -fill none \
+    -draw "color 0,0 floodfill" -shave 1x1 -trim +repage "$assets/cut/$2.png"
+}
+
+# The Android widgets, from the debug build's WidgetPreviewActivity (captures/android-widgets, the
+# sample bike renamed "Road bike" with its front derailleur low): each widget's box, with a margin of
+# backdrop for the cut.
+android_widget() { # <capture> <x> <y> <w> <h> <name>
+  magick "$assets/captures/android-widgets/$1.png" -crop "$(( $4 + 8 ))x$(( $5 + 8 ))+$(( $2 - 4 ))+$(( $3 - 4 ))" \
+    +repage "$assets/cut/$6-box.png"
+  cut "cut/$6-box.png" "$6"
+  rm "$assets/cut/$6-box.png"
+}
+android_widget low-1 63 213 404 404 android-small
+android_widget low-1 63 767 897 404 android-medium
+android_widget low-1 63 1321 897 897 android-large
+
+reset "$play/phoneScreenshots"
+caption screens/phone-1-bike.png "Every battery on the bike, at a glance." 1080 1920 "$play/phoneScreenshots/1_bike.png"
+caption screens/phone-2-low.png "Know what to charge before you ride." 1080 1920 "$play/phoneScreenshots/2_low.png"
+slide android-widgets "On your home screen, too." 1080 1920 "$play/phoneScreenshots/3_widgets.png"
+slide wear "And on your Wear OS watch." 1080 1920 "$play/phoneScreenshots/4_wear.png"
+caption screens/phone-3-component.png "Charge history for every component." 1080 1920 "$play/phoneScreenshots/5_component.png"
+caption screens/phone-4-add-bike.png "Wake the bike. Cassette finds the rest." 1080 1920 "$play/phoneScreenshots/6_add_bike.png"
+
+reset "$play/sevenInchScreenshots"
+for shot in "$assets"/screens/seven-*.png; do
+  name=$(basename "$shot" .png)
+  copy "$shot" "$play/sevenInchScreenshots/${name#seven-}.png"
+done
+reset "$play/tenInchScreenshots"
+for shot in "$assets"/screens/ten-*.png; do
+  name=$(basename "$shot" .png)
+  copy "$shot" "$play/tenInchScreenshots/${name#ten-}.png"
+done
+
+reset "$play/wearScreenshots"
+for shot in "$assets"/captures/wear/*.png; do
+  [[ -e "$shot" ]] || continue
+  copy "$shot" "$play/wearScreenshots/$(basename "$shot")"
+done
+
+# --- App Store -----------------------------------------------------------------------------------
+# deliver tells the device sizes apart by pixel size; the number prefix orders each set.
+
+reset "$ios"
+for render in w-activity-lock-reading-4-dark w-medium-low-dark w-small-good-dark w-watch-page-low; do
+  cut "captures/widgets/$render.png" "$render"
+done
+
+# The phone screens (StoreScreenshots, captures/iphone-*), then the widgets and the watch.
+iphone() { # <screen> <caption> <index>
+  caption "captures/iphone-6.9/$1.png" "$2" 1320 2868 "$ios/$3_iphone69_$1.png"
+  caption "captures/iphone-6.3/$1.png" "$2" 1206 2622 "$ios/$3_iphone63_$1.png"
+}
+surface() { # <slide> <caption> <index>
+  slide "$1" "$2" 1320 2868 "$ios/$3_iphone69_$1.png"
+  slide "$1" "$2" 1206 2622 "$ios/$3_iphone63_$1.png"
+}
+iphone s01-bike "Every battery on the bike, at a glance." 1
+iphone s02-component "Charge history for every component." 2
+surface widgets "On your Home Screen, Lock Screen and Dynamic Island." 3
+surface watch "And on your Apple Watch." 4
+
+# iPad, as captured (portrait: the Simulator doesn't rotate, fastlane/README.md).
+ipad=0
+for shot in "$assets"/captures/ipad-13/s0*.png; do
+  copy "$shot" "$ios/$(( ++ipad ))_ipad13_$(basename "$shot")"
+done
+
+watch=0
+for shot in "$assets"/captures/watch/*.png; do
+  copy "$shot" "$ios/$(( ++watch ))_watch_$(basename "$shot")"
+done

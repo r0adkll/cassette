@@ -1,0 +1,29 @@
+Never ride single-speed by accident. Cassette shows the battery of every component on your bike (derailleurs, shifters, power meter) on your phone, your watch and your home screen.
+
+Works with SRAM AXS wireless components. Cassette is an independent app: it is unofficial and isn't made, endorsed or supported by SRAM. SRAM and AXS are trademarks of SRAM, LLC.
+
+HOW IT WORKS
+• Wake the bike near your phone: a shake or a shift is enough. Cassette hears the components' Bluetooth broadcasts and reads the rest from the rear derailleur. No pairing, no account, no other app open.
+• Each component shows the status it reports (good, low or charge now), with a percentage where it gives one and a marked ≈ estimate from its voltage where it doesn't.
+• Several bikes? Add each one and switch between them.
+
+BEFORE THE RIDE
+• A heads-up when the bike wakes and something is already low.
+• An alert when a component drops to low or charge now.
+• A reminder when a bike hasn't been seen for a while.
+
+EVERYWHERE YOU LOOK
+• Home screen widgets for one bike or all of them.
+• A Quick Settings tile.
+• Wear OS: your bikes on the watch, a tile and complications, kept in step with the phone.
+• Layouts for foldables and tablets.
+
+HISTORY
+• 30-day, 90-day and 1-year charts for each component, marking charges and coin-cell swaps, beside its voltage, shift count and firmware.
+
+PRIVATE
+• No account, no ads, no analytics, no tracking. What Cassette reads stays on your devices.
+
+WORTH KNOWING
+• The Bluetooth protocol was worked out independently and has been tested on one road bike so far. Other wireless groupsets should work; anything Cassette doesn't recognise shows up in Diagnostics, where you can share a report.
+• Cassette is open source: github.com/r0adkll/cassette
