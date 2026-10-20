@@ -108,8 +108,11 @@ versioning, what ships in Diagnostics) comes first, and 0008's "sideload only" c
 ### Google Play
 
 - ~~The release build's label~~: "Cassette", with "(dev)" only on debug and internal builds (#56).
-- Release signing: an upload key and Play App Signing. The phone and Wear apps must keep one signing key
-  for the Data Layer ([0013](decisions/0013-wear.md)).
+- Release signing: an upload key and Play App Signing, which signs the phone and Wear apps with one key,
+  as the Data Layer needs ([0013](decisions/0013-wear.md)). Release builds take the upload key from
+  the environment; `scripts/release-signing-wizard` makes it and sets the CI secrets. The key and
+  secrets exist (2026-10-19; both bundles checked against its fingerprint). Still to do: create the
+  listing in the Play Console.
 - ~~Version codes~~: release's are `MMmmpp0F`, so the phone and Wear bundles never share one (#56, #57).
 - AABs (`bundleRelease`) and a Play upload from CI (the Play/Fastlane tooling 0008 adopted), alongside the
   Drop job.
@@ -121,9 +124,8 @@ versioning, what ships in Diagnostics) comes first, and 0008's "sideload only" c
 
 - The App Store Connect app and API key, which turn on the TestFlight job; then a build installed from
   TestFlight.
-- Privacy manifests (`PrivacyInfo.xcprivacy`) for the app, widgets, watch app and watch complications:
-  no tracking, no data collected, and the required-reason APIs (file timestamps from DataStore/Okio,
-  UserDefaults in `IosCentral`).
+- ~~Privacy manifests~~: one per target, no tracking and nothing collected; the app declares file
+  timestamps (C617.1) and user defaults (CA92.1).
 - iPhone landscape is allowed; check the shared screens in it (or lock to portrait).
 - Review notes for `bluetooth-central` in the background and the time-sensitive notification entitlement.
 - dSYMs for the Kotlin framework, so crashes from App Store builds can be read.
