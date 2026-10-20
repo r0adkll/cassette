@@ -75,25 +75,20 @@ needs an iPhone, a watch and the bike moved to M4's [on hardware](#on-hardware).
 
 ## M4: Store release
 
-Cassette on Google Play (phone and Wear) and the App Store (iPhone and Apple Watch). Gathered from an audit
-of the repo on 2026-10-19; nothing here is started. A decision record for the release (listings, signing,
-versioning, what ships in Diagnostics) comes first, and 0008's "sideload only" changes with it.
+Cassette on Google Play (phone and Wear) and the App Store (iPhone, iPad and Apple Watch), from an audit of
+the repo on 2026-10-19. The release's decisions are in [0019](decisions/0019-store-release.md).
 
 ### Decisions
 
-- **Developer tools in store builds.** Diagnostics → Developer ("Load sample bike", "Demo refresh") shows in
-  every build. Store review can flag demo content, but a reviewer without an AXS bike needs a way to see the
-  app; the sample bike is that way today. Gate them, or keep them and explain them in the review notes.
-  Diagnostics itself stays ([0005](decisions/0005-diagnostics.md)).
-- **iPad.** The iOS app targets iPhone and iPad (XcodeGen's default; `TARGETED_DEVICE_FAMILY` isn't set).
-  Keep it (iPad screenshots and an iPad review pass) or ship iPhone only at first.
+- ~~Developer tools in store builds~~: kept, so reviewers without AXS components can use the sample bike
+  (0019).
+- ~~iPad~~: ships, as do Android tablets and foldables, each with screenshot sets (0019).
 - **Versioning.** Every app's version is `cassette.version` in gradle.properties (#56): Android release
   codes derive from it, Drop builds count commits (#57), iOS build numbers are the commit count. Still
   to pick: the first public version, whether releases are tagged, and cutting CHANGELOG's
   `[Unreleased]` into it.
 - **Languages.** English only, with strings in Kotlin; fine for v1, but say so in both consoles.
-- **Backups.** The phone app doesn't set `allowBackup` or `dataExtractionRules` (on by default), Wear sets
-  `allowBackup="true"`. Decide what the database and settings do on a new phone.
+- ~~Backups~~: automatic, everything but the capture log; none on Wear (0019).
 
 ### Both stores
 
@@ -146,7 +141,7 @@ Before submitting, on an iPhone and an Apple Watch with the bike (deferred from 
   countdown, Stop and Add 60 s from the island, how long the scan keeps going with the phone locked,
   StandBy and its night mode.
 - A ride test with the app (Diagnostics' ride tests and capture log, in place of the spike), the
-  identifiers across days and a battery swap, and a hub read from a background discovery; then
+  identifiers across days, a battery swap and a restore to a new iPhone, and a hub read from a background discovery; then
   background capture's tuning in 0017.
 - The Apple Watch app on a watch paired to the iPhone: the snapshot arriving, the complications on
   faces (tinted too) and in the Smart Stack, its rise when the bike wakes, and Refresh from the watch

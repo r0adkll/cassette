@@ -29,6 +29,8 @@ import kotlinx.coroutines.IO
 import platform.Foundation.NSApplicationSupportDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSSearchPathForDirectoriesInDomains
+import platform.Foundation.NSURL
+import platform.Foundation.NSURLIsExcludedFromBackupKey
 import platform.Foundation.NSUserDomainMask
 
 @DependencyGraph(AppScope::class)
@@ -61,7 +63,7 @@ interface IosAppGraph {
   @Provides @SingleIn(AppScope::class) fun provideSqlDriver(): SqlDriver = createNativeDriver()
 
   @Provides
-  fun provideCaptureLogFile(): CaptureLogFile = CaptureLogFile(appFile("capture-log.jsonl"))
+  fun provideCaptureLogFile(): CaptureLogFile = CaptureLogFile(unbackedFile("capture-log.jsonl"))
 
   @Provides
   fun provideSettingsFile(): SettingsFile = SettingsFile(appFile("settings.preferences_pb"))
@@ -82,4 +84,24 @@ internal fun appFile(name: String): String {
       .first() as String
   NSFileManager.defaultManager.createDirectoryAtPath(dir, true, null, null)
   return "$dir/$name"
+}
+
+/**
+ * Application Support/Diagnostics: like [appFile], but kept out of iCloud and device backups
+ * (decision 0019), as what it holds is about this phone. The folder carries the flag, since its
+ * files get rewritten. A file from before it existed moves in.
+ */
+@OptIn(ExperimentalForeignApi::class)
+internal fun unbackedFile(name: String): String {
+  val files = NSFileManager.defaultManager
+  val dir = appFile("Diagnostics")
+  files.createDirectoryAtPath(dir, true, null, null)
+  NSURL.fileURLWithPath(dir, isDirectory = true)
+    .setResourceValue(true, NSURLIsExcludedFromBackupKey, null)
+  val path = "$dir/$name"
+  val old = appFile(name)
+  if (files.fileExistsAtPath(old) && !files.fileExistsAtPath(path)) {
+    files.moveItemAtPath(old, path, null)
+  }
+  return path
 }
