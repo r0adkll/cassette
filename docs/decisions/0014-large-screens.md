@@ -22,7 +22,12 @@ them:
 | Medium or expanded width | The Pixel 10 Pro Fold open (expanded, either way up), tablets in portrait | `Dashboard`: bikes as chips in the top bar; the component sheet covers most of the screen |
 | Large or extra-large width | Tablets in landscape | `DashboardWithRail`: a bike rail on the left; a narrower sheet |
 
-Phones in landscape keep the phone layout: they are wide but too short for the dashboard.
+Phones in landscape keep the phone layout: they are wide but too short for the dashboard. They are
+also too short for a footer that stays put (decision 0016), so in a compact-height window
+(`isShortWindow()`) the screens with one (the welcome, permissions, add bike) scroll it with the
+rest through `FooterColumn`: the footer comes last, and still sits at the foot when everything
+fits. The column stays capped at phone width and centred. The bikes, onboarding and Settings renders
+include a phone on its side (892 × 412 dp, `*landscape*`).
 
 The rail waits for large width rather than starting at expanded. The first build guessed the Fold at
 790 dp and drew the line at expanded; the open Fold is in fact expanded width, so it got the tablet

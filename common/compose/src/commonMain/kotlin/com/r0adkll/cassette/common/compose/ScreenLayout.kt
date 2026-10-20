@@ -54,6 +54,16 @@ fun currentScreenLayout(): ScreenLayout =
   ScreenLayout.of(currentWindowAdaptiveInfoV2().windowSizeClass)
 
 /**
+ * Whether the window is too short for a footer that stays put: compact height, such as a phone on
+ * its side. Screens with a footer then scroll it with everything else (`FooterColumn`, decision
+ * 0014).
+ */
+@Composable fun isShortWindow(): Boolean = isShort(currentWindowAdaptiveInfoV2().windowSizeClass)
+
+internal fun isShort(sizeClass: WindowSizeClass): Boolean =
+  !sizeClass.isHeightAtLeastBreakpoint(HEIGHT_DP_MEDIUM_LOWER_BOUND)
+
+/**
  * Where a half-open foldable folds, in window pixels, while it stands in tabletop (hinge
  * horizontal); null otherwise, and always on phones, tablets and iOS today. The bike screen splits
  * there (decision 0014).

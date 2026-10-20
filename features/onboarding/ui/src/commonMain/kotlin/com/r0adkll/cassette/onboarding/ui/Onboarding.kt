@@ -53,6 +53,7 @@ import com.r0adkll.cassette.common.compose.LocalScreenLayout
 import com.r0adkll.cassette.common.compose.PermissionState
 import com.r0adkll.cassette.common.compose.ScreenLayout
 import com.r0adkll.cassette.common.compose.components.CassetteButton
+import com.r0adkll.cassette.common.compose.components.FooterColumn
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.SplitPanes
@@ -144,90 +145,94 @@ fun WelcomeUi(state: WelcomeUiState, modifier: Modifier = Modifier) {
   }
   val colors = CassetteTheme.colors
   // The poster's red runs up under the status bar (decision 0016).
-  Column(modifier.fillMaxSize()) {
-    Box(
-      Modifier.fillMaxWidth()
-        .background(CassetteRed)
-        .windowInsetsPadding(
-          WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
-        ),
-      contentAlignment = Alignment.TopCenter,
-    ) {
+  FooterColumn(
+    footer = {
       Column(
         Modifier.widthIn(max = MaxContentWidth)
           .fillMaxWidth()
-          .padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 26.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp),
-      ) {
-        Text("CASSETTE", style = CassetteTheme.type.label, color = Color.White)
-        Row(verticalAlignment = Alignment.Top) {
-          // Each line stays whole: the title shrinks below 54 sp on narrow phones instead of
-          // breaking "single-speed".
-          Text(
-            "Never ride\nsingle-speed\nby accident.",
-            style = CassetteTheme.type.display.copy(lineHeight = 0.88.em),
-            color = Color.White,
-            softWrap = false,
-            autoSize = TextAutoSize.StepBased(maxFontSize = 54.sp),
-            modifier = Modifier.weight(1f),
+          .windowInsetsPadding(
+            WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
           )
-          // The tape, drawn straight on the red: the poster is its shell.
-          Image(
-            rememberVectorPainter(CassetteMarks.Tape),
-            contentDescription = null,
-            modifier = Modifier.size(112.dp),
+          .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+      ) {
+        CassetteButton("Get started", onClick = { state.eventSink(WelcomeEvent.GetStarted) })
+        Row(
+          Modifier.fillMaxWidth(),
+          horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+          verticalAlignment = Alignment.CenterVertically,
+        ) {
+          Icon(LucideIcons.Info, null, tint = colors.muted, modifier = Modifier.size(13.dp))
+          Text(
+            "Unofficial · not affiliated with SRAM",
+            style = CassetteTheme.type.bodySmall,
+            color = colors.muted,
           )
         }
+      }
+    },
+    modifier = modifier.fillMaxSize(),
+    horizontalAlignment = Alignment.CenterHorizontally,
+    top = { Poster() },
+  ) {
+    Column(
+      Modifier.widthIn(max = MaxContentWidth)
+        .fillMaxWidth()
+        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
+        .padding(start = 20.dp, end = 20.dp, top = 8.dp)
+    ) {
+      Point(
+        "01",
+        "Hears the bike when it wakes",
+        "No pairing, no app open: a shake or a shift is enough.",
+      )
+      Point("02", "Shows it at a glance", glanceText())
+      Point("03", "Warns you before a ride", "A nudge when the bike wakes and something is low.")
+    }
+  }
+}
+
+/** The welcome's red block: the wordmark, the promise and the tape. */
+@Composable
+private fun Poster() {
+  Box(
+    Modifier.fillMaxWidth()
+      .background(CassetteRed)
+      .windowInsetsPadding(
+        WindowInsets.safeDrawing.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+      ),
+    contentAlignment = Alignment.TopCenter,
+  ) {
+    Column(
+      Modifier.widthIn(max = MaxContentWidth)
+        .fillMaxWidth()
+        .padding(start = 20.dp, end = 20.dp, top = 28.dp, bottom = 26.dp),
+      verticalArrangement = Arrangement.spacedBy(18.dp),
+    ) {
+      Text("CASSETTE", style = CassetteTheme.type.label, color = Color.White)
+      Row(verticalAlignment = Alignment.Top) {
+        // Each line stays whole: the title shrinks below 54 sp on narrow phones instead of
+        // breaking "single-speed".
         Text(
-          "Battery levels for your SRAM AXS bike, without the guesswork.",
-          style = CassetteTheme.type.body,
+          "Never ride\nsingle-speed\nby accident.",
+          style = CassetteTheme.type.display.copy(lineHeight = 0.88.em),
           color = Color.White,
+          softWrap = false,
+          autoSize = TextAutoSize.StepBased(maxFontSize = 54.sp),
+          modifier = Modifier.weight(1f),
+        )
+        // The tape, drawn straight on the red: the poster is its shell.
+        Image(
+          rememberVectorPainter(CassetteMarks.Tape),
+          contentDescription = null,
+          modifier = Modifier.size(112.dp),
         )
       }
-    }
-    Box(
-      Modifier.weight(1f)
-        .fillMaxWidth()
-        .windowInsetsPadding(
-          WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
-        ),
-      contentAlignment = Alignment.TopCenter,
-    ) {
-      Column(
-        Modifier.widthIn(max = MaxContentWidth)
-          .fillMaxSize()
-          .padding(horizontal = 20.dp)
-          .padding(top = 8.dp, bottom = 24.dp)
-      ) {
-        Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-          Point(
-            "01",
-            "Hears the bike when it wakes",
-            "No pairing, no app open: a shake or a shift is enough.",
-          )
-          Point("02", "Shows it at a glance", glanceText())
-          Point(
-            "03",
-            "Warns you before a ride",
-            "A nudge when the bike wakes and something is low.",
-          )
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-          CassetteButton("Get started", onClick = { state.eventSink(WelcomeEvent.GetStarted) })
-          Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically,
-          ) {
-            Icon(LucideIcons.Info, null, tint = colors.muted, modifier = Modifier.size(13.dp))
-            Text(
-              "Unofficial · not affiliated with SRAM",
-              style = CassetteTheme.type.bodySmall,
-              color = colors.muted,
-            )
-          }
-        }
-      }
+      Text(
+        "Battery levels for your SRAM AXS bike, without the guesswork.",
+        style = CassetteTheme.type.body,
+        color = Color.White,
+      )
     }
   }
 }
@@ -357,35 +362,30 @@ fun PermissionsUi(state: PermissionsUiState, modifier: Modifier = Modifier) {
   }
   val colors = CassetteTheme.colors
   Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-    Column(
-      Modifier.widthIn(max = MaxContentWidth)
-        .fillMaxSize()
-        .safeDrawingPadding()
-        .padding(horizontal = 20.dp, vertical = 24.dp),
+    FooterColumn(
+      footer = { ContinueFooter(state) },
+      modifier = Modifier.widthIn(max = MaxContentWidth).fillMaxSize(),
+      padding = Modifier.safeDrawingPadding().padding(horizontal = 20.dp, vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp),
+      top = {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          TopBarButton(
+            LucideIcons.ArrowLeft,
+            "Back",
+            onClick = { state.eventSink(PermissionsEvent.Back) },
+          )
+          Spacer(Modifier.weight(1f))
+          Kicker("Set up")
+        }
+      },
     ) {
-      Row(verticalAlignment = Alignment.CenterVertically) {
-        TopBarButton(
-          LucideIcons.ArrowLeft,
-          "Back",
-          onClick = { state.eventSink(PermissionsEvent.Back) },
-        )
-        Spacer(Modifier.weight(1f))
-        Kicker("Set up")
-      }
-      Column(
-        Modifier.weight(1f).verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-      ) {
-        Text("Two things to allow.", style = CassetteTheme.type.display, color = colors.text)
-        Text(
-          "Cassette runs quietly in the background. These let it hear your bike and tell you when to charge.",
-          style = CassetteTheme.type.body,
-          color = colors.muted,
-        )
-        PermissionCards()
-      }
-      ContinueFooter(state)
+      Text("Two things to allow.", style = CassetteTheme.type.display, color = colors.text)
+      Text(
+        "Cassette runs quietly in the background. These let it hear your bike and tell you when to charge.",
+        style = CassetteTheme.type.body,
+        color = colors.muted,
+      )
+      PermissionCards()
     }
   }
 }

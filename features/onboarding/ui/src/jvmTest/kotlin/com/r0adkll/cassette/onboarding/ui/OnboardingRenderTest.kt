@@ -63,6 +63,13 @@ class OnboardingRenderTest {
       render(File(out, "onboarding-tablet-permissions-$theme.png"), dark, askable, 1280, 800) {
         PermissionsUi(PermissionsUiState {})
       }
+      // A phone on its side: compact height, so the phone's column (decision 0014).
+      render(File(out, "onboarding-landscape-welcome-$theme.png"), dark, askable, 892, 412) {
+        WelcomeUi(WelcomeUiState {})
+      }
+      render(File(out, "onboarding-landscape-permissions-$theme.png"), dark, askable, 892, 412) {
+        PermissionsUi(PermissionsUiState {})
+      }
     }
   }
 

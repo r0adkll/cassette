@@ -48,6 +48,7 @@ import com.r0adkll.cassette.common.compose.LocalScreenLayout
 import com.r0adkll.cassette.common.compose.ScreenLayout
 import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.CodeBadge
+import com.r0adkll.cassette.common.compose.components.FooterColumn
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.SplitPanes
@@ -77,27 +78,20 @@ fun AddBikeUi(state: AddBikeUiState, modifier: Modifier = Modifier) {
     return
   }
   Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-    Column(
-      Modifier.widthIn(max = 480.dp)
-        .fillMaxSize()
-        .safeDrawingPadding()
-        .padding(horizontal = 20.dp, vertical = 24.dp),
+    FooterColumn(
+      footer = { Footer(state.step, sink) },
+      modifier = Modifier.widthIn(max = 480.dp).fillMaxSize(),
+      padding = Modifier.safeDrawingPadding().padding(horizontal = 20.dp, vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp),
+      top = { Header(state.step.number, onClose = { sink(AddBikeEvent.Close) }) },
     ) {
-      Header(state.step.number, onClose = { sink(AddBikeEvent.Close) })
-      Column(
-        Modifier.weight(1f).verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-      ) {
-        when (val step = state.step) {
-          is AddBikeStep.Wake -> Wake(step, sink)
-          is AddBikeStep.Found -> Found(step, sink)
-          is AddBikeStep.Name -> Name(step, sink)
-          is AddBikeStep.PowerMeter -> PowerMeter(step, sink)
-          is AddBikeStep.KeepFresh -> KeepFresh(step)
-        }
+      when (val step = state.step) {
+        is AddBikeStep.Wake -> Wake(step, sink)
+        is AddBikeStep.Found -> Found(step, sink)
+        is AddBikeStep.Name -> Name(step, sink)
+        is AddBikeStep.PowerMeter -> PowerMeter(step, sink)
+        is AddBikeStep.KeepFresh -> KeepFresh(step)
       }
-      Footer(state.step, sink)
     }
   }
 }
