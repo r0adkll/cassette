@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# Lists the required-reason APIs (Apple's privacy manifest list) each iOS binary uses, so the
+# PrivacyInfo.xcprivacy files (decision 0017) can be checked before a release. Builds the Release
+# app for the Simulator first; the binaries match a device build's imports.
+#
+#   scripts/ios-privacy-scan
+set -uo pipefail
+cd "$(dirname "$0")/.."
+
+derived=app/ios/Cassette/build/privacy-scan
+scripts/xcodegen
+xcodebuild -project app/ios/Cassette/Cassette.xcodeproj -scheme Cassette -configuration Release \
+  -destination 'generic/platform=iOS Simulator' -derivedDataPath "$derived" \
+  CODE_SIGNING_ALLOWED=NO build -quiet || exit 1
+
+products=$derived/Build/Products
+# C functions (file timestamps, disk space, boot time) and classes, from the imports.
+symbols='_(f|l)?stat(64)?$|_fstatat|_(f)?getattrlist|_getattrlistbulk|_getattrlistat|_(f)?statv?fs$|_mach_absolute_time|NSUserDefaults'
+# Objective-C selectors and keys, from the binary's strings.
+selectors='systemUptime|creationDate|modificationDate|fileModificationDate|contentModificationDateKey|creationDateKey|volumeAvailableCapacity|NSFileSystemFreeSize|NSFileSystemSize|activeInputModes|attributesOfItemAtPath|attributesOfFileSystemForPath|NSFileModificationDate|NSFileCreationDate'
+
+for bin in \
+  "$products/Release-iphonesimulator/Cassette.app/Cassette" \
+  "$products/Release-iphonesimulator/CassetteWidgets.appex/CassetteWidgets" \
+  "$products/Release-watchsimulator/CassetteWatch.app/CassetteWatch" \
+  "$products/Release-watchsimulator/CassetteWatchWidgets.appex/CassetteWatchWidgets"; do
+  found=$({
+    nm -u "$bin" | grep -E "$symbols"
+    strings -a "$bin" | grep -E -x "($selectors)[A-Za-z:]*"
+  } | sort -u | tr '\n' ' ')
+  echo "${bin##*/}: ${found:-none}"
+done

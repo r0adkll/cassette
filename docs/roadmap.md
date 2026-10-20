@@ -124,9 +124,8 @@ versioning, what ships in Diagnostics) comes first, and 0008's "sideload only" c
 
 - The App Store Connect app and API key, which turn on the TestFlight job; then a build installed from
   TestFlight.
-- Privacy manifests (`PrivacyInfo.xcprivacy`) for the app, widgets, watch app and watch complications:
-  no tracking, no data collected, and the required-reason APIs (file timestamps from DataStore/Okio,
-  UserDefaults in `IosCentral`).
+- ~~Privacy manifests~~: one per target, no tracking and nothing collected; the app declares file
+  timestamps (C617.1) and user defaults (CA92.1).
 - iPhone landscape is allowed; check the shared screens in it (or lock to portrait).
 - Review notes for `bluetooth-central` in the background and the time-sensitive notification entitlement.
 - dSYMs for the Kotlin framework, so crashes from App Store builds can be read.
