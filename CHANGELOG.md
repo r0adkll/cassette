@@ -48,6 +48,9 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Changed
 
+- The Android app starts faster (decision 0023): it ships a baseline profile, so Android compiles
+  startup, the first run and the bike screen ahead of time, and a startup profile, which puts the
+  classes the first frame needs first in the app's code. Drop builds install the profile themselves.
 - Android release version codes come from the version name (`cassette.version`), with the form factor
   as the last digit, so the phone and Wear apps never share one. Drop builds keep counting commits,
   now with the build type and form factor as the last two digits. Builds installed from Drop between

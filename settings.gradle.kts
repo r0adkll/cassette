@@ -21,6 +21,8 @@ rootProject.name = "Cassette"
 
 include(":app:android")
 
+include(":app:baselineprofile")
+
 include(":app:ios")
 
 include(":app:shared")

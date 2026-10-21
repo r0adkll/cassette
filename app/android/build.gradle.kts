@@ -12,6 +12,7 @@ plugins {
   alias(libs.plugins.google.services)
   alias(libs.plugins.firebase.crashlytics)
   alias(libs.plugins.aboutlibraries.android)
+  alias(libs.plugins.androidx.baselineprofile)
 }
 
 // Crash reports (decision 0020). The Firebase config isn't committed: CI writes it from a secret
@@ -82,6 +83,13 @@ android {
     }
   }
 
+  // The baseline profile plugin's minified benchmark build types (decision 0023) never ship, so
+  // their mappings don't go to Crashlytics.
+  buildTypes.configureEach {
+    if (name.startsWith("benchmark"))
+      configure<CrashlyticsExtension> { mappingFileUploadEnabled = false }
+  }
+
   sourceSets.getByName("internal").res.directories += "src/debug/res"
 
   buildFeatures { compose = true }
@@ -90,6 +98,14 @@ android {
 // The version name is `cassette.version`; release's code derives from it, the Drop builds' from
 // the commit count.
 configureVersions(FormFactor.Phone)
+
+// Baseline and startup profiles (decision 0023): :app:baselineprofile generates them from the
+// release build on an emulator into src/main/generated/baselineProfiles, so release and internal
+// both ship them, and R8 puts the startup classes first in the dex.
+baselineProfile {
+  mergeIntoMain = true
+  dexLayoutOptimization = true
+}
 
 // Builds from CI go to Drop; the debug and internal builds get its SDK (in-app updates), release
 // the no-op.
@@ -132,7 +148,14 @@ dependencies {
   implementation(libs.circuit.codegen.annotations)
   implementation(libs.metro.runtime)
   implementation(libs.androidx.activity.compose)
+  // AndroidPermissionController's activity-result launcher: Play Services alone would resolve
+  // fragment 1.1.0, which release lint rejects (InvalidFragmentVersionForActivityResult).
+  implementation(libs.androidx.fragment)
   implementation(libs.androidx.core.ktx)
+  // Installs the baseline profile where Play doesn't: Drop builds and sideloads.
+  implementation(libs.androidx.profileinstaller)
   implementation(platform(libs.firebase.bom))
   implementation(libs.firebase.crashlytics)
+  // Internal falls back to release's profile run, so one run makes both.
+  baselineProfile(project(":app:baselineprofile"))
 }

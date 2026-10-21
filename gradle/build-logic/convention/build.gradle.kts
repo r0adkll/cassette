@@ -27,6 +27,10 @@ gradlePlugin {
       id = "cassette.android.application"
       implementationClass = "com.r0adkll.cassette.convention.AndroidApplicationConventionPlugin"
     }
+    register("androidTest") {
+      id = "cassette.android.test"
+      implementationClass = "com.r0adkll.cassette.convention.AndroidTestConventionPlugin"
+    }
     register("compose") {
       id = "cassette.compose"
       implementationClass = "com.r0adkll.cassette.convention.ComposeConventionPlugin"

@@ -80,6 +80,11 @@ ported. Don't build new features on the POC.
 - `scripts/ktfmt` checks formatting in under a second (`--format` fixes it), build-logic included. It is
   the only formatter: CI and the pre-push hook (`./gradlew bootstrap`) use it, and there is no Gradle
   ktfmt task. In the IDE, use the ktfmt plugin set to Google style.
+- Baseline and startup profiles (decision 0023): `./gradlew :app:android:generateBaselineProfile` runs
+  `:app:baselineprofile`'s journeys (the sample bike, from Diagnostics) on its own Gradle managed
+  emulator and rewrites `app/android/src/main/generated/baselineProfiles/`; commit both files. The
+  journeys find text and content descriptions, so renaming one they tap breaks them. `./gradlew
+  :app:baselineprofile:pixel6Api34BenchmarkReleaseAndroidTest` compares cold starts with and without.
 - Crash reports (decision 0020): Firebase configs aren't committed (`scripts/firebase-wizard`
   writes `app/android/google-services.json` and `app/ios/Cassette/Firebase/GoogleService-Info.plist`).
   Without them everything builds and nothing reports; debug builds never report either way.
