@@ -75,7 +75,7 @@ internal fun AboutBody(
     SettingsSwitchRow(
       "Send crash reports",
       subtitle =
-        "When Cassette crashes, what went wrong and the phone's model go to Firebase " +
+        "Crashes, and a note at each start so crash rates can be counted, go to Firebase " +
           "Crashlytics. Never your bikes or where you ride.",
       icon = LucideIcons.TriangleAlert,
       checked = crashReports,

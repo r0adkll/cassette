@@ -18,7 +18,8 @@ anywhere, so it replaces "nothing collected" in the privacy answers (M4), and it
   reports show whether the watches need it.
 - **Nothing of ours is attached.** No custom keys, logs, user ids or non-fatals, and no Analytics (so no
   breadcrumbs). What goes is what Crashlytics always collects: the stack, app state, device model and
-  OS, and its installation id. Bikes, readings and locations stay on the phone, as About says.
+  OS, and its installation id; and, while collection is on, a session event at each cold start (or
+  return after 30 minutes away) for crash-free rates, through Firebase Sessions. Bikes, readings and locations stay on the phone, as About says.
 - **Kotlin crashes on iOS.** Touchlab's CrashKiOS hooks Kotlin's unhandled exceptions, so they arrive
   as Kotlin stacks rather than a bare `abort`. `CassetteKit` builds with `-Xadd-light-debug=enable`,
   so its frames have line numbers in the app's dSYM, which the Crashlytics build phase uploads.
