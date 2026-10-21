@@ -116,6 +116,11 @@ ported. Don't build new features on the POC.
   Licences screen shows them from there (`BUNDLED` in `LicenceCatalog.kt`: add an entry with the file).
   Library licences need nothing: the AboutLibraries plugin collects them at build time for each app.
   A dependency that spans several Maven groups, or whose POM name reads badly, gets a `ProjectRule`.
+- **Tests run twice:** `commonTest` runs as `jvmTest` and as `testAndroidHostTest`, where android.jar
+  is stubs that return defaults (`isReturnDefaultValues`). A library whose Android code calls the
+  platform (AboutLibraries parses with `org.json`) silently gets nulls there: add the real artifact to
+  that module's `androidHostTest` dependencies. Run CI's command (`./gradlew jvmTest
+  testAndroidHostTest`), not just `jvmTest`, before pushing.
 - **Gradle wiring:** a generated directory handed to another task (Compose resources' `customDirectory`)
   must come from the producing task (`taskProvider.map { … }`); `flatMap` onto a plain build-dir
   provider drops the dependency, and it only works while someone runs the task by hand.

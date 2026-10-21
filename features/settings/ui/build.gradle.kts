@@ -13,6 +13,9 @@ kotlin {
       implementation(libs.compose.components.resources)
     }
     commonTest.dependencies { implementation(project(":features:settings:test")) }
+    // AboutLibraries parses with org.json on Android; host tests otherwise get android.jar's stubs,
+    // which return null, so every export parsed empty.
+    getByName("androidHostTest").dependencies { implementation(libs.org.json) }
     // Renders screens to PNG for review without a device (build/screens/).
     jvmTest.dependencies { implementation(compose.desktop.currentOs) }
   }
