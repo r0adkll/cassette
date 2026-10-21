@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.widthIn
@@ -20,8 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.r0adkll.cassette.common.compose.components.FloatingTopBar
 import com.r0adkll.cassette.common.compose.components.TopBarButton
-import com.r0adkll.cassette.common.compose.components.TopBarTitle
-import com.r0adkll.cassette.common.compose.components.topBarMargin
+import com.r0adkll.cassette.common.compose.components.TopBarButtonSize
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.protocol.ComponentKind
@@ -47,22 +47,18 @@ internal fun DiagnosticsScaffold(
         .fillMaxWidth()
         .verticalScroll(rememberScrollState())
         .safeDrawingPadding()
-        .padding(horizontal = 20.dp, vertical = topBarMargin()),
+        .padding(horizontal = 20.dp, vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-      if (onBack != null) {
-        // Clear of a short action on the right, such as Live adverts' pause.
-        TopBarTitle(title, endInset = 96.dp)
-      } else {
-        Text(title, style = CassetteTheme.type.title, color = CassetteTheme.colors.text)
-      }
+      if (onBack != null) Spacer(Modifier.height(TopBarButtonSize))
+      Text(title, style = CassetteTheme.type.title, color = CassetteTheme.colors.text)
       content()
     }
     if (onBack != null)
       FloatingTopBar(
         Modifier.widthIn(max = 480.dp)
           .safeDrawingPadding()
-          .padding(horizontal = 20.dp, vertical = topBarMargin())
+          .padding(horizontal = 20.dp, vertical = 24.dp)
       ) {
         TopBarButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
         Spacer(Modifier.weight(1f))

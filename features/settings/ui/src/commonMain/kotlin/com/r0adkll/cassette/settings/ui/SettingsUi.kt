@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
@@ -45,9 +47,8 @@ import com.r0adkll.cassette.common.compose.components.SettingsRow
 import com.r0adkll.cassette.common.compose.components.SettingsSection
 import com.r0adkll.cassette.common.compose.components.SettingsSwitchRow
 import com.r0adkll.cassette.common.compose.components.TopBarButton
-import com.r0adkll.cassette.common.compose.components.TopBarTitle
+import com.r0adkll.cassette.common.compose.components.TopBarButtonSize
 import com.r0adkll.cassette.common.compose.components.WaitingDot
-import com.r0adkll.cassette.common.compose.components.topBarMargin
 import com.r0adkll.cassette.common.compose.endPane
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.startPane
@@ -84,16 +85,17 @@ internal fun TitledScreen(
         .fillMaxWidth()
         .verticalScroll(rememberScrollState())
         .safeDrawingPadding()
-        .padding(horizontal = 20.dp, vertical = topBarMargin()),
+        .padding(horizontal = 20.dp, vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-      TopBarTitle(title)
+      Spacer(Modifier.height(TopBarButtonSize))
+      Text(title, style = CassetteTheme.type.title, color = CassetteTheme.colors.text)
       content()
     }
     FloatingTopBar(
       Modifier.widthIn(max = 480.dp)
         .safeDrawingPadding()
-        .padding(horizontal = 20.dp, vertical = topBarMargin())
+        .padding(horizontal = 20.dp, vertical = 24.dp)
     ) {
       TopBarButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
     }
@@ -180,12 +182,15 @@ internal fun WideSettings(
           .verticalScroll(rememberScrollState())
           .safeDrawingPadding()
           .width(320.dp)
-          .padding(horizontal = 16.dp, vertical = topBarMargin()),
+          .padding(horizontal = 16.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
       ) {
-        TopBarTitle(
+        Spacer(Modifier.height(TopBarButtonSize))
+        Text(
           "Settings.",
-          Modifier.padding(start = 8.dp, top = 8.dp, bottom = 10.dp),
+          style = CassetteTheme.type.title,
+          color = colors.text,
+          modifier = Modifier.padding(start = 8.dp, top = 8.dp, bottom = 10.dp),
         )
         categories.forEach { category ->
           val info = state.info(category, update, LocalAppPlatform.current, LocalAppInfo.current)
@@ -201,7 +206,7 @@ internal fun WideSettings(
         Footnote(Modifier.padding(start = 12.dp, top = 16.dp))
       }
       FloatingTopBar(
-        Modifier.safeDrawingPadding().width(320.dp).padding(start = 20.dp, top = topBarMargin())
+        Modifier.safeDrawingPadding().width(320.dp).padding(start = 20.dp, top = 24.dp)
       ) {
         TopBarButton(LucideIcons.ArrowLeft, "Back", onClick = { sink(SettingsEvent.Back) })
       }
@@ -217,11 +222,22 @@ internal fun WideSettings(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .safeDrawingPadding()
-            .padding(horizontal = 32.dp, vertical = topBarMargin()),
+            .padding(horizontal = 32.dp, vertical = 24.dp),
           verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-          // Lines the title up with the list's, which sits by its back button.
-          TopBarTitle(selected.title(), buttons = 0)
+          if (LocalScreenLayout.current == ScreenLayout.Landscape) {
+            // Short on height (decision 0021): level with the list's back button, not its title.
+            Box(
+              Modifier.heightIn(min = TopBarButtonSize),
+              contentAlignment = Alignment.CenterStart,
+            ) {
+              Text(selected.title(), style = CassetteTheme.type.title, color = colors.text)
+            }
+          } else {
+            // Lines the title up with the list's, which sits under its back button.
+            Spacer(Modifier.height(TopBarButtonSize))
+            Text(selected.title(), style = CassetteTheme.type.title, color = colors.text)
+          }
           CategoryBody(selected, state, wide = true, gutter = 32.dp)
         }
       }
