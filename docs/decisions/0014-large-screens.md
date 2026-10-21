@@ -18,11 +18,13 @@ them:
 
 | Window size class | Example | Layout |
 |---|---|---|
-| Compact width, or compact height | Phones, the Fold closed, phones in landscape | `Column`: the phone layout, as today |
+| Compact width | Phones, the Fold closed | `Column`: the phone layout, as today |
+| Compact height, medium width or wider | Phones in landscape | `Landscape`: two panes ([0021](0021-phone-landscape.md)) |
 | Medium or expanded width | The Pixel 10 Pro Fold open (expanded, either way up), tablets in portrait | `Dashboard`: bikes as chips in the top bar; the component sheet covers most of the screen |
 | Large or extra-large width | Tablets in landscape | `DashboardWithRail`: a bike rail on the left; a narrower sheet |
 
-Phones in landscape keep the phone layout: they are wide but too short for the dashboard.
+Phones in landscape are wide but too short for the dashboard; they split in two instead
+([0021](0021-phone-landscape.md)).
 
 The rail waits for large width rather than starting at expanded. The first build guessed the Fold at
 790 dp and drew the line at expanded; the open Fold is in fact expanded width, so it got the tablet

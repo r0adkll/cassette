@@ -141,6 +141,21 @@ class ScreenRenderTest {
         ),
         Shot("phone-about", RenderSize.Phone, state.copy(category = About), ready),
         Shot("fold-about", RenderSize.Fold, state.copy(selected = About), ready),
+        // A phone on its side shows the list and the open category side by side (decision 0021).
+        Shot("landscape-bikes", RenderSize.PhoneLandscape, state.copy(selected = Bikes), ready),
+        Shot(
+          "landscape-notifications",
+          RenderSize.PhoneLandscape,
+          state.copy(selected = Notifications),
+          ready,
+        ),
+        Shot(
+          "landscape-appearance",
+          RenderSize.PhoneLandscape,
+          state.copy(selected = Appearance),
+          ready,
+        ),
+        Shot("landscape-updates", RenderSize.PhoneLandscape, state.copy(selected = Updates), ready),
       )
     for (dark in listOf(true, false)) {
       for (shot in screens) {
@@ -274,6 +289,7 @@ class ScreenRenderTest {
     Phone(412, 892),
     Fold(852, 883),
     Tablet(1280, 800),
+    PhoneLandscape(892, 412),
   }
 
   private companion object {

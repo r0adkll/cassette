@@ -23,10 +23,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.r0adkll.cassette.common.compose.LocalScreenLayout
+import com.r0adkll.cassette.common.compose.ScreenLayout
 import com.r0adkll.cassette.common.compose.components.FloatingTopBar
 import com.r0adkll.cassette.common.compose.components.HistoryChart
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
+import com.r0adkll.cassette.common.compose.components.ScrollColumn
+import com.r0adkll.cassette.common.compose.components.SplitPanes
 import com.r0adkll.cassette.common.compose.components.StatCell
 import com.r0adkll.cassette.common.compose.components.TopBarButton
 import com.r0adkll.cassette.common.compose.components.TopBarButtonSize
@@ -55,6 +59,10 @@ fun ComponentUi(state: ComponentUiState, modifier: Modifier = Modifier) {
     }
     return
   }
+  if (LocalScreenLayout.current == ScreenLayout.Landscape) {
+    LandscapeComponent(state, modifier)
+    return
+  }
   Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
     Column(
       Modifier.widthIn(max = 480.dp)
@@ -74,17 +82,59 @@ fun ComponentUi(state: ComponentUiState, modifier: Modifier = Modifier) {
       }
       if (model != null) Detail(model, state.eventSink)
     }
-    FloatingTopBar(
-      Modifier.widthIn(max = 480.dp)
-        .safeDrawingPadding()
-        .padding(horizontal = 20.dp, vertical = 24.dp)
-    ) {
-      TopBarButton(
-        LucideIcons.ArrowLeft,
-        "Back",
-        onClick = { state.eventSink(ComponentEvent.Back) },
-      )
-    }
+    BackBar(
+      state.eventSink,
+      Modifier.widthIn(max = 480.dp).safeDrawingPadding().padding(vertical = 24.dp),
+    )
+  }
+}
+
+/**
+ * A phone on its side (decision 0021): the name and status block on the left, the stats and history
+ * on the right.
+ */
+@Composable
+private fun LandscapeComponent(state: ComponentUiState, modifier: Modifier = Modifier) {
+  val model = state.loaded
+  SplitPanes(
+    start = {
+      Box {
+        ScrollColumn(
+          Modifier.fillMaxSize(),
+          padding = Modifier.safeDrawingPadding().padding(vertical = 16.dp),
+          verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+          Row(
+            Modifier.padding(horizontal = 20.dp).height(TopBarButtonSize),
+            verticalAlignment = Alignment.CenterVertically,
+          ) {
+            Spacer(Modifier.weight(1f))
+            if (model != null) Kicker(model.bikeName)
+          }
+          if (model != null) DetailHeader(model)
+        }
+        BackBar(state.eventSink, Modifier.safeDrawingPadding().padding(vertical = 16.dp))
+      }
+    },
+    end = {
+      Column(
+        Modifier.fillMaxSize()
+          .verticalScroll(rememberScrollState())
+          .safeDrawingPadding()
+          .padding(vertical = 16.dp)
+      ) {
+        if (model != null) DetailBody(model, state.eventSink)
+      }
+    },
+    modifier = modifier.fillMaxSize(),
+    divider = true,
+  )
+}
+
+@Composable
+private fun BackBar(sink: (ComponentEvent) -> Unit, modifier: Modifier) {
+  FloatingTopBar(modifier.padding(horizontal = 20.dp)) {
+    TopBarButton(LucideIcons.ArrowLeft, "Back", onClick = { sink(ComponentEvent.Back) })
   }
 }
 
@@ -97,12 +147,17 @@ private fun Detail(
   sink: (ComponentEvent) -> Unit,
   gutter: Dp = 20.dp,
 ) {
-  val colors = CassetteTheme.colors
-  val type = CassetteTheme.type
+  DetailHeader(model, gutter)
+  DetailBody(model, sink, gutter)
+}
+
+/** The component's name and its status block. */
+@Composable
+private fun DetailHeader(model: ComponentDetailModel, gutter: Dp = 20.dp) {
   Text(
     model.name,
-    style = type.title,
-    color = colors.text,
+    style = CassetteTheme.type.title,
+    color = CassetteTheme.colors.text,
     modifier = Modifier.padding(horizontal = gutter),
   )
   ValueStatusBlock(
@@ -113,6 +168,17 @@ private fun Detail(
     tone = model.tone,
     horizontalPadding = gutter,
   )
+}
+
+/** The stats and the history chart. */
+@Composable
+private fun DetailBody(
+  model: ComponentDetailModel,
+  sink: (ComponentEvent) -> Unit,
+  gutter: Dp = 20.dp,
+) {
+  val colors = CassetteTheme.colors
+  val type = CassetteTheme.type
   Column(Modifier.padding(horizontal = gutter), verticalArrangement = Arrangement.spacedBy(6.dp)) {
     model.stats.chunked(3).forEach { row ->
       Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

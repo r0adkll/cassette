@@ -107,26 +107,7 @@ class ScreenRenderTest {
   /** The bike and component screens on an open fold and a tablet (decision 0014). */
   @Test
   fun largeScreens() {
-    val bike =
-      BikeUiState.Loaded(
-        bikeId = 1,
-        name = "Road bike",
-        position = "1 OF 2",
-        status =
-          BikeStatus(
-            StatusTone.Good,
-            "All good.",
-            "Next to charge: rear derailleur, in about 3 weeks (est.)",
-            "Seen 2 min ago",
-          ),
-        components = sampleRows,
-        bikes =
-          listOf(
-            BikeChoice(1, "Road bike", StatusTone.Good, "2 min ago"),
-            BikeChoice(2, "Gravel bike", StatusTone.Good, "3 days ago"),
-          ),
-        trends = sampleRows.associate { it.id to trendTo(it.level) },
-      ) {}
+    val bike = sampleBike
     // Charge soon: the front derailleur is low, so it takes the wide tile.
     val low =
       bike.copy(
@@ -166,6 +147,43 @@ class ScreenRenderTest {
         render("component-$suffix", dark, size) {
           ComponentUi(ComponentUiState(sampleComponent) {})
         }
+      }
+    }
+  }
+
+  /**
+   * A phone on its side (decision 0014): compact height keeps the phone layouts, which have to
+   * scroll and stay readable in a short, wide window.
+   */
+  @Test
+  fun phoneLandscape() {
+    val size = RenderSize.PhoneLandscape
+    val rows = sampleRows.take(4).map { FoundRow(it.code, it.name, it.source, it.value, it.tone) }
+    for (dark in listOf(true, false)) {
+      val theme = if (dark) "dark" else "light"
+      render("landscape-bike-$theme", dark, size) { BikeUi(sampleBike) }
+      render("landscape-bike-tip-$theme", dark, size) {
+        BikeUi(sampleBike.copy(tip = Tip.entries.first()))
+      }
+      render("landscape-bike-empty-$theme", dark, size) { BikeUi(BikeUiState.Empty {}) }
+      render("landscape-component-$theme", dark, size) {
+        ComponentUi(ComponentUiState(sampleComponent) {})
+      }
+      val steps =
+        listOf(
+          "1-wake" to AddBikeStep.Wake(12, bluetoothReady = true, showTips = false),
+          "1-wake-tips" to AddBikeStep.Wake(12, bluetoothReady = true, showTips = true),
+          "2-found" to AddBikeStep.Found(1405188718, false, rows, failed = false),
+          "3-name" to AddBikeStep.Name("Road bike", BikeType.Road),
+          "4-power" to
+            AddBikeStep.PowerMeter(
+              listOf(MeterRow("Quarq AGN12387", "Strong signal", 4)),
+              selected = "Quarq AGN12387",
+            ),
+          "5-fresh" to AddBikeStep.KeepFresh(bluetoothReady = true, saving = false),
+        )
+      for ((name, step) in steps) {
+        render("landscape-add-bike-$name-$theme", dark, size) { AddBikeUi(AddBikeUiState(step) {}) }
       }
     }
   }
@@ -460,7 +478,31 @@ class ScreenRenderTest {
     Tablet(1280, 800),
     /** The open fold turned so its hinge runs across, standing half open. */
     Tabletop(883, 852),
+    /** A phone on its side: compact height, so still the phone layouts. */
+    PhoneLandscape(892, 412),
   }
+
+  private val sampleBike
+    get() =
+      BikeUiState.Loaded(
+        bikeId = 1,
+        name = "Road bike",
+        position = "1 OF 2",
+        status =
+          BikeStatus(
+            StatusTone.Good,
+            "All good.",
+            "Next to charge: rear derailleur, in about 3 weeks (est.)",
+            "Seen 2 min ago",
+          ),
+        components = sampleRows,
+        bikes =
+          listOf(
+            BikeChoice(1, "Road bike", StatusTone.Good, "2 min ago"),
+            BikeChoice(2, "Gravel bike", StatusTone.Good, "3 days ago"),
+          ),
+        trends = sampleRows.associate { it.id to trendTo(it.level) },
+      ) {}
 
   private val sampleRows =
     listOf(

@@ -65,12 +65,13 @@ class AddBikePresenter(
     var meter by rememberRetained { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
 
+    // Counted from when waking started, so turning the phone doesn't restart the count.
+    val wakeStart = rememberRetained(step) { clock.now() }
     var seconds by remember { mutableIntStateOf(0) }
-    LaunchedEffect(step) {
-      seconds = 0
+    LaunchedEffect(step, wakeStart) {
       while (step == 1) {
+        seconds = (clock.now() - wakeStart).inWholeSeconds.toInt()
         delay(1.seconds)
-        seconds++
       }
     }
 

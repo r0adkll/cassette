@@ -14,11 +14,15 @@ import androidx.window.core.layout.WindowSizeClass.Companion.WIDTH_DP_MEDIUM_LOW
  * window, not the device, so split screen and resizing pick the right one.
  */
 enum class ScreenLayout {
-  /**
-   * Compact width or compact height: phones, a closed foldable, and phones in landscape (wide but
-   * too short). The phone layouts.
-   */
+  /** Compact width: phones, a closed foldable, split screen. The phone layouts. */
   Column,
+
+  /**
+   * Compact height but not compact width: a phone on its side (decision 0021). Too short for the
+   * dashboard, so screens split in two: what the screen says and its buttons on the left, what it
+   * lists on the right.
+   */
+  Landscape,
 
   /**
    * Medium or expanded width: an open foldable such as the Pixel 10 Pro Fold, or a tablet in
@@ -36,8 +40,8 @@ enum class ScreenLayout {
   companion object {
     internal fun of(sizeClass: WindowSizeClass): ScreenLayout =
       when {
-        !sizeClass.isWidthAtLeastBreakpoint(WIDTH_DP_MEDIUM_LOWER_BOUND) ||
-          !sizeClass.isHeightAtLeastBreakpoint(HEIGHT_DP_MEDIUM_LOWER_BOUND) -> Column
+        !sizeClass.isWidthAtLeastBreakpoint(WIDTH_DP_MEDIUM_LOWER_BOUND) -> Column
+        isShort(sizeClass) -> Landscape
         sizeClass.isWidthAtLeastBreakpoint(WIDTH_DP_LARGE_LOWER_BOUND) -> DashboardWithRail
         else -> Dashboard
       }
@@ -52,6 +56,16 @@ val LocalScreenLayout = staticCompositionLocalOf { ScreenLayout.Column }
 fun currentScreenLayout(): ScreenLayout =
   // V2 includes the large and extra-large width classes.
   ScreenLayout.of(currentWindowAdaptiveInfoV2().windowSizeClass)
+
+/**
+ * Whether the window is too short for a footer that stays put: compact height, such as a phone on
+ * its side. Screens with a footer then scroll it with everything else (`FooterColumn`, decision
+ * 0014).
+ */
+@Composable fun isShortWindow(): Boolean = isShort(currentWindowAdaptiveInfoV2().windowSizeClass)
+
+internal fun isShort(sizeClass: WindowSizeClass): Boolean =
+  !sizeClass.isHeightAtLeastBreakpoint(HEIGHT_DP_MEDIUM_LOWER_BOUND)
 
 /**
  * Where a half-open foldable folds, in window pixels, while it stands in tabletop (hinge

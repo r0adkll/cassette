@@ -37,6 +37,7 @@ import com.r0adkll.cassette.common.compose.components.ComponentRow
 import com.r0adkll.cassette.common.compose.components.FloatingTopBar
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
+import com.r0adkll.cassette.common.compose.components.SplitPanes
 import com.r0adkll.cassette.common.compose.components.StatusBlock
 import com.r0adkll.cassette.common.compose.components.StatusBlockMeta
 import com.r0adkll.cassette.common.compose.components.StatusBlockText
@@ -60,7 +61,7 @@ fun BikeUi(state: BikeUiState, modifier: Modifier = Modifier) {
   // Folding the phone with a sheet open carries the component over as its own screen.
   val openSheet = (state as? BikeUiState.Loaded)?.sheet
   LaunchedEffect(layout, openSheet) {
-    if (layout == ScreenLayout.Column && openSheet != null) {
+    if (layout.opensComponents && openSheet != null) {
       state.eventSink(BikeEvent.CloseSheet)
       state.eventSink(BikeEvent.OpenComponent(openSheet))
     }
@@ -69,6 +70,10 @@ fun BikeUi(state: BikeUiState, modifier: Modifier = Modifier) {
   val hinge = currentTabletopHinge()
   if (state is BikeUiState.Loaded && hinge != null) {
     TabletopBike(state, hinge, modifier)
+    return
+  }
+  if (state is BikeUiState.Loaded && layout == ScreenLayout.Landscape) {
+    LandscapeBike(state, modifier)
     return
   }
   if (state is BikeUiState.Empty && layout != ScreenLayout.Column) {
@@ -126,8 +131,99 @@ private fun TopBar(onAddBike: (() -> Unit)?, onSettings: () -> Unit, modifier: M
   }
 }
 
+/** Where tapping a component opens its own screen rather than the dashboard's sheet. */
+private val ScreenLayout.opensComponents: Boolean
+  get() = this == ScreenLayout.Column || this == ScreenLayout.Landscape
+
+/**
+ * A phone on its side (decision 0021, direction A): the bike's name, status and Refresh on the
+ * left, its components (and a tip) scrolling on the right.
+ */
+@Composable
+private fun LandscapeBike(state: BikeUiState.Loaded, modifier: Modifier = Modifier) {
+  SplitPanes(
+    start = {
+      Box {
+        // Refresh stays at the foot (decision 0016's fixed footer); a long status scrolls above it.
+        Column(
+          Modifier.fillMaxSize().safeDrawingPadding().padding(vertical = 16.dp),
+          verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+          Column(
+            Modifier.weight(1f).verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+          ) {
+            // The wordmark scrolls; the buttons float over it, as on the phone.
+            Row(
+              Modifier.padding(horizontal = 20.dp).height(TopBarButtonSize),
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              Kicker("Cassette")
+            }
+            BikeName(state)
+            BikeStatus(state)
+          }
+          Box(Modifier.padding(horizontal = 20.dp)) {
+            RefreshButton(state.refresh, onClick = { state.eventSink(BikeEvent.Refresh) })
+          }
+        }
+        TopBar(
+          onAddBike = { state.eventSink(BikeEvent.AddBike) },
+          onSettings = { state.eventSink(BikeEvent.OpenSettings) },
+          modifier = Modifier.safeDrawingPadding().padding(vertical = 16.dp),
+        )
+      }
+    },
+    end = {
+      Column(
+        Modifier.fillMaxSize()
+          .verticalScroll(rememberScrollState())
+          .safeDrawingPadding()
+          .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+      ) {
+        // Lined up with the wordmark across the panes.
+        Box(Modifier.height(TopBarButtonSize), contentAlignment = Alignment.CenterStart) {
+          Kicker("Components · ${state.components.size}")
+        }
+        Components(state)
+        state.tip?.let { tip ->
+          Spacer(Modifier.height(10.dp))
+          TipPanel(
+            tip,
+            onAccept = { state.eventSink(BikeEvent.AcceptTip(tip)) },
+            onDismiss = { state.eventSink(BikeEvent.DismissTip(tip)) },
+          )
+        }
+      }
+    },
+    modifier = modifier.fillMaxSize(),
+    divider = true,
+  )
+}
+
 @Composable
 private fun LoadedBike(state: BikeUiState.Loaded) {
+  BikeName(state)
+  BikeStatus(state)
+  Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Components(state)
+    Spacer(Modifier.height(10.dp))
+    RefreshButton(state.refresh, onClick = { state.eventSink(BikeEvent.Refresh) })
+    state.tip?.let { tip ->
+      Spacer(Modifier.height(10.dp))
+      TipPanel(
+        tip,
+        onAccept = { state.eventSink(BikeEvent.AcceptTip(tip)) },
+        onDismiss = { state.eventSink(BikeEvent.DismissTip(tip)) },
+      )
+    }
+  }
+}
+
+/** The bike's name, and which of the bikes it is. */
+@Composable
+private fun BikeName(state: BikeUiState.Loaded) {
   val colors = CassetteTheme.colors
   Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.Bottom) {
     Text(
@@ -149,33 +245,29 @@ private fun LoadedBike(state: BikeUiState.Loaded) {
       }
     }
   }
+}
+
+@Composable
+private fun BikeStatus(state: BikeUiState.Loaded) {
   // Screen readers get the plain title (decision 0015).
   StatusBlock(state.title, state.status.tone, titleDescription = state.status.headline) {
     StatusBlockText(state.status.summary)
     StatusBlockMeta(state.status.meta)
   }
-  Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-    state.components.forEach { row ->
-      ComponentRow(
-        code = row.code,
-        name = row.name,
-        source = row.source,
-        value = row.value,
-        level = row.level,
-        tone = row.tone,
-        onClick = { state.eventSink(BikeEvent.OpenComponent(row.id)) },
-      )
-    }
-    Spacer(Modifier.height(10.dp))
-    RefreshButton(state.refresh, onClick = { state.eventSink(BikeEvent.Refresh) })
-    state.tip?.let { tip ->
-      Spacer(Modifier.height(10.dp))
-      TipPanel(
-        tip,
-        onAccept = { state.eventSink(BikeEvent.AcceptTip(tip)) },
-        onDismiss = { state.eventSink(BikeEvent.DismissTip(tip)) },
-      )
-    }
+}
+
+@Composable
+private fun Components(state: BikeUiState.Loaded) {
+  state.components.forEach { row ->
+    ComponentRow(
+      code = row.code,
+      name = row.name,
+      source = row.source,
+      value = row.value,
+      level = row.level,
+      tone = row.tone,
+      onClick = { state.eventSink(BikeEvent.OpenComponent(row.id)) },
+    )
   }
 }
 
