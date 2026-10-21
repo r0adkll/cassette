@@ -254,6 +254,12 @@ private val PROJECTS =
       listOf("app.cash.sqldelight"),
     ),
     ProjectRule("Google Play services", "GP", null, listOf("com.google.android.gms")),
+    ProjectRule(
+      "Firebase",
+      "FB",
+      "https://firebase.google.com",
+      listOf("com.google.firebase", "com.google.android.datatransport"),
+    ),
     ProjectRule("Drop", "DR", null, listOf("com.r0adkll.drop")),
     ProjectRule("Touchlab", "TL", null, listOf("co.touchlab")),
     ProjectRule(

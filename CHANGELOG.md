@@ -13,7 +13,8 @@ All notable changes to Cassette are documented here. The format follows
 - Settings → About → Open-source licences lists every library the app ships, one row per project
   (AndroidX, Compose Multiplatform, Circuit…) that opens its libraries and licences, plus the bundled
   fonts and icons and each licence's full text. The list is collected at build time for each app
-  (AboutLibraries), so the Android and iPhone apps each show their own.
+  (AboutLibraries), so the Android and iPhone apps each show their own. On a phone on its side, an
+  open foldable or a tablet, each of these screens splits in two (decision 0022).
 - An iPhone app (decision 0017): the shared screens on iOS, Core Bluetooth scanning and
   unpaired GATT reads (a peripheral's identifier stands in for its Bluetooth address), the background
   scan with state restoration, and the three notifications with "Snooze until tomorrow". On iOS,

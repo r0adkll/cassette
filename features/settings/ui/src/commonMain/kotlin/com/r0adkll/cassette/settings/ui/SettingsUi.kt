@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
@@ -17,11 +18,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.rememberScrollState
@@ -56,6 +59,7 @@ import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.SettingsRow
 import com.r0adkll.cassette.common.compose.components.SettingsSection
 import com.r0adkll.cassette.common.compose.components.SettingsSwitchRow
+import com.r0adkll.cassette.common.compose.components.SplitPanes
 import com.r0adkll.cassette.common.compose.components.TopBarButton
 import com.r0adkll.cassette.common.compose.components.TopBarButtonSize
 import com.r0adkll.cassette.common.compose.components.WaitingDot
@@ -128,6 +132,63 @@ internal fun TitledLazyScreen(
     }
     BackBar(onBack)
   }
+}
+
+/**
+ * [TitledScreen] split in two on anything wider than a phone (decision 0022): back, the title and
+ * what the screen says ([start]) on the left; what it lists ([end], a lazy list) on the right. Each
+ * pane scrolls on its own and keeps the phone's width, against the split, so a tablet's panes read
+ * as one page rather than drifting to its edges.
+ */
+@Composable
+internal fun TitledPanes(
+  title: String,
+  onBack: () -> Unit,
+  modifier: Modifier = Modifier,
+  kicker: String? = null,
+  start: @Composable ColumnScope.() -> Unit,
+  end: LazyListScope.() -> Unit,
+) {
+  SplitPanes(
+    start = {
+      Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopEnd) {
+        Column(
+          Modifier.widthIn(max = 480.dp)
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .safeDrawingPadding()
+            .padding(horizontal = 20.dp, vertical = 24.dp),
+          verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+          TitleBlock(title, kicker)
+          start()
+        }
+        BackBar(onBack)
+      }
+    },
+    end = {
+      Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopStart) {
+        // The pane has already dropped the start bar, which contentPadding wouldn't know: the sides
+        // pad as a modifier, the top and bottom as content padding so the list scrolls under them.
+        val vertical = WindowInsets.safeDrawing.only(WindowInsetsSides.Vertical).asPaddingValues()
+        LazyColumn(
+          Modifier.widthIn(max = 480.dp)
+            .fillMaxWidth()
+            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
+          contentPadding =
+            PaddingValues(
+              start = 20.dp,
+              top = vertical.calculateTopPadding() + 24.dp,
+              end = 20.dp,
+              bottom = vertical.calculateBottomPadding() + 24.dp,
+            ),
+          content = end,
+        )
+      }
+    },
+    modifier = modifier.fillMaxSize(),
+    divider = LocalScreenLayout.current == ScreenLayout.Landscape,
+  )
 }
 
 @Composable

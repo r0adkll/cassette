@@ -112,8 +112,43 @@ ported. Don't build new features on the POC.
   Compose's transitions, so only the active screen shows them (`LocalTopBarShown`).
 - **Decision records:** number them from main's newest record just before opening the PR; parallel
   branches have taken the same number.
-- **Third-party assets:** fonts (OFL) and Lucide (ISC) licences live in `thirdparty/licenses/`.
+- **Third-party assets:** fonts (OFL) and Lucide (ISC) licences live in `thirdparty/licenses/`; the
+  Licences screen shows them from there (`BUNDLED` in `LicenceCatalog.kt`: add an entry with the file).
+  Library licences need nothing: the AboutLibraries plugin collects them at build time for each app.
+  A dependency that spans several Maven groups, or whose POM name reads badly, gets a `ProjectRule`.
+- **Gradle wiring:** a generated directory handed to another task (Compose resources' `customDirectory`)
+  must come from the producing task (`taskProvider.map { … }`); `flatMap` onto a plain build-dir
+  provider drops the dependency, and it only works while someone runs the task by hand.
 - **Commits** keep their `Co-Authored-By` attribution lines.
+
+## Every screen, every size
+
+Decisions 0014, 0016, 0021 and 0022. A screen isn't done until it works as a phone column, a phone on its
+side, an open foldable and a tablet; "it caps at phone width and centres" is not support.
+
+- **Layouts follow the window, not the device:** read `LocalScreenLayout` (`Column`, `Landscape`,
+  `Dashboard`, `DashboardWithRail`), which comes from Material's window size classes. Never branch on
+  our own dp figures, the device or the orientation. Split screen (compact both ways) is a `Column`.
+- **Wider than a phone, split in two** with `SplitPanes`: what the screen says and its one action on the
+  left, what it lists on the right; each pane scrolls on its own. It splits at an open fold's hinge, so
+  nothing sits on the fold, and gets a divider on a phone on its side. Pane content keeps the phone's
+  width (480 dp) against the split, so a tablet reads as one page. Titled screens in Settings use
+  `TitledScreen` / `TitledLazyScreen` on a phone and `TitledPanes` wider; follow them elsewhere.
+- **Insets per pane:** each pane pads only by its own side's bars (`startPane()` / `endPane()`, which
+  `SplitPanes` applies). Modifier insets (`safeDrawingPadding`) respect that; `WindowInsets…asPaddingValues()`
+  doesn't, so a `LazyColumn` in a pane pads its sides with `windowInsetsPadding` and only its top and
+  bottom with `contentPadding`.
+- **Short windows:** a phone on its side is about 412 dp tall. A fixed footer squeezes the middle to a
+  sliver: put the action at the foot of the left pane, and in split screen let footers scroll
+  (`FooterColumn`); `ScrollColumn` keeps a centred or footed layout at least its pane's height.
+- **Long lists are lazy:** a list that can run past a screen or two (libraries, history, tables) is a
+  `LazyColumn`; `PanelItem` keeps one panel's look across its items.
+- **Check every size before calling UI done:** the screen's `jvmTest` renders each `RenderSize`
+  (phone, `Fold` 852 × 883, `Tablet` 1280 × 800, `PhoneLandscape` 892 × 412), light and dark; look at
+  them. On an emulator, rotate with `adb shell settings put system accelerometer_rotation 0` and
+  `adb shell settings put system user_rotation 1` (`0` to go back).
+- **New layouts are designed first** (decision 0006): mockups at those sizes with real data, approved,
+  then built. Applying an existing pattern (the split above) to a new screen needs no new round.
 
 ## Diagnostics stay
 

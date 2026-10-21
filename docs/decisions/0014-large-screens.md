@@ -116,7 +116,7 @@ come from the same adaptive library (`windowPosture`: `isTabletop` and the hinge
 - **Permissions:** split like the welcome before it: the ask in the panel colour on the first half
   (back at the top, "Two things to allow." and why at the foot; red stays the welcome's), the two
   permissions and Continue on the other.
-- Screens not listed (licences, hub tables, ride tests) cap their content at phone width
-  and centre it, as `TitledScreen` already does.
+- Screens not listed (licences, hub tables, ride tests) capped their content at phone width
+  and centred it. Superseded by [0022](0022-every-screen-every-size.md): they split in two.
 
 Widgets, the Quick Settings tile, notifications and Wear are unaffected.

@@ -331,20 +331,25 @@ class ScreenRenderTest {
         url = null,
       )
     val detail = ProjectDetail(androidX, catalog.licences.filter { it.key in androidX.licences })
+    // Every size (decision 0022): the phone's column, and two panes on anything wider.
     for (dark in listOf(true, false)) {
       val mode = if (dark) "dark" else "light"
-      val shot = Shot("licences", RenderSize.Phone, state, UpdateStatus.Off)
-      render("settings-licences-$mode", dark, shot) {
-        LicencesUi(LicencesUiState(LoadState.Loaded(catalog), {}, {}, {}))
+      for (size in RenderSize.entries) {
+        val prefix = if (size == RenderSize.Phone) "" else "${size.name.lowercase()}-"
+        val shot = Shot("licences", size, state, UpdateStatus.Off)
+        render("settings-${prefix}licences-$mode", dark, shot) {
+          LicencesUi(LicencesUiState(LoadState.Loaded(catalog), {}, {}, {}))
+        }
+        render("settings-${prefix}licences-project-$mode", dark, shot) {
+          LicenceProjectUi(LicenceProjectUiState("AndroidX", LoadState.Loaded(detail), {}, {}))
+        }
+        render("settings-${prefix}licences-text-$mode", dark, shot) {
+          LicenceTextUi(LicenceTextUiState(LoadState.Loaded(text)) {})
+        }
       }
-      render("settings-licences-failed-$mode", dark, shot) {
+      val phone = Shot("licences", RenderSize.Phone, state, UpdateStatus.Off)
+      render("settings-licences-failed-$mode", dark, phone) {
         LicencesUi(LicencesUiState(LoadState.Failed, {}, {}, {}))
-      }
-      render("settings-licences-project-$mode", dark, shot) {
-        LicenceProjectUi(LicenceProjectUiState("AndroidX", LoadState.Loaded(detail), {}, {}))
-      }
-      render("settings-licences-text-$mode", dark, shot) {
-        LicenceTextUi(LicenceTextUiState(LoadState.Loaded(text)) {})
       }
     }
   }
