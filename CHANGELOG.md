@@ -7,6 +7,14 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Added
 
+### Changed
+
+### Fixed
+
+## [1.0.0] - 2026-10-21
+
+### Added
+
 - `scripts/release` cuts a release from main, as Campfire's does (decision 0019): the baseline
   profiles, this file's `[Unreleased]` rolled into the version, the Play and App Store notes (drafted
   by Claude Code from the entries for each platform), a GitHub release tagged with the version, which
@@ -50,83 +58,6 @@ All notable changes to Cassette are documented here. The format follows
   open-source licences, which move here from their own category.
 - Back, close, settings and add-bike buttons float over the screen, so scrolling no longer takes them
   off screen. On iOS they're Liquid Glass (a frosted material before iOS 26).
-
-### Changed
-
-- The Android app starts faster (decision 0023): it ships a baseline profile, so Android compiles
-  startup, the first run and the bike screen ahead of time, and a startup profile, which puts the
-  classes the first frame needs first in the app's code. Drop builds install the profile themselves.
-- Android release version codes come from the version name (`cassette.version`), with the form factor
-  as the last digit, so the phone and Wear apps never share one. Drop builds keep counting commits,
-  now with the build type and form factor as the last two digits. Builds installed from Drop between
-  the two schemes (codes 10010 and 10011) need one reinstall.
-- Settings switches animate as each platform's do: Material 3's on Android, and on iOS one sized
-  and moving like the system's, whose thumb slides on a spring and stretches while pressed. A press
-  anywhere on the row shows on the switch.
-- Settings lists App updates after Diagnostics, just above About.
-- About's Privacy policy row has no subtitle, like Terms of service.
-- About's Made by names The Scavenger's Software only.
-- Settings' Bikes category has a bike icon instead of the pin.
-- Ride tests are a guided flow (decision 0018): choose what to test, check what's ready, ride, then a
-  verdict in plain words (Kept up, Patchy or Lost the bike), the wakes across the ride, each component
-  by name, reads and phone battery, with the raw numbers under Details. Ride tests compares Low power
-  and Batched 30 s. A test that tries Batched 30 s puts Low power back when it stops.
-- Android's background scan has two profiles, Low power and Batched 30 s (decision 0009); Balanced and
-  First + lost are gone, and a phone set to either goes back to Low power. The scan profile chips left
-  Diagnostics: a ride test chooses the profile for its ride.
-- Backups (decision 0019): your bikes, their history and your settings go to a new phone with Android's
-  backup and device transfer, as they already did with iCloud. The capture log stays on the phone
-  (on iOS it moves to a `Diagnostics` folder kept out of backups), and the Wear app isn't backed up.
-
-### Fixed
-
-- Phones in landscape use the width (decision 0021): the bike, component, add-bike, welcome and
-  permissions screens split in two, what the screen says and its button on the left and what it
-  lists on the right; Settings and a bike's page show their two panes. Before, a phone-width column
-  sat in the middle, and the screens with buttons at the foot squeezed their middle into a sliver
-  (add bike's type chips and power meters didn't show). In split screen, those screens now scroll
-  their buttons with the rest.
-- Turning the phone while waking a bike no longer restarts the listening timer.
-- The Android release build is called "Cassette"; only debug and internal builds say "(dev)".
-- The iPhone app, its widgets and the watch app carry the real version and build number (they all
-  said 1.0 (1)): the version from `cassette.version`, shared with Android, and CI's build number.
-- In-app updates work again in the builds Drop ships: since the R8 `internal` build, they were switched
-  off because that build isn't debuggable.
-- On a tablet, Settings sits at the foot of the bike rail again instead of floating halfway down it,
-  and is now an outlined button to match Add bike.
-- The dividers between Settings and Diagnostics rows sit midway between them; they hugged the row
-  above.
-
-### Changed
-
-- Every screen draws edge to edge (decision 0016): backgrounds, panes, the tablet rail and dividers run
-  under the status and navigation bars, and content scrolls under both.
-- Settings are grouped by category (decision 0014): Bikes, Capture, Notifications, App updates,
-  Diagnostics and Licences, each with a line on where it stands ("2 of 3 on", a red dot for a waiting
-  build). On a phone each category opens its own screen; on an open foldable or a tablet the list sits
-  beside the open category, and Diagnostics' tools open in that pane.
-- Settings' Bikes page is a garage: a card per bike with its components and status, an "Open the last
-  bike seen" switch, and the bike that opens first marked. Each bike has its own page to rename it,
-  change its type, make it open first, see its components and remove it; on an open foldable or a
-  tablet the bike's details sit on the left and its components on the right. Remove bike is red with
-  a trash can; after the first tap (a light tick) it fills red and the can shakes until the second
-  tap (a firmer buzz), or resets after 5 seconds.
-- Settings' App updates page says what's waiting: the build, what's new, its size and when it was
-  uploaded, the installed build, and one action (Install, or Reinstall with a warning that it clears
-  the bikes). Up to date and couldn't-check states say when it last checked.
-- The welcome screen's tagline, folded and unfolded, is now "Never ride single-speed by accident."
-  (was "Know before you ride.").
-- The app icon (phone and watch, release and dev) drops its four small screw dots.
-- The watch app's internal build goes to Drop as a Wear Build in the same run as the phone's (Drop
-  0.4.0), with the phone's commit-count version code, so it installs from its Build page instead of a
-  CI artifact.
-- Builds uploaded to Drop are the R8-optimised `internal` build type (same app id, key and icon as the
-  debug build), built in a separate, non-required CI job after the compile passes. The Wear app gets
-  the same build type, kept as a CI artifact so it pairs with the phone's Drop build. Release builds
-  use R8 too.
-
-### Added
-
 - Settings → Appearance: System, Light or Dark, each shown as a small picture of the bike screen.
   The app and its system bars follow the choice; widgets, the Quick Settings tile and the watch keep
   following the phone.
@@ -216,3 +147,77 @@ All notable changes to Cassette are documented here. The format follows
   readings until capture is ported.
 - CI on GitHub Actions (formatting, tests, Android build, iOS compile, design-gallery renders), Danger
   checks and Renovate.
+
+### Changed
+
+- The Android app starts faster (decision 0023): it ships a baseline profile, so Android compiles
+  startup, the first run and the bike screen ahead of time, and a startup profile, which puts the
+  classes the first frame needs first in the app's code. Drop builds install the profile themselves.
+- Android release version codes come from the version name (`cassette.version`), with the form factor
+  as the last digit, so the phone and Wear apps never share one. Drop builds keep counting commits,
+  now with the build type and form factor as the last two digits. Builds installed from Drop between
+  the two schemes (codes 10010 and 10011) need one reinstall.
+- Settings switches animate as each platform's do: Material 3's on Android, and on iOS one sized
+  and moving like the system's, whose thumb slides on a spring and stretches while pressed. A press
+  anywhere on the row shows on the switch.
+- Settings lists App updates after Diagnostics, just above About.
+- About's Privacy policy row has no subtitle, like Terms of service.
+- About's Made by names The Scavenger's Software only.
+- Settings' Bikes category has a bike icon instead of the pin.
+- Ride tests are a guided flow (decision 0018): choose what to test, check what's ready, ride, then a
+  verdict in plain words (Kept up, Patchy or Lost the bike), the wakes across the ride, each component
+  by name, reads and phone battery, with the raw numbers under Details. Ride tests compares Low power
+  and Batched 30 s. A test that tries Batched 30 s puts Low power back when it stops.
+- Android's background scan has two profiles, Low power and Batched 30 s (decision 0009); Balanced and
+  First + lost are gone, and a phone set to either goes back to Low power. The scan profile chips left
+  Diagnostics: a ride test chooses the profile for its ride.
+- Backups (decision 0019): your bikes, their history and your settings go to a new phone with Android's
+  backup and device transfer, as they already did with iCloud. The capture log stays on the phone
+  (on iOS it moves to a `Diagnostics` folder kept out of backups), and the Wear app isn't backed up.
+- Every screen draws edge to edge (decision 0016): backgrounds, panes, the tablet rail and dividers run
+  under the status and navigation bars, and content scrolls under both.
+- Settings are grouped by category (decision 0014): Bikes, Capture, Notifications, App updates,
+  Diagnostics and Licences, each with a line on where it stands ("2 of 3 on", a red dot for a waiting
+  build). On a phone each category opens its own screen; on an open foldable or a tablet the list sits
+  beside the open category, and Diagnostics' tools open in that pane.
+- Settings' Bikes page is a garage: a card per bike with its components and status, an "Open the last
+  bike seen" switch, and the bike that opens first marked. Each bike has its own page to rename it,
+  change its type, make it open first, see its components and remove it; on an open foldable or a
+  tablet the bike's details sit on the left and its components on the right. Remove bike is red with
+  a trash can; after the first tap (a light tick) it fills red and the can shakes until the second
+  tap (a firmer buzz), or resets after 5 seconds.
+- Settings' App updates page says what's waiting: the build, what's new, its size and when it was
+  uploaded, the installed build, and one action (Install, or Reinstall with a warning that it clears
+  the bikes). Up to date and couldn't-check states say when it last checked.
+- The welcome screen's tagline, folded and unfolded, is now "Never ride single-speed by accident."
+  (was "Know before you ride.").
+- The app icon (phone and watch, release and dev) drops its four small screw dots.
+- The watch app's internal build goes to Drop as a Wear Build in the same run as the phone's (Drop
+  0.4.0), with the phone's commit-count version code, so it installs from its Build page instead of a
+  CI artifact.
+- Builds uploaded to Drop are the R8-optimised `internal` build type (same app id, key and icon as the
+  debug build), built in a separate, non-required CI job after the compile passes. The Wear app gets
+  the same build type, kept as a CI artifact so it pairs with the phone's Drop build. Release builds
+  use R8 too.
+
+### Fixed
+
+- Phones in landscape use the width (decision 0021): the bike, component, add-bike, welcome and
+  permissions screens split in two, what the screen says and its button on the left and what it
+  lists on the right; Settings and a bike's page show their two panes. Before, a phone-width column
+  sat in the middle, and the screens with buttons at the foot squeezed their middle into a sliver
+  (add bike's type chips and power meters didn't show). In split screen, those screens now scroll
+  their buttons with the rest.
+- Turning the phone while waking a bike no longer restarts the listening timer.
+- The Android release build is called "Cassette"; only debug and internal builds say "(dev)".
+- The iPhone app, its widgets and the watch app carry the real version and build number (they all
+  said 1.0 (1)): the version from `cassette.version`, shared with Android, and CI's build number.
+- In-app updates work again in the builds Drop ships: since the R8 `internal` build, they were switched
+  off because that build isn't debuggable.
+- On a tablet, Settings sits at the foot of the bike rail again instead of floating halfway down it,
+  and is now an outlined button to match Add bike.
+- The dividers between Settings and Diagnostics rows sit midway between them; they hugged the row
+  above.
+
+[Unreleased]: https://github.com/r0adkll/cassette/compare/1.0.0...HEAD
+[1.0.0]: https://github.com/r0adkll/cassette/releases/tag/1.0.0
