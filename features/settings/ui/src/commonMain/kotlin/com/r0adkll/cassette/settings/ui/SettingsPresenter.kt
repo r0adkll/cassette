@@ -45,6 +45,8 @@ data class SettingsUiState(
   val playfulTitles: Boolean,
   val notifications: NotificationSettings,
   val themeMode: ThemeMode = ThemeMode.System,
+  /** Settings → About → Send crash reports (decision 0020). */
+  val crashReports: Boolean = true,
   /** The screen's category: on a phone, null is the list and a category is its own screen. */
   val category: SettingsCategory? = null,
   /** The category open beside the list on wide windows. */
@@ -94,6 +96,8 @@ sealed interface SettingsEvent : CircuitUiEvent {
 
   data class SetThemeMode(val mode: ThemeMode) : SettingsEvent
 
+  data class SetCrashReports(val enabled: Boolean) : SettingsEvent
+
   /** On a phone: the category's screen (Diagnostics opens its own). */
   data class OpenCategory(val category: SettingsCategory) : SettingsEvent
 
@@ -127,6 +131,7 @@ class SettingsPresenter(
     }
       .collectAsRetainedState(NotificationSettings())
     val themeMode by remember { settings.themeMode }.collectAsRetainedState(ThemeMode.System)
+    val crashReports by remember { settings.crashReports }.collectAsRetainedState(true)
     var selected by rememberRetained {
       mutableStateOf(screen.category ?: SettingsCategory.Bikes)
     }
@@ -141,6 +146,7 @@ class SettingsPresenter(
       playful,
       notifications,
       themeMode = themeMode,
+      crashReports = crashReports,
       category = screen.category,
       selected = selected,
       lastHeard = health?.lastDeliveryAt?.let { "Last heard ${ago(now - it)}" },
@@ -166,6 +172,7 @@ class SettingsPresenter(
         is SettingsEvent.SetNotifications ->
           scope.launch { settings.setNotifications(event.settings) }
         is SettingsEvent.SetThemeMode -> scope.launch { settings.setThemeMode(event.mode) }
+        is SettingsEvent.SetCrashReports -> scope.launch { settings.setCrashReports(event.enabled) }
         is SettingsEvent.OpenCategory ->
           navigator.goTo(
             when (event.category) {

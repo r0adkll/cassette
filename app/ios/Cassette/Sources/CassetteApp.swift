@@ -17,7 +17,8 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
     RefreshControls.more = { Cassette.shared.addRefreshTime() }
     Cassette.shared.didFinishLaunching(
       reloadWidgets: { WidgetCenter.shared.reloadAllTimelines() },
-      showRefresh: { RefreshActivityController.show($0) })
+      showRefresh: { RefreshActivityController.show($0) },
+      setCrashReports: CrashReports.start())
     return true
   }
 }

@@ -2,8 +2,12 @@ package com.r0adkll.cassette.app.ios
 
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.window.ComposeUIViewController
+import co.touchlab.crashkios.crashlytics.enableCrashlytics
+import co.touchlab.crashkios.crashlytics.setCrashlyticsUnhandledExceptionHook
 import com.r0adkll.cassette.alerts.impl.IosNotifier
 import com.r0adkll.cassette.app.shared.CassetteRoot
+import com.r0adkll.cassette.app.shared.CrashCollection
+import com.r0adkll.cassette.app.shared.followCrashReports
 import com.r0adkll.cassette.common.compose.AppInfo
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
 import com.r0adkll.cassette.common.screens.DeepLinks
@@ -52,9 +56,20 @@ object Cassette {
    * At every launch, including the ones iOS makes in the background for the Bluetooth scan: the
    * central manager has to exist before launch finishes for iOS to restore it. [reloadWidgets] is
    * WidgetKit's reload and [showRefresh] starts, updates or ends the refresh's Live Activity
-   * (returning null, or why ActivityKit refused): only Swift can call either.
+   * (returning null, or why ActivityKit refused): only Swift can call either. [setCrashReports] is
+   * Crashlytics' switch, passed only by Release builds with a Firebase config (decision 0020).
    */
-  fun didFinishLaunching(reloadWidgets: () -> Unit, showRefresh: (String) -> String?) {
+  fun didFinishLaunching(
+    reloadWidgets: () -> Unit,
+    showRefresh: (String) -> String?,
+    setCrashReports: ((Boolean) -> Unit)?,
+  ) {
+    // First, so a Kotlin crash in the rest of launch is reported with its Kotlin stack.
+    if (setCrashReports != null) {
+      enableCrashlytics()
+      setCrashlyticsUnhandledExceptionHook()
+      graph.settings.followCrashReports(scope, CrashCollection(setCrashReports))
+    }
     graph.central.start()
     graph.widgets.start(scope, reloadWidgets)
     graph.refreshActivity.start(scope, showRefresh)

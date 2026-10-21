@@ -46,6 +46,14 @@ interface CassetteSettings {
 
   suspend fun setPlayfulTitles(enabled: Boolean)
 
+  /**
+   * Crash reports to Firebase Crashlytics (Settings → About, decision 0020). On by default; only
+   * release builds with a Firebase config send them.
+   */
+  val crashReports: Flow<Boolean>
+
+  suspend fun setCrashReports(enabled: Boolean)
+
   /** What background capture has been doing, for Diagnostics. */
   val captureHealth: Flow<CaptureHealth>
 

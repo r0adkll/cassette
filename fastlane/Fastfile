@@ -27,4 +27,15 @@ platform :ios do
       run_precheck_before_submit: false,
     )
   end
+
+  # Decision 0020: crash data and other diagnostic data, not linked, not tracking. Apple has no API
+  # key route for these, so it signs in with an Apple ID (an owner or admin of the team).
+  desc "Uploads and publishes the App Store privacy answers from app_privacy_details.json"
+  lane :privacy do |options|
+    upload_app_privacy_details_to_app_store(
+      app_identifier: "com.r0adkll.cassette",
+      username: options[:username],
+      json_path: "fastlane/app_privacy_details.json",
+    )
+  end
 end

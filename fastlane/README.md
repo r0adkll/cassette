@@ -1,7 +1,9 @@
 # Store listings
 
 The Play and App Store listings, for fastlane's `supply` and `deliver`. `fastlane android listing` and
-`fastlane ios listing` upload the text and images only (see `Fastfile`).
+`fastlane ios listing` upload the text and images only (see `Fastfile`). `fastlane ios privacy
+username:<apple id>` uploads the App Store privacy answers from `app_privacy_details.json` (an Apple ID
+login: Apple has no API key route for them).
 
 | Path | What |
 |---|---|
@@ -64,5 +66,28 @@ All in dark mode with a clean status bar, on Simulators of your own:
 ## Set by hand
 
 Not in fastlane's metadata: Play's category (Tools), contact email and website, the App Store's age
-rating, copyright, privacy answers and review contact, both content rating questionnaires, and Play's
-App access note (the same steps as `metadata/ios/review_information/notes.txt`).
+rating, copyright and review contact, both content rating questionnaires, Play's App access note (the
+same steps as `metadata/ios/review_information/notes.txt`) and Play's Data safety form (below).
+
+## Privacy answers
+
+Decision 0020: crash reports are the one thing collected. The privacy policy
+(thescavengers.software/cassette/privacy) says the same; change all three together.
+
+App Store (`app_privacy_details.json`): Crash Data and Other Diagnostic Data, purpose App
+Functionality, not linked to the person, not used for tracking. The app's `PrivacyInfo.xcprivacy`
+declares the same two.
+
+Google Play Data safety (App content → Data safety), by hand:
+
+| Question | Answer |
+|---|---|
+| Does your app collect or share any of the required user data types? | Yes |
+| Is all of the user data collected by your app encrypted in transit? | Yes (Crashlytics uses HTTPS) |
+| Which account creation methods does your app support? | My app does not allow users to create an account |
+| Do you provide a way for users to request that their data is deleted? | No: reports aren't linked to a person; Crashlytics deletes them after 90 days |
+| Data types | App info and performance → Crash logs; App info and performance → Diagnostics; Device or other IDs (Crashlytics' installation id) |
+| Each type: collected / shared | Collected, not shared (Google processes it for us as Firebase's processor) |
+| Each type: processed ephemerally? | No |
+| Each type: required or optional? | Optional: users can turn it off (Settings → About → Send crash reports) |
+| Each type: purpose | App functionality |

@@ -144,6 +144,17 @@ jobs:
           echo "CASSETTE_KEYSTORE=$RUNNER_TEMP/internal.keystore" >> "$GITHUB_ENV"
           echo "signed=true" >> "$GITHUB_OUTPUT"
 
+      # Crash reports (decision 0020): without the config, the build doesn't report.
+      - name: Firebase config
+        env:
+          CONFIG_BASE64: ${{ secrets.FIREBASE_ANDROID_CONFIG_BASE64 }}
+        run: |
+          if [ -z "$CONFIG_BASE64" ]; then
+            echo "No Firebase config: this build doesn't send crash reports."
+            exit 0
+          fi
+          echo "$CONFIG_BASE64" | base64 -d > app/android/google-services.json
+
       - name: Build
         run: ./gradlew :app:android:assembleInternal :app:wear:assembleInternal
         env:
@@ -290,6 +301,19 @@ jobs:
       - name: Set up Gradle
         if: steps.key.outputs.ready == 'true'
         uses: gradle/actions/setup-gradle@v6
+
+      # Crash reports (decision 0020): without the config, the build doesn't report.
+      - name: Firebase config
+        if: steps.key.outputs.ready == 'true'
+        env:
+          CONFIG_BASE64: ${{ secrets.FIREBASE_IOS_CONFIG_BASE64 }}
+        run: |
+          if [ -z "$CONFIG_BASE64" ]; then
+            echo "No Firebase config: this build doesn't send crash reports."
+            exit 0
+          fi
+          mkdir -p app/ios/Cassette/Firebase
+          echo "$CONFIG_BASE64" | base64 -d > app/ios/Cassette/Firebase/GoogleService-Info.plist
 
       - name: Archive and upload
         if: steps.key.outputs.ready == 'true'

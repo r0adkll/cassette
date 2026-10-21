@@ -1,11 +1,16 @@
 package com.r0adkll.cassette.app
 
 import android.app.Application
+import android.content.pm.ApplicationInfo
+import com.google.firebase.FirebaseApp
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import com.r0adkll.cassette.alerts.api.Alerts
 import com.r0adkll.cassette.alerts.impl.AlertsHost
 import com.r0adkll.cassette.alerts.impl.AndroidNotifier
 import com.r0adkll.cassette.alerts.impl.ReminderWorker
 import com.r0adkll.cassette.app.di.AndroidAppGraph
+import com.r0adkll.cassette.app.shared.CrashCollection
+import com.r0adkll.cassette.app.shared.followCrashReports
 import com.r0adkll.cassette.data.ble.BackgroundDeliveryHandler
 import com.r0adkll.cassette.data.ble.BleHost
 import com.r0adkll.cassette.surfaces.tile.TileComponent
@@ -47,6 +52,21 @@ class CassetteApplication : Application(), BleHost, WidgetHost, TileHost, Alerts
     graph.wearPublisher.start(bleScope)
     AndroidNotifier.ensureChannels(this)
     ReminderWorker.schedule(this)
+    crashCollection()?.let { graph.settings.followCrashReports(bleScope, it) }
+  }
+
+  /**
+   * Crashlytics on the release and internal builds that have a Firebase config (decision 0020);
+   * debug builds never report.
+   */
+  private fun crashCollection(): CrashCollection? {
+    if (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) return null
+    if (FirebaseApp.getApps(this).isEmpty()) return null
+    val crashlytics = FirebaseCrashlytics.getInstance()
+    return CrashCollection { enabled ->
+      crashlytics.setCrashlyticsCollectionEnabled(enabled)
+      if (!enabled) crashlytics.deleteUnsentReports()
+    }
   }
 
   override val backgroundDeliveryHandler: BackgroundDeliveryHandler

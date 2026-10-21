@@ -13,6 +13,9 @@ kotlin {
     target.binaries.framework {
       baseName = "CassetteKit"
       isStatic = true
+      // Line numbers for Kotlin frames in the app's dSYM, which Crashlytics symbolicates with
+      // (decision 0020); release frameworks carry no debug info otherwise.
+      freeCompilerArgs += "-Xadd-light-debug=enable"
     }
   }
 
@@ -37,6 +40,9 @@ kotlin {
       implementation(libs.circuitx.gesture.navigation)
       implementation(libs.circuit.codegen.annotations)
       implementation(libs.metro.runtime)
+      // Kotlin crashes reach Crashlytics with Kotlin stacks (decision 0020). The framework is
+      // static, so the app's link resolves Firebase and CrashKiOS's link plugin isn't needed.
+      implementation(libs.crashkios.crashlytics)
     }
   }
 }

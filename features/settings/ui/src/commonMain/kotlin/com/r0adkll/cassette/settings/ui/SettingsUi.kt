@@ -297,7 +297,12 @@ private fun ColumnScope.CategoryBody(
     }
     SettingsCategory.Appearance ->
       ThemeChoices(state.themeMode, onSelect = { sink(SettingsEvent.SetThemeMode(it)) })
-    SettingsCategory.About -> AboutBody(onLicences = { sink(SettingsEvent.OpenLicences) })
+    SettingsCategory.About ->
+      AboutBody(
+        crashReports = state.crashReports,
+        onCrashReports = { sink(SettingsEvent.SetCrashReports(it)) },
+        onLicences = { sink(SettingsEvent.OpenLicences) },
+      )
     // Opens as its own screen on a phone, and in the pane on a wide window.
     SettingsCategory.Diagnostics -> Unit
   }

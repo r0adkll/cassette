@@ -106,6 +106,12 @@ class DataStoreSettings(file: SettingsFile) : CassetteSettings {
     store.edit { it[PLAYFUL_TITLES] = enabled }
   }
 
+  override val crashReports: Flow<Boolean> = store.data.map { it[CRASH_REPORTS] ?: true }
+
+  override suspend fun setCrashReports(enabled: Boolean) {
+    store.edit { it[CRASH_REPORTS] = enabled }
+  }
+
   override val captureHealth: Flow<CaptureHealth> =
     store.data.map {
       CaptureHealth(
@@ -141,6 +147,7 @@ class DataStoreSettings(file: SettingsFile) : CassetteSettings {
     val PRE_RIDE = booleanPreferencesKey("notify_pre_ride")
     val REMINDERS = booleanPreferencesKey("notify_not_seen")
     val PLAYFUL_TITLES = booleanPreferencesKey("playful_titles")
+    val CRASH_REPORTS = booleanPreferencesKey("crash_reports")
     val ARM_RESULT = stringPreferencesKey("capture_arm_result")
     val ARMED_AT = longPreferencesKey("capture_armed_at")
     val LAST_DELIVERY = longPreferencesKey("capture_last_delivery")
