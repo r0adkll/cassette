@@ -16,6 +16,7 @@ local.properties
 build/
 .kotlin/
 /fastlane/assets/cut
+/.claude/worktrees
 
 # Firebase configs (decision 0020): scripts/firebase-wizard writes them, CI from secrets.
 /app/android/google-services.json
