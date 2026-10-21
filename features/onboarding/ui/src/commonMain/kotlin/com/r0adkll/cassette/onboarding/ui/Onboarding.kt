@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -56,6 +57,7 @@ import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.FooterColumn
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
+import com.r0adkll.cassette.common.compose.components.ScrollColumn
 import com.r0adkll.cassette.common.compose.components.SplitPanes
 import com.r0adkll.cassette.common.compose.components.TopBarButton
 import com.r0adkll.cassette.common.compose.currentVerticalHinge
@@ -139,37 +141,26 @@ class PermissionsPresenter(
 @CircuitInject(OnboardingScreen::class, AppScope::class)
 @Composable
 fun WelcomeUi(state: WelcomeUiState, modifier: Modifier = Modifier) {
+  if (LocalScreenLayout.current == ScreenLayout.Landscape) {
+    LandscapeWelcome(state, modifier)
+    return
+  }
   if (LocalScreenLayout.current != ScreenLayout.Column) {
     WideWelcome(state, modifier)
     return
   }
-  val colors = CassetteTheme.colors
   // The poster's red runs up under the status bar (decision 0016).
   FooterColumn(
     footer = {
-      Column(
+      WelcomeFooter(
+        state,
         Modifier.widthIn(max = MaxContentWidth)
           .fillMaxWidth()
           .windowInsetsPadding(
             WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
           )
           .padding(start = 20.dp, end = 20.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-      ) {
-        CassetteButton("Get started", onClick = { state.eventSink(WelcomeEvent.GetStarted) })
-        Row(
-          Modifier.fillMaxWidth(),
-          horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-          verticalAlignment = Alignment.CenterVertically,
-        ) {
-          Icon(LucideIcons.Info, null, tint = colors.muted, modifier = Modifier.size(13.dp))
-          Text(
-            "Unofficial · not affiliated with SRAM",
-            style = CassetteTheme.type.bodySmall,
-            color = colors.muted,
-          )
-        }
-      }
+      )
     },
     modifier = modifier.fillMaxSize(),
     horizontalAlignment = Alignment.CenterHorizontally,
@@ -181,13 +172,72 @@ fun WelcomeUi(state: WelcomeUiState, modifier: Modifier = Modifier) {
         .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal))
         .padding(start = 20.dp, end = 20.dp, top = 8.dp)
     ) {
-      Point(
-        "01",
-        "Hears the bike when it wakes",
-        "No pairing, no app open: a shake or a shift is enough.",
+      WelcomePoints()
+    }
+  }
+}
+
+/**
+ * A phone on its side (decision 0021): the poster takes the left half, the wordmark at its top and
+ * the promise at its foot; what Cassette does and Get started take the right.
+ */
+@Composable
+private fun LandscapeWelcome(state: WelcomeUiState, modifier: Modifier = Modifier) {
+  SplitPanes(
+    start = {
+      // The red runs under the status bar, the cutout and the navigation bar.
+      ScrollColumn(
+        Modifier.fillMaxSize().background(CassetteRed),
+        padding = Modifier.safeDrawingPadding().padding(horizontal = 20.dp, vertical = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+      ) {
+        Text("CASSETTE", style = CassetteTheme.type.label, color = Color.White)
+        Spacer(Modifier.weight(1f))
+        Promise()
+      }
+    },
+    end = {
+      ScrollColumn(
+        Modifier.fillMaxSize(),
+        padding = Modifier.safeDrawingPadding().padding(horizontal = 20.dp, vertical = 16.dp),
+      ) {
+        WelcomePoints()
+        Spacer(Modifier.weight(1f).heightIn(min = 16.dp))
+        WelcomeFooter(state)
+      }
+    },
+    modifier = modifier.fillMaxSize(),
+  )
+}
+
+@Composable
+private fun WelcomePoints() {
+  Point(
+    "01",
+    "Hears the bike when it wakes",
+    "No pairing, no app open: a shake or a shift is enough.",
+  )
+  Point("02", "Shows it at a glance", glanceText())
+  Point("03", "Warns you before a ride", "A nudge when the bike wakes and something is low.")
+}
+
+/** Get started, and the unofficial notice beneath it. */
+@Composable
+private fun WelcomeFooter(state: WelcomeUiState, modifier: Modifier = Modifier) {
+  val colors = CassetteTheme.colors
+  Column(modifier, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    CassetteButton("Get started", onClick = { state.eventSink(WelcomeEvent.GetStarted) })
+    Row(
+      Modifier.fillMaxWidth(),
+      horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Icon(LucideIcons.Info, null, tint = colors.muted, modifier = Modifier.size(13.dp))
+      Text(
+        "Unofficial · not affiliated with SRAM",
+        style = CassetteTheme.type.bodySmall,
+        color = colors.muted,
       )
-      Point("02", "Shows it at a glance", glanceText())
-      Point("03", "Warns you before a ride", "A nudge when the bike wakes and something is low.")
     }
   }
 }
@@ -210,31 +260,37 @@ private fun Poster() {
       verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
       Text("CASSETTE", style = CassetteTheme.type.label, color = Color.White)
-      Row(verticalAlignment = Alignment.Top) {
-        // Each line stays whole: the title shrinks below 54 sp on narrow phones instead of
-        // breaking "single-speed".
-        Text(
-          "Never ride\nsingle-speed\nby accident.",
-          style = CassetteTheme.type.display.copy(lineHeight = 0.88.em),
-          color = Color.White,
-          softWrap = false,
-          autoSize = TextAutoSize.StepBased(maxFontSize = 54.sp),
-          modifier = Modifier.weight(1f),
-        )
-        // The tape, drawn straight on the red: the poster is its shell.
-        Image(
-          rememberVectorPainter(CassetteMarks.Tape),
-          contentDescription = null,
-          modifier = Modifier.size(112.dp),
-        )
-      }
-      Text(
-        "Battery levels for your SRAM AXS bike, without the guesswork.",
-        style = CassetteTheme.type.body,
-        color = Color.White,
-      )
+      Promise()
     }
   }
+}
+
+/** The poster's promise beside the tape, then what Cassette is. */
+@Composable
+private fun Promise() {
+  Row(verticalAlignment = Alignment.Top) {
+    // Each line stays whole: the title shrinks below 54 sp on narrow phones instead of
+    // breaking "single-speed".
+    Text(
+      "Never ride\nsingle-speed\nby accident.",
+      style = CassetteTheme.type.display.copy(lineHeight = 0.88.em),
+      color = Color.White,
+      softWrap = false,
+      autoSize = TextAutoSize.StepBased(maxFontSize = 54.sp),
+      modifier = Modifier.weight(1f),
+    )
+    // The tape, drawn straight on the red: the poster is its shell.
+    Image(
+      rememberVectorPainter(CassetteMarks.Tape),
+      contentDescription = null,
+      modifier = Modifier.size(112.dp),
+    )
+  }
+  Text(
+    "Battery levels for your SRAM AXS bike, without the guesswork.",
+    style = CassetteTheme.type.body,
+    color = Color.White,
+  )
 }
 
 /**
@@ -356,6 +412,10 @@ private fun Point(number: String, title: String, text: String) {
 @CircuitInject(OnboardingPermissionsScreen::class, AppScope::class)
 @Composable
 fun PermissionsUi(state: PermissionsUiState, modifier: Modifier = Modifier) {
+  if (LocalScreenLayout.current == ScreenLayout.Landscape) {
+    LandscapePermissions(state, modifier)
+    return
+  }
   if (LocalScreenLayout.current != ScreenLayout.Column) {
     WidePermissions(state, modifier)
     return
@@ -388,6 +448,53 @@ fun PermissionsUi(state: PermissionsUiState, modifier: Modifier = Modifier) {
       PermissionCards()
     }
   }
+}
+
+/**
+ * A phone on its side (decision 0021), as the welcome before it: the ask on the left in the panel
+ * colour, the two permissions and Continue on the right.
+ */
+@Composable
+private fun LandscapePermissions(state: PermissionsUiState, modifier: Modifier = Modifier) {
+  val colors = CassetteTheme.colors
+  SplitPanes(
+    start = {
+      ScrollColumn(
+        Modifier.fillMaxSize().background(colors.panel),
+        padding = Modifier.safeDrawingPadding().padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+      ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+          TopBarButton(
+            LucideIcons.ArrowLeft,
+            "Back",
+            onClick = { state.eventSink(PermissionsEvent.Back) },
+          )
+          Spacer(Modifier.weight(1f))
+          Kicker("Set up")
+        }
+        Spacer(Modifier.weight(1f))
+        Text("Two things to allow.", style = CassetteTheme.type.display, color = colors.text)
+        Text(
+          "Cassette runs quietly in the background. These let it hear your bike and tell you when to charge.",
+          style = CassetteTheme.type.body,
+          color = colors.muted,
+        )
+      }
+    },
+    end = {
+      ScrollColumn(
+        Modifier.fillMaxSize(),
+        padding = Modifier.safeDrawingPadding().padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+      ) {
+        PermissionCards()
+        Spacer(Modifier.weight(1f))
+        ContinueFooter(state)
+      }
+    },
+    modifier = modifier.fillMaxSize(),
+  )
 }
 
 /**

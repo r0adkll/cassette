@@ -61,10 +61,13 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Fixed
 
-- Phones in landscape: the welcome, permissions and add-bike screens squeezed their middle into a
-  sliver between the title and the buttons (add bike's type chips and power meters didn't show).
-  In a short window the whole screen now scrolls, buttons last. Turning the phone while waking a
-  bike no longer restarts the listening timer.
+- Phones in landscape use the width (decision 0021): the bike, component, add-bike, welcome and
+  permissions screens split in two, what the screen says and its button on the left and what it
+  lists on the right; Settings and a bike's page show their two panes. Before, a phone-width column
+  sat in the middle, and the screens with buttons at the foot squeezed their middle into a sliver
+  (add bike's type chips and power meters didn't show). In split screen, those screens now scroll
+  their buttons with the rest.
+- Turning the phone while waking a bike no longer restarts the listening timer.
 - The Android release build is called "Cassette"; only debug and internal builds say "(dev)".
 - The iPhone app, its widgets and the watch app carry the real version and build number (they all
   said 1.0 (1)): the version from `cassette.version`, shared with Android, and CI's build number.

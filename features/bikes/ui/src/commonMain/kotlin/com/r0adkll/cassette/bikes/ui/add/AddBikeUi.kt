@@ -51,6 +51,7 @@ import com.r0adkll.cassette.common.compose.components.CodeBadge
 import com.r0adkll.cassette.common.compose.components.FooterColumn
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
+import com.r0adkll.cassette.common.compose.components.ScrollColumn
 import com.r0adkll.cassette.common.compose.components.SplitPanes
 import com.r0adkll.cassette.common.compose.components.StatusLabel
 import com.r0adkll.cassette.common.compose.components.TopBarButton
@@ -69,6 +70,10 @@ import dev.zacsweers.metro.AppScope
 fun AddBikeUi(state: AddBikeUiState, modifier: Modifier = Modifier) {
   val sink = state.eventSink
   val step = state.step
+  if (LocalScreenLayout.current == ScreenLayout.Landscape) {
+    LandscapeAddBike(state, modifier)
+    return
+  }
   // Wide windows put waking and found on one screen (decision 0014).
   if (
     LocalScreenLayout.current != ScreenLayout.Column &&
@@ -85,14 +90,88 @@ fun AddBikeUi(state: AddBikeUiState, modifier: Modifier = Modifier) {
       verticalArrangement = Arrangement.spacedBy(16.dp),
       top = { Header(state.step.number, onClose = { sink(AddBikeEvent.Close) }) },
     ) {
-      when (val step = state.step) {
-        is AddBikeStep.Wake -> Wake(step, sink)
-        is AddBikeStep.Found -> Found(step, sink)
-        is AddBikeStep.Name -> Name(step, sink)
-        is AddBikeStep.PowerMeter -> PowerMeter(step, sink)
-        is AddBikeStep.KeepFresh -> KeepFresh(step)
-      }
+      Intro(state.step)
+      StepContent(state.step, sink)
     }
+  }
+}
+
+/**
+ * A phone on its side (decision 0021): the step's title, what to do and its buttons on the left,
+ * what it shows (the pulse, the hub's components, the name, the meters) on the right.
+ */
+@Composable
+private fun LandscapeAddBike(state: AddBikeUiState, modifier: Modifier = Modifier) {
+  val sink = state.eventSink
+  val step = state.step
+  val padding = Modifier.safeDrawingPadding().padding(horizontal = 20.dp, vertical = 16.dp)
+  SplitPanes(
+    start = {
+      ScrollColumn(
+        Modifier.fillMaxSize(),
+        padding = padding,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+      ) {
+        Header(step.number, onClose = { sink(AddBikeEvent.Close) })
+        Intro(step)
+        // The buttons sit at the foot when everything fits.
+        Spacer(Modifier.weight(1f))
+        Footer(step, sink)
+      }
+    },
+    end = {
+      ScrollColumn(
+        Modifier.fillMaxSize(),
+        padding = padding,
+        // The pulse sits in the middle of its pane.
+        verticalArrangement =
+          if (step is AddBikeStep.Wake) Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
+          else Arrangement.spacedBy(16.dp),
+      ) {
+        StepContent(step, sink)
+      }
+    },
+    modifier = modifier.fillMaxSize(),
+    divider = true,
+  )
+}
+
+/** The step's title and what to do, above its content (or beside it, on a phone on its side). */
+@Composable
+private fun Intro(step: AddBikeStep) {
+  val (title, body) =
+    when (step) {
+      is AddBikeStep.Wake ->
+        "Wake your bike." to
+          "Shake the bike or press the AXS button on a shifter. Cassette listens for the rear derailleur, which reports for the whole bike."
+      is AddBikeStep.Found ->
+        (if (step.failed) "Couldn't read it." else "Found a bike.") to
+          when {
+            step.failed -> "The hub stopped answering. Wake the bike again and retry."
+            step.reading -> "Reading the hub's list of components…"
+            else ->
+              "The rear derailleur is the hub. It listed ${step.components.size} components; more can join later."
+          }
+      is AddBikeStep.Name -> "Name it." to null
+      is AddBikeStep.PowerMeter ->
+        "Power meter?" to
+          "Power meters don't join the hub, so pick yours from what's nearby. Spin the crank: yours gets stronger."
+      is AddBikeStep.KeepFresh ->
+        "Keep it fresh." to
+          "When the bike wakes, Cassette reads its batteries in the background, so widgets and alerts stay current without opening the app."
+    }
+  Title(title)
+  body?.let { Body(it) }
+}
+
+@Composable
+private fun ColumnScope.StepContent(step: AddBikeStep, sink: (AddBikeEvent) -> Unit) {
+  when (step) {
+    is AddBikeStep.Wake -> Wake(step)
+    is AddBikeStep.Found -> Found(step)
+    is AddBikeStep.Name -> Name(step, sink)
+    is AddBikeStep.PowerMeter -> PowerMeter(step, sink)
+    is AddBikeStep.KeepFresh -> KeepFresh(step)
   }
 }
 
@@ -146,11 +225,7 @@ private fun Note(text: String, icon: ImageVector = LucideIcons.Info) {
 }
 
 @Composable
-private fun ColumnScope.Wake(step: AddBikeStep.Wake, sink: (AddBikeEvent) -> Unit) {
-  Title("Wake your bike.")
-  Body(
-    "Shake the bike or press the AXS button on a shifter. Cassette listens for the rear derailleur, which reports for the whole bike."
-  )
+private fun ColumnScope.Wake(step: AddBikeStep.Wake) {
   ListeningPulse(listening = true, Modifier.fillMaxWidth())
   ListeningLabel(step, Modifier.align(Alignment.CenterHorizontally))
   if (step.showTips) Tips()
@@ -231,17 +306,8 @@ private fun Tips() {
 }
 
 @Composable
-private fun Found(step: AddBikeStep.Found, sink: (AddBikeEvent) -> Unit) {
+private fun Found(step: AddBikeStep.Found) {
   val colors = CassetteTheme.colors
-  Title(if (step.failed) "Couldn't read it." else "Found a bike.")
-  Body(
-    when {
-      step.failed -> "The hub stopped answering. Wake the bike again and retry."
-      step.reading -> "Reading the hub's list of components…"
-      else ->
-        "The rear derailleur is the hub. It listed ${step.components.size} components; more can join later."
-    }
-  )
   Panel {
     Row(verticalAlignment = Alignment.CenterVertically) {
       Kicker("Hub", Modifier.weight(1f))
@@ -278,7 +344,6 @@ private fun Found(step: AddBikeStep.Found, sink: (AddBikeEvent) -> Unit) {
 private fun Name(step: AddBikeStep.Name, sink: (AddBikeEvent) -> Unit) {
   val colors = CassetteTheme.colors
   val type = CassetteTheme.type
-  Title("Name it.")
   Kicker("Name")
   BasicTextField(
     value = step.name,
@@ -313,10 +378,6 @@ private fun Name(step: AddBikeStep.Name, sink: (AddBikeEvent) -> Unit) {
 @Composable
 private fun PowerMeter(step: AddBikeStep.PowerMeter, sink: (AddBikeEvent) -> Unit) {
   val colors = CassetteTheme.colors
-  Title("Power meter?")
-  Body(
-    "Power meters don't join the hub, so pick yours from what's nearby. Spin the crank: yours gets stronger."
-  )
   if (step.meters.isEmpty())
     Note(
       "No power meter heard yet. Spin the crank to wake it, or skip.",
@@ -373,10 +434,6 @@ private fun SignalBars(bars: Int) {
 @Composable
 private fun KeepFresh(step: AddBikeStep.KeepFresh) {
   val colors = CassetteTheme.colors
-  Title("Keep it fresh.")
-  Body(
-    "When the bike wakes, Cassette reads its batteries in the background, so widgets and alerts stay current without opening the app."
-  )
   Panel {
     Row(
       verticalAlignment = Alignment.CenterVertically,

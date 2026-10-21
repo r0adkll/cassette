@@ -141,16 +141,21 @@ class ScreenRenderTest {
         ),
         Shot("phone-about", RenderSize.Phone, state.copy(category = About), ready),
         Shot("fold-about", RenderSize.Fold, state.copy(selected = About), ready),
-        // A phone on its side keeps the phone's one category at a time (decision 0014).
-        Shot("landscape", RenderSize.PhoneLandscape, state, ready),
-        Shot("landscape-bikes", RenderSize.PhoneLandscape, state.copy(category = Bikes), ready),
+        // A phone on its side shows the list and the open category side by side (decision 0021).
+        Shot("landscape-bikes", RenderSize.PhoneLandscape, state.copy(selected = Bikes), ready),
+        Shot(
+          "landscape-notifications",
+          RenderSize.PhoneLandscape,
+          state.copy(selected = Notifications),
+          ready,
+        ),
         Shot(
           "landscape-appearance",
           RenderSize.PhoneLandscape,
-          state.copy(category = Appearance),
+          state.copy(selected = Appearance),
           ready,
         ),
-        Shot("landscape-updates", RenderSize.PhoneLandscape, state.copy(category = Updates), ready),
+        Shot("landscape-updates", RenderSize.PhoneLandscape, state.copy(selected = Updates), ready),
       )
     for (dark in listOf(true, false)) {
       for (shot in screens) {

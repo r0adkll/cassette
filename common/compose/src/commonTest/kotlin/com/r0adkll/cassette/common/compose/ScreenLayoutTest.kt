@@ -20,8 +20,10 @@ class ScreenLayoutTest {
   }
 
   @Test
-  fun phonesInLandscapeKeepTheColumn() {
-    assertEquals(ScreenLayout.Column, layout(892, 412))
+  fun phonesInLandscapeSplit() {
+    assertEquals(ScreenLayout.Landscape, layout(892, 412))
+    // Narrower than a phone on its side (split screen) keeps the column.
+    assertEquals(ScreenLayout.Column, layout(480, 412))
   }
 
   @Test

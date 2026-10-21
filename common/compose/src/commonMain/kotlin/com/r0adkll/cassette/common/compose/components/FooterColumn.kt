@@ -46,19 +46,37 @@ fun FooterColumn(
     }
     return
   }
+  ScrollColumn(modifier, padding, verticalArrangement, horizontalAlignment) {
+    top()
+    Column(verticalArrangement = verticalArrangement, horizontalAlignment = horizontalAlignment) {
+      body()
+    }
+    // Pushes the footer down when there's room.
+    Spacer(Modifier.weight(1f))
+    footer()
+  }
+}
+
+/**
+ * A column that scrolls but is at least as tall as its space, so [verticalArrangement] and weights
+ * still place things when the content fits: a centred pulse, a footer at the foot. Its pane on a
+ * phone on its side (decision 0021), or a short window's whole screen. [padding] (the insets, then
+ * any margins) goes inside the scroll so content runs under the bars.
+ */
+@Composable
+fun ScrollColumn(
+  modifier: Modifier = Modifier,
+  padding: Modifier = Modifier,
+  verticalArrangement: Arrangement.Vertical = Arrangement.Top,
+  horizontalAlignment: Alignment.Horizontal = Alignment.Start,
+  content: @Composable ColumnScope.() -> Unit,
+) {
   BoxWithConstraints(modifier) {
-    // At least the window's height, so the spacer can push the footer down when there's room.
     Column(
       Modifier.verticalScroll(rememberScrollState()).heightIn(min = maxHeight).then(padding),
       verticalArrangement,
       horizontalAlignment,
-    ) {
-      top()
-      Column(verticalArrangement = verticalArrangement, horizontalAlignment = horizontalAlignment) {
-        body()
-      }
-      Spacer(Modifier.weight(1f))
-      footer()
-    }
+      content,
+    )
   }
 }
