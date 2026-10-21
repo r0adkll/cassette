@@ -41,6 +41,17 @@ jobs:
           echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/upload.jks"
           echo "CASSETTE_UPLOAD_KEYSTORE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
 
+      # Crash reports (decision 0020): a store build without the config wouldn't report.
+      - name: Firebase config
+        env:
+          CONFIG_BASE64: ${{ secrets.FIREBASE_ANDROID_CONFIG_BASE64 }}
+        run: |
+          if [ -z "$CONFIG_BASE64" ]; then
+            echo "::error::No Firebase config in the repository secrets: run scripts/firebase-wizard."
+            exit 1
+          fi
+          echo "$CONFIG_BASE64" | base64 -d > app/android/google-services.json
+
       - name: Build
         run: ./gradlew :app:android:bundleRelease :app:wear:bundleRelease
         env:
@@ -48,8 +59,8 @@ jobs:
           CASSETTE_UPLOAD_KEY_ALIAS: ${{ secrets.CASSETTE_UPLOAD_KEY_ALIAS }}
           CASSETTE_UPLOAD_KEY_PASSWORD: ${{ secrets.CASSETTE_UPLOAD_KEY_PASSWORD }}
 
-      # No network or install permissions, nothing debuggable, no debug components, the watch
-      # feature only on Wear.
+      # No install permissions, network only for the phone app's crash reports, nothing
+      # debuggable, no debug components, the watch feature only on Wear.
       - name: Check the manifests
         run: scripts/check-release-manifests | tee "$RUNNER_TEMP/manifests.txt"
 

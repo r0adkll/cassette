@@ -14,5 +14,10 @@ kotlin {
       api(project(":features:settings:api"))
       api(libs.circuit.foundation)
     }
+    commonTest.dependencies {
+      implementation(project(":features:settings:test"))
+      implementation(libs.kotlin.test)
+      implementation(libs.kotlinx.coroutines.test)
+    }
   }
 }

@@ -5,6 +5,11 @@ options:
   deploymentTarget:
     iOS: "17.0"
     watchOS: "10.0"
+# Crash reports (decision 0020): only the iPhone app links Firebase.
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    exactVersion: 13.0.1
 settings:
   base:
     DEVELOPMENT_TEAM: N6RWL4DC5S
@@ -64,6 +69,8 @@ targets:
         # Compose draws at the display's full refresh rate.
         CADisableMinimumFrameDurationOnPhone: true
         ITSAppUsesNonExemptEncryption: false
+        # Crash reports wait for Settings → About → Send crash reports (decision 0020).
+        FirebaseCrashlyticsCollectionEnabled: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_ID)
@@ -77,6 +84,8 @@ targets:
     dependencies:
       - target: CassetteWidgets
       - target: CassetteWatch
+      - package: Firebase
+        product: FirebaseCrashlytics
     scheme:
       testTargets: [CassetteUITests, CassetteWidgetsTests]
     preBuildScripts:
@@ -87,6 +96,24 @@ targets:
           [ -z "$JAVA_HOME" ] && export JAVA_HOME="$(/usr/libexec/java_home)"
           cd "$SRCROOT/../../.."
           ./gradlew :app:ios:embedAndSignAppleFrameworkForXcode
+    postBuildScripts:
+      # Release only (decision 0020): the Firebase config, when there is one (it isn't committed;
+      # scripts/firebase-wizard makes it), then the dSYM upload Crashlytics symbolicates with.
+      - name: Crashlytics
+        basedOnDependencyAnalysis: false
+        inputFiles:
+          - ${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}
+          - ${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${PRODUCT_NAME}
+          - ${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Info.plist
+          - $(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)
+        script: |
+          config="$SRCROOT/Firebase/GoogleService-Info.plist"
+          if [ "$CONFIGURATION" != "Release" ] || [ ! -f "$config" ]; then
+            echo "No crash reports in this build ($CONFIGURATION)."
+            exit 0
+          fi
+          cp "$config" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/"
+          "${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run"
   # Drives the app on a Simulator (scripts/ios-uitest), without touching the desktop.
   CassetteUITests:
     type: bundle.ui-testing

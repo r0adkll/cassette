@@ -6,4 +6,4 @@ Background Bluetooth (bluetooth-central): the components only broadcast for a mi
 
 Time-sensitive notifications: the pre-ride alert ("the bike just woke and a battery is low") is only useful in the minutes before a ride, so it is marked time sensitive. Other alerts are normal notifications.
 
-No account, no network service, no analytics or tracking.
+No account, no analytics or tracking. The only network use is crash reports to Firebase Crashlytics, which Settings → About → Send crash reports turns off; they hold no bike data and aren't linked to the person.

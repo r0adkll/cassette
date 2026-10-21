@@ -32,6 +32,12 @@ class InMemorySettings : CassetteSettings {
     playfulTitles.value = enabled
   }
 
+  override val crashReports = MutableStateFlow(true)
+
+  override suspend fun setCrashReports(enabled: Boolean) {
+    crashReports.value = enabled
+  }
+
   override suspend fun dismissTip(tip: Tip) {
     dismissedTips.update { it + tip }
   }

@@ -25,12 +25,14 @@ class DataStoreSettingsTest {
     assertNull(settings.pinnedBike.first())
     assertEquals(NotificationSettings(), settings.notifications.first())
     assertTrue(settings.playfulTitles.first())
+    assertTrue(settings.crashReports.first())
 
     settings.setBackgroundCapture(false)
     settings.setScanProfile(ScanProfile.Batched30s)
     settings.setPinnedBike(BikeId(3))
     settings.setNotifications(NotificationSettings(preRide = false))
     settings.setPlayfulTitles(false)
+    settings.setCrashReports(false)
     settings.recordDelivery(4, Instant.fromEpochMilliseconds(1_000))
     settings.recordDelivery(2, Instant.fromEpochMilliseconds(2_000))
 
@@ -39,6 +41,7 @@ class DataStoreSettingsTest {
     assertEquals(BikeId(3), settings.pinnedBike.first())
     assertEquals(false, settings.notifications.first().preRide)
     assertEquals(false, settings.playfulTitles.first())
+    assertEquals(false, settings.crashReports.first())
     val health = settings.captureHealth.first()
     assertEquals(2, health.deliveries)
     assertEquals(2_000, health.lastDeliveryAt?.toEpochMilliseconds())

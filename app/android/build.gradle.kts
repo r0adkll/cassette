@@ -1,3 +1,5 @@
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
+import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
 import com.r0adkll.cassette.convention.FormFactor
 import com.r0adkll.cassette.convention.configureVersions
 
@@ -6,7 +8,15 @@ plugins {
   id("cassette.di")
   alias(libs.plugins.compose.compiler)
   alias(libs.plugins.drop)
+  alias(libs.plugins.google.services)
+  alias(libs.plugins.firebase.crashlytics)
 }
+
+// Crash reports (decision 0020). The Firebase config isn't committed: CI writes it from a secret
+// and scripts/firebase-wizard makes it. Without it the app builds and Crashlytics stays dormant.
+val hasFirebase = file("google-services.json").exists()
+
+googleServices { missingGoogleServicesStrategy = MissingGoogleServicesStrategy.WARN }
 
 android {
   namespace = "com.r0adkll.cassette.app"
@@ -51,6 +61,8 @@ android {
       isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
       if (uploadKeystore != null) signingConfig = signingConfigs.getByName("upload")
+      // R8's mapping, so Crashlytics can deobfuscate; it needs the config's app id.
+      configure<CrashlyticsExtension> { mappingFileUploadEnabled = hasFirebase }
     }
 
     // What CI uploads to Drop: the release build's R8 optimisation, under the debug build's id, key
@@ -61,6 +73,7 @@ android {
       applicationIdSuffix = ".debug"
       matchingFallbacks += "release"
       isProfileable = true
+      configure<CrashlyticsExtension> { mappingFileUploadEnabled = hasFirebase }
       signingConfig =
         if (keystore != null) signingConfigs.getByName("internal")
         else signingConfigs.getByName("debug")
@@ -110,4 +123,6 @@ dependencies {
   implementation(libs.metro.runtime)
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.core.ktx)
+  implementation(platform(libs.firebase.bom))
+  implementation(libs.firebase.crashlytics)
 }

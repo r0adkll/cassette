@@ -96,8 +96,12 @@ the repo on 2026-10-19. The release's decisions are in [0019](decisions/0019-sto
   not affiliated with SRAM, and SRAM and AXS stay out of the names and App Store keywords.
 - ~~Screenshots and listing art~~: `scripts/store-assets` builds them all into `fastlane/` (its
   README). The iPad set is portrait: its Simulator doesn't rotate.
-- Privacy answers: no data collected, no tracking (no analytics, crash reporting or network client). The
-  privacy policy and terms pages exist; the support URL is the GitHub issues page.
+- Privacy answers: no tracking or analytics; crash reports are the one thing collected
+  ([0020](decisions/0020-crash-reports.md); `fastlane/README.md` has both stores' answers and
+  `fastlane ios privacy` uploads Apple's). The privacy policy covers crash reports (2026-10-20); the
+  terms page exists; the support URL is the GitHub issues page.
+- Firebase: `scripts/firebase-wizard` makes the project, the two configs and their CI secrets; then
+  a first crash from an internal build and a TestFlight build in the Crashlytics dashboard.
 - Content rating questionnaires.
 - ~~Review notes~~: `fastlane/metadata/ios/review_information/notes.txt` (the sample bike, background
   Bluetooth, time-sensitive notifications); the same steps go in Play's App access.
@@ -116,19 +120,23 @@ the repo on 2026-10-19. The release's decisions are in [0019](decisions/0019-sto
   it (fastlane supply), once a service account exists.
 - Play Console: the app, the Wear form factor opt-in, internal testing track first.
 - ~~Rebuild the release manifests and check them~~: `scripts/check-release-manifests`, run by the
-  Release workflow. Neither app asks for `INTERNET` or `REQUEST_INSTALL_PACKAGES`, nor ships a debug
-  component (2026-10-20).
+  Release workflow. Neither app asks for `REQUEST_INSTALL_PACKAGES` or ships a debug component
+  (2026-10-20); only the phone app asks for `INTERNET`, for Crashlytics
+  ([0020](decisions/0020-crash-reports.md)).
 
 ### App Store
 
 - The App Store Connect app and API key, which turn on the TestFlight job; then a build installed from
   TestFlight.
-- ~~Privacy manifests~~: one per target, no tracking and nothing collected; the app declares file
-  timestamps (C617.1) and user defaults (CA92.1).
+- ~~Privacy manifests~~: one per target, no tracking; the app collects crash data and other diagnostic
+  data (0020), and declares file timestamps (C617.1) and user defaults (CA92.1). Re-run
+  `scripts/ios-privacy-scan` now that Firebase is linked.
 - iPhone landscape is allowed; check the shared screens in it (or lock to portrait).
 - ~~Review notes~~ for `bluetooth-central` in the background and the time-sensitive notification
   entitlement (above).
-- dSYMs for the Kotlin framework, so crashes from App Store builds can be read.
+- dSYMs for the Kotlin framework, so crashes from App Store builds can be read: `CassetteKit` builds
+  with light debug info and the Crashlytics phase uploads the app's dSYM (0020); check a TestFlight
+  crash shows Kotlin line numbers.
 
 ### On hardware
 

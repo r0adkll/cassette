@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Checks the phone and Wear apps' merged release manifests before they go to Play (decision 0019).
 
-Lists every permission and component, and fails on what a store build must not have: network or
-install permissions (the privacy answers say nothing leaves the phone, and Drop's no-op leaves
-none), anything debuggable or test-only, and the debug builds' own components.
+Lists every permission and component, and fails on what a store build must not have: install
+permissions (Drop's no-op leaves none), network on Wear (only the phone app's crash reports use it,
+decision 0020), anything debuggable or test-only, and the debug builds' own components.
 
     ./gradlew :app:android:processReleaseMainManifest :app:wear:processReleaseMainManifest
     scripts/check-release-manifests
@@ -19,9 +19,10 @@ MANIFESTS = {
     "phone": ROOT / "app/android/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml",
     "wear": ROOT / "app/wear/build/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml",
 }
+# The phone app needs INTERNET for Crashlytics (decision 0020); the Wear app sends nothing.
 FORBIDDEN_PERMISSIONS = {
-    "android.permission.INTERNET",
-    "android.permission.REQUEST_INSTALL_PACKAGES",
+    "phone": {"android.permission.REQUEST_INSTALL_PACKAGES"},
+    "wear": {"android.permission.INTERNET", "android.permission.REQUEST_INSTALL_PACKAGES"},
 }
 # The debug source sets' components (WidgetPreviewActivity, SampleDataReceiver) and Drop's SDK.
 FORBIDDEN_COMPONENTS = (".debug.", "software.thescavengers.drop", "com.r0adkll.drop")
@@ -42,7 +43,7 @@ def check(name: str, path: Path) -> list[str]:
     for permission in manifest.iter("uses-permission"):
         permission_name = permission.get(A + "name")
         print(f"  permission {permission_name}")
-        if permission_name in FORBIDDEN_PERMISSIONS:
+        if permission_name in FORBIDDEN_PERMISSIONS[name]:
             problems.append(f"{name}: {permission_name}")
     for kind in COMPONENTS:
         for component in application.iter(kind):

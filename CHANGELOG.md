@@ -7,6 +7,9 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Added
 
+- Crash reports (decision 0020): release and internal builds on Android, and Release builds on
+  iOS, send crashes to Firebase Crashlytics, with Kotlin stacks on iOS through CrashKiOS. Settings →
+  About → Privacy → Send crash reports turns them off. `scripts/firebase-wizard` sets up Firebase.
 - An iPhone app (decision 0017): the shared screens on iOS, Core Bluetooth scanning and
   unpaired GATT reads (a peripheral's identifier stands in for its Bluetooth address), the background
   scan with state restoration, and the three notifications with "Snooze until tomorrow". On iOS,

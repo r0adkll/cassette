@@ -14,15 +14,21 @@ import com.r0adkll.cassette.common.compose.LocalAppPlatform
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.SettingsRow
 import com.r0adkll.cassette.common.compose.components.SettingsSection
+import com.r0adkll.cassette.common.compose.components.SettingsSwitchRow
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 
 /**
  * About: the installed version, who made Cassette and where its source lives, where to report a
- * bug, and the legal pages. Links open in the browser; licences open their own screen.
+ * bug, crash reports and the privacy policy, and the legal pages. Links open in the browser;
+ * licences open their own screen.
  */
 @Composable
-internal fun AboutBody(onLicences: () -> Unit) {
+internal fun AboutBody(
+  crashReports: Boolean,
+  onCrashReports: (Boolean) -> Unit,
+  onLicences: () -> Unit,
+) {
   val app = LocalAppInfo.current
   val platform = LocalAppPlatform.current
   Panel {
@@ -64,8 +70,20 @@ internal fun AboutBody(onLicences: () -> Unit) {
       divider = false,
     )
   }
+  // Decision 0020: the only thing Cassette sends anywhere, and it can be turned off.
+  SettingsSection("Privacy") {
+    SettingsSwitchRow(
+      "Send crash reports",
+      subtitle =
+        "When Cassette crashes, what went wrong and the phone's model go to Firebase " +
+          "Crashlytics. Never your bikes or where you ride.",
+      icon = LucideIcons.TriangleAlert,
+      checked = crashReports,
+      onCheckedChange = onCrashReports,
+    )
+    LinkRow("Privacy policy", null, LucideIcons.Shield, AboutLinks.PRIVACY, divider = false)
+  }
   SettingsSection("Legal") {
-    LinkRow("Privacy policy", null, LucideIcons.Shield, AboutLinks.PRIVACY)
     LinkRow("Terms of service", null, LucideIcons.Scale, AboutLinks.TERMS)
     SettingsRow(
       "Open-source licences",

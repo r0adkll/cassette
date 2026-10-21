@@ -12,6 +12,12 @@
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.NoActionBar">
 
+        <!-- Crash reports wait for Settings → About → Send crash reports (decision 0020), which
+             CassetteApplication applies once the settings load. -->
+        <meta-data
+            android:name="firebase_crashlytics_collection_enabled"
+            android:value="false" />
+
         <!-- Shares diagnostics bundles from the cache (decision 0011). -->
         <provider
             android:name="androidx.core.content.FileProvider"
