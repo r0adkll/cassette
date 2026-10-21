@@ -50,8 +50,14 @@ enum class SettingsCategory {
  */
 @Parcelize data class DiagnosticsScreen(val inPane: Boolean = false) : ParcelableScreen
 
-/** Third-party notices, from Settings → About. */
+/** Third-party notices, from Settings → About: libraries by project, fonts and icons, licences. */
 @Parcelize data object LicencesScreen : ParcelableScreen
+
+/** The libraries one project (AndroidX, Circuit) contributes, and their licences. */
+@Parcelize data class LicenceProjectScreen(val project: String) : ParcelableScreen
+
+/** A licence's full text: one the libraries use, or a bundled font's or icon set's notice. */
+@Parcelize data class LicenceTextScreen(val licence: String) : ParcelableScreen
 
 @Parcelize data object LiveAdvertsScreen : ParcelableScreen
 

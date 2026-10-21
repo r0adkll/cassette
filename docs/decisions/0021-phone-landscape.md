@@ -36,7 +36,8 @@ when everything fits; the right holds what it lists.
   the bike beside its components. No bike yet: the wide empty screen. The open category's title
   sits level with the list's back button rather than with the list's title, so the category starts
   higher.
-- Screens not listed (Diagnostics, licences, hub tables, ride tests) keep the capped phone column.
+- Screens not listed (Diagnostics, licences, hub tables, ride tests) kept the capped phone column;
+  [0022](0022-every-screen-every-size.md) splits them in two as well.
 
 Rejected: B · cluster (a status band with Refresh inside, the components as five tiles across,
 the whole bike without scrolling). A was preferred; it keeps the phone's component rows, source

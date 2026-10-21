@@ -2,6 +2,7 @@ import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
 import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
 import com.r0adkll.cassette.convention.FormFactor
 import com.r0adkll.cassette.convention.configureVersions
+import java.util.regex.Pattern
 
 plugins {
   id("cassette.android.application")
@@ -10,6 +11,7 @@ plugins {
   alias(libs.plugins.drop)
   alias(libs.plugins.google.services)
   alias(libs.plugins.firebase.crashlytics)
+  alias(libs.plugins.aboutlibraries.android)
 }
 
 // Crash reports (decision 0020). The Firebase config isn't committed: CI writes it from a secret
@@ -94,6 +96,14 @@ configureVersions(FormFactor.Phone)
 drop {
   serverUrl = "https://drop.thescavengers.software"
   enableFor { it.buildType == "debug" || it.buildType == "internal" }
+}
+
+// Settings → About → Open-source licences: every dependency's licence, collected per variant into
+// res/raw/aboutlibraries.json.
+aboutLibraries {
+  collect.fetchRemoteLicense = false
+  library.duplicationMode = com.mikepenz.aboutlibraries.plugin.DuplicateMode.MERGE
+  library.exclusionPatterns.add(Pattern.compile(".*-bom"))
 }
 
 dependencies {

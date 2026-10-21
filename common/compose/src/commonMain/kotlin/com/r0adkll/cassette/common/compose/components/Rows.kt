@@ -21,6 +21,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -55,6 +60,60 @@ fun Panel(
         .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
         .padding(horizontal = 14.dp, vertical = 10.dp),
     verticalArrangement = Arrangement.spacedBy(PanelSpacing),
+    content = content,
+  )
+}
+
+/**
+ * One item of a [Panel] that is spread over a lazy list's items, so a long panel only composes what
+ * shows: item [index] of [count] draws its slice of the surface and outline, rounded at the panel's
+ * ends, with the panel's padding and the gap rows leave for their dividers.
+ */
+@Composable
+fun PanelItem(
+  index: Int,
+  count: Int,
+  modifier: Modifier = Modifier,
+  content: @Composable ColumnScope.() -> Unit,
+) {
+  val colors = CassetteTheme.colors
+  val first = index == 0
+  val last = index == count - 1
+  val corner = 16.dp
+  Column(
+    modifier =
+      modifier
+        .fillMaxWidth()
+        .clip(
+          RoundedCornerShape(
+            topStart = if (first) corner else 0.dp,
+            topEnd = if (first) corner else 0.dp,
+            bottomStart = if (last) corner else 0.dp,
+            bottomEnd = if (last) corner else 0.dp,
+          )
+        )
+        .background(colors.panel)
+        .drawBehind {
+          // The whole panel's outline, run past this item's ends where the panel goes on, so only
+          // its sides (and its own ends' curves) show.
+          val stroke = 1.dp.toPx()
+          val reach = corner.toPx() * 2
+          val top = if (first) stroke / 2 else -reach
+          val bottom = if (last) size.height - stroke / 2 else size.height + reach
+          drawRoundRect(
+            colors.line,
+            topLeft = Offset(stroke / 2, top),
+            size = Size(size.width - stroke, bottom - top),
+            cornerRadius = CornerRadius(corner.toPx() - stroke / 2),
+            style = Stroke(stroke),
+          )
+        }
+        .padding(
+          start = 14.dp,
+          end = 14.dp,
+          top = if (first) 10.dp else 0.dp,
+          bottom = if (last) 10.dp else PanelSpacing,
+        ),
     content = content,
   )
 }
