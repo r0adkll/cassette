@@ -35,6 +35,9 @@ when everything fits; the right holds what it lists.
 - **Settings and a bike's page:** the wide layouts (0014): the list beside the open category, and
   the bike beside its components. No bike yet: the wide empty screen.
 - Screens not listed (Diagnostics, licences, hub tables, ride tests) keep the capped phone column.
+- Titled screens and panes (Settings, its categories, a bike's page, Diagnostics) put their title
+  in the back button's row (`TopBarTitle`) rather than below it, and their top margin is 16 dp,
+  not 24, so a page starts about 70 dp higher.
 
 Rejected: B · cluster (a status band with Refresh inside, the components as five tiles across,
 the whole bike without scrolling). A was preferred; it keeps the phone's component rows, source
