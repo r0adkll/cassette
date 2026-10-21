@@ -1,0 +1,1193 @@
+#!/usr/bin/env python3
+"""Cuts a release of Cassette from main, step by step (after Campfire's scripts/release).
+
+The version released is `cassette.version` in gradle.properties, every app's version (decision
+0019). Each step stops at a blocker and says how to clear it:
+
+  1. Preflight   on main, up to date with origin, a clean tree, gh signed in, the version valid,
+                 above the last release and not tagged yet, and entries under [Unreleased]
+  2. Profiles    regenerate the phone app's baseline and startup profiles on the Gradle managed
+                 emulator (decision 0023); Gradle's output goes to build/release/*.log
+  3. Changelog   roll [Unreleased] into [<version>] and write each store's notes from the entries
+                 for its platform: Play's "What's new" (500 characters, a file per version code,
+                 phone and Wear) and the App Store's What's New (4000). Claude Code (`claude -p`,
+                 started in the background after preflight) rewrites the entries for riders, and
+                 you take, edit or redo its draft. The first release takes Play's default.txt, and
+                 the App Store has no What's New for a first version
+  4. Review      the GitHub release notes: pull requests merged since the last release, bots left out
+  5. Publish     commit, push main and create the GitHub release and its tag, which starts the
+                 Release workflow (the Play bundles); CI's TestFlight job builds the same commit
+  6. Next        move cassette.version on, so main's Drop and TestFlight builds stop carrying the
+                 released version
+
+Usage:
+  scripts/release                  # the guided flow
+  scripts/release --skip-baseline  # keep the committed baseline profiles
+  scripts/release --yes            # take every default, never prompt
+  scripts/release --dry-run        # show what would happen: nothing is written, pushed or created
+  scripts/release --no-claude      # write the store notes yourself
+  scripts/release --notes-model sonnet   # draft them with another model (default: opus)
+  scripts/release bump [VERSION]   # only step 6, e.g. after a Release workflow that failed
+
+CHANGELOG.md entries for one platform start with a tag: `- [Android] …` (the phone and Wear apps)
+or `- [iOS] …` (iPhone, iPad and Apple Watch); untagged entries go to both stores. Play's version
+codes mirror gradle/build-logic Versioning.kt (MMmmpp0F, F: phone 0, Wear 1).
+"""
+
+import argparse
+import itertools
+import json
+import os
+import re
+import shutil
+import subprocess
+import sys
+import tempfile
+import threading
+import time
+from dataclasses import dataclass
+from datetime import date, datetime
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+GRADLE_PROPERTIES = REPO_ROOT / "gradle.properties"
+CHANGELOG = REPO_ROOT / "CHANGELOG.md"
+PLAY_CHANGELOGS = REPO_ROOT / "fastlane/metadata/android/en-US/changelogs"
+PLAY_DEFAULT_NOTES = PLAY_CHANGELOGS / "default.txt"
+APP_STORE_NOTES = REPO_ROOT / "fastlane/metadata/ios/en-US/release_notes.txt"
+BASELINE_PROFILES = REPO_ROOT / "app/android/src/main/generated/baselineProfiles"
+LOG_DIR = REPO_ROOT / "build/release"
+
+REPO = "r0adkll/cassette"
+REPO_URL = f"https://github.com/{REPO}"
+RELEASE_WORKFLOW = "release.yml"
+# major.minor.patch with minor and patch under 100 (Versioning.kt). Tags are the bare version.
+VERSION_REGEX = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)$")
+# The last digit of a release version code, Versioning.kt's FormFactor.
+FORM_FACTOR_DIGITS = (0, 1)
+PR_NUMBER_REGEX = re.compile(r"\(#(\d+)\)\s*$")
+EXCLUDED_AUTHOR_PATTERNS = ("[bot]", "renovate", "app/", "dependabot", "github-actions")
+# A CHANGELOG.md section runs to the next version, the link definitions or the end of the file.
+SECTION_END = r"(?=^## \[|^\[[^\]]+\]: |\Z)"
+UNRELEASED_SKELETON = "## [Unreleased]\n\n### Added\n\n### Changed\n\n### Fixed\n\n"
+PLATFORMS = ("Android", "iOS")
+PLATFORM_TAG_REGEX = re.compile(r"^\[([^\]]+)\]\s+(.+)$", re.DOTALL)
+
+# Only the generators: StartupBenchmark runs on the same managed device otherwise.
+BASELINE_GRADLE_ARGS = [
+    ":app:android:generateBaselineProfile",
+    "-Pandroid.testInstrumentationRunnerArguments.androidx.benchmark.enabledRules=BaselineProfile",
+]
+
+# Drafting the store notes with Claude Code. Opus counts characters reliably, and it runs while
+# the profiles generate, so its latency is mostly hidden.
+CLAUDE_DEFAULT_MODEL = "opus"
+CLAUDE_ATTEMPTS = 3
+CLAUDE_TIMEOUT_SECONDS = 300
+STORE_NOTES_SCHEMA = {
+    "type": "object",
+    "properties": {"notes": {"type": "string"}},
+    "required": ["notes"],
+    "additionalProperties": False,
+}
+
+
+@dataclass(frozen=True)
+class Store:
+    name: str
+    field: str
+    # Its CHANGELOG.md platform tag.
+    platform: str
+    # What the notes ship with, and what they don't, for Claude.
+    apps: str
+    others: str
+    limit: int
+    target: int
+
+    def paths(self, version):
+        """Where the notes go; the first is the one to edit, the rest are copies."""
+        if self is PLAY:
+            return [
+                PLAY_CHANGELOGS / f"{release_version_code(version, digit)}.txt"
+                for digit in FORM_FACTOR_DIGITS
+            ]
+        return [APP_STORE_NOTES]
+
+
+PLAY = Store(
+    "Google Play", "What's new", "Android",
+    apps="the Android phone app and its Wear OS app",
+    others="iPhone, iPad or Apple Watch",
+    limit=500, target=470,
+)
+APP_STORE = Store(
+    "App Store", "What's New", "iOS",
+    apps="the iPhone and iPad app and its Apple Watch app",
+    others="Android phones or Wear OS watches",
+    limit=4000, target=1000,
+)
+STORES = (PLAY, APP_STORE)
+
+
+def notes_system_prompt(store):
+    return f"""\
+You write the release notes shown in {store.name}'s "{store.field}" for Cassette, an unofficial \
+app that shows the battery levels of a bike's electronic shifting components on the phone, in \
+widgets and on the watch. These notes ship with {store.apps}. Answer with the notes only, in the \
+requested JSON field.
+
+Hard rules:
+- At most {store.limit} characters in total, counting spaces, newlines and punctuation. Aim for \
+about {store.target}.
+- Plain text, no Markdown: every item is a line starting with "- ". When there is more than one \
+kind of change, group lines under the labels "New:", "Improved:" and "Fixed:" on their own lines, \
+in that order, skipping empty groups.
+- Use only what the entries say. Never invent features, numbers, settings or platforms.
+- Leave out anything only for {store.others}, and anything riders never see: decision records, \
+scripts, CI, builds and signing, internal test builds (Drop), store listings and version codes.
+
+How to write:
+- Write for riders deciding whether the update matters to them. Lead with what they will notice \
+most, then visible improvements, then fixes.
+- Merge related entries into one line, and fold minor fixes into a single line naming the areas \
+they touch.
+- Drop parenthetical asides, decision numbers and implementation detail; keep a settings path \
+only when it is how to find a feature. Short phrases, not sentences; no trailing periods."""
+
+
+# =========================================================================== terminal ui
+
+IS_TTY = sys.stdout.isatty()
+
+
+def style(text, *codes):
+    if not IS_TTY or not codes:
+        return text
+    return "\033[" + ";".join(str(c) for c in codes) + "m" + text + "\033[0m"
+
+
+BOLD, DIM, RED, GREEN, YELLOW, BLUE, CYAN = 1, 2, 31, 32, 33, 34, 36
+
+
+def header(number, title):
+    print()
+    print(style(f"━━ {number}. {title} ", BOLD, CYAN) + style("━" * max(0, 60 - len(title)), CYAN))
+
+
+def subheader(title):
+    print()
+    print(style(f"  {title}", BOLD))
+
+
+def ok(message):
+    print(style("  ✔ ", GREEN) + message)
+
+
+def info(message):
+    print("  · " + message)
+
+
+def warn(message):
+    print(style("  ! ", YELLOW) + message)
+
+
+def error(message):
+    print(style("  ✘ ", RED) + message)
+
+
+def block(text, indent="    "):
+    for line in text.rstrip("\n").splitlines():
+        print(style(indent + line, DIM))
+
+
+class Abort(Exception):
+    """Stops the release; the message says what to do next."""
+
+
+class Ui:
+    """Prompts. With --yes every question takes its default without asking."""
+
+    def __init__(self, assume_yes):
+        self.assume_yes = assume_yes
+
+    def confirm(self, question, default=False):
+        if self.assume_yes:
+            return default
+        suffix = " [Y/n] " if default else " [y/N] "
+        while True:
+            answer = input(style("  ? ", BLUE) + question + suffix).strip().lower()
+            if not answer:
+                return default
+            if answer in ("y", "yes"):
+                return True
+            if answer in ("n", "no"):
+                return False
+
+    def choose(self, question, options, default_key):
+        """options: a list of (key, label). Returns the chosen key."""
+        if self.assume_yes:
+            return default_key
+        print(style("  ? ", BLUE) + question)
+        for key, label in options:
+            marker = style(" (default)", DIM) if key == default_key else ""
+            print(f"      {style(key, BOLD)}  {label}{marker}")
+        keys = {key for key, _ in options}
+        while True:
+            answer = input("    › ").strip().lower()
+            if not answer:
+                return default_key
+            if answer in keys:
+                return answer
+
+    def ask(self, question):
+        """A free-text answer; empty with --yes."""
+        if self.assume_yes:
+            return ""
+        return input(style("  ? ", BLUE) + question + "\n    › ").strip()
+
+
+class Spinner:
+    """A one-line progress indicator while a long command runs quietly."""
+
+    def __init__(self, message):
+        self.message = message
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._spin, daemon=True)
+        self._started = time.monotonic()
+
+    def __enter__(self):
+        if IS_TTY:
+            self._thread.start()
+        else:
+            print("  … " + self.message)
+        return self
+
+    def __exit__(self, *_):
+        self._stop.set()
+        if IS_TTY:
+            self._thread.join()
+            sys.stdout.write("\r\033[K")
+            sys.stdout.flush()
+
+    def elapsed(self):
+        return time.monotonic() - self._started
+
+    def _spin(self):
+        for frame in itertools.cycle("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"):
+            if self._stop.is_set():
+                break
+            minutes, seconds = divmod(int(self.elapsed()), 60)
+            elapsed = style(f"{minutes:02d}:{seconds:02d}", DIM)
+            sys.stdout.write(f"\r  {style(frame, CYAN)} {self.message} {elapsed}")
+            sys.stdout.flush()
+            time.sleep(0.1)
+
+
+# =========================================================================== helpers
+
+
+def run(args, check=True, capture=True, env=None):
+    return subprocess.run(
+        args, cwd=REPO_ROOT, check=check, capture_output=capture, text=True, env=env
+    )
+
+
+def git(*args, check=True):
+    return run(["git", *args], check=check).stdout.strip()
+
+
+def rel(path):
+    return str(path.relative_to(REPO_ROOT))
+
+
+def run_retrying(ui, args, what):
+    """Commits, fetches and pushes can fail on a locked SSH or signing agent: offers a retry."""
+    while True:
+        with Spinner(what):
+            result = run(args, check=False)
+        if result.returncode == 0:
+            return result
+        error(f"{what} failed")
+        block(result.stderr or result.stdout)
+        if ui.assume_yes or not ui.confirm(
+            "Retry? (unlock your SSH or signing agent first if it asked)", default=True
+        ):
+            raise Abort(f"{what} failed; fix it and re-run")
+
+
+def run_quietly(args, message, log_name):
+    """Runs a long command with its output in build/release/<log_name>-<timestamp>.log.
+    Returns (returncode, log_path, elapsed_seconds)."""
+    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    log_path = LOG_DIR / f"{log_name}-{datetime.now():%Y%m%d-%H%M%S}.log"
+    with log_path.open("w") as log, Spinner(message) as spinner:
+        log.write("$ " + " ".join(args) + "\n\n")
+        log.flush()
+        result = subprocess.run(args, cwd=REPO_ROOT, stdout=log, stderr=subprocess.STDOUT)
+        elapsed = spinner.elapsed()
+    return result.returncode, log_path, elapsed
+
+
+def show_log_tail(log_path, lines=25):
+    content = log_path.read_text().splitlines()
+    pattern = r"error|FAILED|What went wrong|Exception"
+    interesting = [line for line in content if re.search(pattern, line, re.IGNORECASE)]
+    block("\n".join((interesting or content)[-lines:]))
+    info(f"full log: {rel(log_path)}")
+
+
+def editor_name():
+    return os.environ.get("VISUAL") or os.environ.get("EDITOR") or shutil.which("nano") or "vi"
+
+
+def open_in_editor(path):
+    subprocess.run([*editor_name().split(), str(path)], cwd=REPO_ROOT)
+
+
+# =========================================================================== versions
+
+
+def read_version():
+    match = re.search(r"^cassette\.version=(.+)$", GRADLE_PROPERTIES.read_text(), re.MULTILINE)
+    if not match:
+        raise Abort("could not find cassette.version in gradle.properties")
+    version = match.group(1).strip()
+    check_version(version)
+    return version
+
+
+def check_version(version):
+    match = VERSION_REGEX.match(version)
+    if not match or version.startswith("v"):
+        raise Abort(f"'{version}' isn't a version: cassette.version is major.minor.patch")
+    _, minor, patch = match.groups()
+    if int(minor) >= 100 or int(patch) >= 100:
+        raise Abort(f"'{version}': Play's version codes need minor and patch under 100")
+
+
+def version_tuple(version):
+    return tuple(int(part) for part in VERSION_REGEX.match(version).groups())
+
+
+def release_version_code(version, form_factor_digit):
+    """MMmmpp0F, as Versioning.kt's releaseVersionCode: 1.2.3 is 1020300 (phone), 1020301 (Wear)."""
+    major, minor, patch = version_tuple(version)
+    return (major * 10_000 + minor * 100 + patch) * 100 + form_factor_digit
+
+
+def set_version(version):
+    text = GRADLE_PROPERTIES.read_text()
+    text = re.sub(
+        r"^cassette\.version=.+$", f"cassette.version={version}", text, count=1, flags=re.MULTILINE
+    )
+    GRADLE_PROPERTIES.write_text(text)
+
+
+def resolve_tag(version):
+    for candidate in (version, f"v{version}"):
+        verify = ["git", "rev-parse", "-q", "--verify", f"refs/tags/{candidate}"]
+        if run(verify, check=False).returncode == 0:
+            return candidate
+    return None
+
+
+def previous_tag():
+    """The latest release tag behind HEAD, or None before the first release."""
+    describe = ["git", "describe", "--tags", "--abbrev=0", "--match", "[0-9]*", "--match", "v[0-9]*"]
+    tag = run(describe, check=False).stdout.strip()
+    return tag if VERSION_REGEX.match(tag) else None
+
+
+def baseline_profile_files():
+    return sorted(rel(p) for p in BASELINE_PROFILES.glob("*.txt"))
+
+
+def release_files(version):
+    notes = [rel(path) for store in STORES for path in store.paths(version)]
+    return ["gradle.properties", "CHANGELOG.md", *notes, *baseline_profile_files()]
+
+
+# =========================================================================== changelog
+
+
+def section_regex(heading):
+    return re.compile(
+        rf"^## \[{re.escape(heading)}\][^\n]*\n(.*?){SECTION_END}", re.MULTILINE | re.DOTALL
+    )
+
+
+def parse_sections(body):
+    """A section's categories in their order, each with its text; empty ones left out, and a
+    heading that comes up again (two pull requests each adding `### Added`) merged into the first."""
+    sections = {}
+    for section in re.split(r"^### ", body, flags=re.MULTILINE)[1:]:
+        heading, _, text = section.partition("\n")
+        heading, text = heading.strip(), text.strip("\n")
+        if text:
+            sections[heading] = f"{sections[heading]}\n{text}" if heading in sections else text
+    return sections
+
+
+def unreleased_sections():
+    match = section_regex("Unreleased").search(CHANGELOG.read_text())
+    return parse_sections(match.group(1)) if match else {}
+
+
+def released_sections(version):
+    """The entries of an already rolled [version] section (re-running after an abort)."""
+    match = section_regex(version).search(CHANGELOG.read_text())
+    return parse_sections(match.group(1)) if match else None
+
+
+def changelog_entries(text):
+    """One category's entries, each with its wrapped lines joined."""
+    entries = []
+    for line in text.splitlines():
+        if line.startswith("- "):
+            entries.append(line[2:].strip())
+        elif line.strip() and entries:
+            entries[-1] += " " + line.strip()
+    return entries
+
+
+def platform_entries(sections, platform):
+    """The entries that apply to platform, by category, with their platform tags taken off."""
+    known = {p.lower() for p in PLATFORMS}
+    filtered = {}
+    for category, text in sections.items():
+        kept = []
+        for entry in changelog_entries(text):
+            match = PLATFORM_TAG_REGEX.match(entry)
+            if match:
+                tags = {tag.strip().lower() for tag in match.group(1).split(",")}
+                if not tags <= known:
+                    raise Abort(
+                        f"CHANGELOG.md tags an entry [{match.group(1)}]; the platforms are "
+                        f"{' and '.join(PLATFORMS)}: {entry[:80]}"
+                    )
+                if platform.lower() not in tags:
+                    continue
+                entry = match.group(2)
+            kept.append(entry)
+        if kept:
+            filtered[category] = kept
+    return filtered
+
+
+def store_text(sections, store):
+    """The store's entries as plain text, or "" when none apply to its platform."""
+    entries = platform_entries(sections, store.platform)
+    lines = []
+    for category, items in entries.items():
+        if len(entries) > 1:
+            lines.append(f"{category}:")
+        lines.extend(f"- {item}" for item in items)
+    return "\n".join(lines) + "\n" if lines else ""
+
+
+def with_compare_links(content, version, prev_tag):
+    """Keep a Changelog's link definitions: [Unreleased] compares from this version, and this
+    version from the last release (or links its tag, the first time)."""
+    content = re.sub(r"^\[Unreleased\]: .*\n?", "", content, flags=re.MULTILINE)
+    if prev_tag:
+        this = f"{REPO_URL}/compare/{prev_tag}...{version}"
+    else:
+        this = f"{REPO_URL}/releases/tag/{version}"
+    links = f"[Unreleased]: {REPO_URL}/compare/{version}...HEAD\n[{version}]: {this}\n"
+    first = re.search(r"^\[[^\]]+\]: ", content, re.MULTILINE)
+    if first:
+        return content[: first.start()] + links + content[first.start() :]
+    return content.rstrip("\n") + "\n\n" + links
+
+
+def roll_changelog(version, prev_tag):
+    """Renames [Unreleased] to [version] with today's date, puts a fresh [Unreleased] above it and
+    updates the compare links. Returns the released entries by category."""
+    content = CHANGELOG.read_text()
+    match = section_regex("Unreleased").search(content)
+    if not match:
+        raise Abort("could not find the ## [Unreleased] section in CHANGELOG.md")
+    sections = parse_sections(match.group(1))
+    if not sections:
+        raise Abort("CHANGELOG.md has nothing under [Unreleased]: nothing to release")
+    released = f"## [{version}] - {date.today().isoformat()}\n"
+    for category, text in sections.items():
+        released += f"\n### {category}\n\n{text}\n"
+    rest = content[match.end() :].lstrip("\n")
+    content = content[: match.start()] + UNRELEASED_SKELETON + released + "\n" + rest
+    CHANGELOG.write_text(with_compare_links(content, version, prev_tag))
+    return sections
+
+
+# =========================================================================== claude
+
+
+def claude_model(args):
+    """The model that drafts the store notes, or None when Claude is off or not installed."""
+    if args.no_claude or not shutil.which("claude"):
+        return None
+    return args.notes_model
+
+
+class StoreNotesDrafter:
+    """Asks Claude Code for a store's notes on a background thread. It runs `claude -p` with no
+    tools and hooks off, from a temp dir so the repo's CLAUDE.md stays out, and asks again with the
+    measured length while a draft is over the limit. `notes` is the shortest draft (possibly still
+    over the limit); `failure` says why there is none."""
+
+    def __init__(self, store, entries, model, previous=None, guidance=None):
+        self.store = store
+        self.entries = entries
+        self.model = model
+        self.previous = previous
+        self.guidance = guidance
+        self.notes = None
+        self.failure = None
+        self._process = None
+        self._cancelled = False
+        self._lock = threading.Lock()
+        self._thread = threading.Thread(target=self._run, daemon=True)
+
+    def start(self):
+        self._thread.start()
+        return self
+
+    def redo(self, guidance):
+        return StoreNotesDrafter(
+            self.store, self.entries, self.model, previous=self.notes, guidance=guidance
+        ).start()
+
+    def wait(self):
+        if self._thread.is_alive():
+            with Spinner(f"waiting for Claude ({self.model}) to draft {self.store.name}'s notes"):
+                self._thread.join()
+        return self.notes
+
+    def cancel(self):
+        with self._lock:
+            self._cancelled = True
+            if self._process and self._process.poll() is None:
+                self._process.kill()
+
+    def _run(self):
+        store = self.store
+        request = (
+            f"Write {store.name}'s {store.field} from these changelog entries, at most "
+            f"{store.limit} characters:\n\n{self.entries}"
+        )
+        if self.previous:
+            request += f"\n\nYour previous draft was:\n\n{self.previous}"
+        if self.guidance:
+            request += f"\n\nThe release manager asks for a new draft: {self.guidance}"
+        elif self.previous:
+            request += "\n\nThe release manager wants a different take."
+        prompt = request
+        try:
+            for _ in range(CLAUDE_ATTEMPTS):
+                draft = self._ask(prompt)
+                if self.notes is None or len(draft) < len(self.notes):
+                    self.notes = draft
+                if len(draft) <= store.limit:
+                    return
+                prompt = (
+                    f"{request}\n\nThis draft is {len(draft)} characters, over the {store.limit} "
+                    f"limit. Cut it to about {store.target}:\n\n{draft}"
+                )
+        except Exception as e:  # the changelog step reports it; the release goes on without it
+            self.failure = str(e) or type(e).__name__
+
+    def _ask(self, prompt):
+        command = [
+            "claude", "-p",
+            "--model", self.model,
+            "--system-prompt", notes_system_prompt(self.store),
+            "--output-format", "json",
+            "--json-schema", json.dumps(STORE_NOTES_SCHEMA),
+            "--tools", "",
+            "--strict-mcp-config",
+            "--no-session-persistence",
+            "--settings", json.dumps({"disableAllHooks": True}),
+        ]
+        with tempfile.TemporaryDirectory() as cwd:
+            with self._lock:
+                if self._cancelled:
+                    raise RuntimeError("cancelled")
+                self._process = subprocess.Popen(
+                    command, cwd=cwd, text=True,
+                    stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                )
+            try:
+                stdout, stderr = self._process.communicate(prompt, timeout=CLAUDE_TIMEOUT_SECONDS)
+            except subprocess.TimeoutExpired:
+                self._process.kill()
+                self._process.communicate()
+                raise RuntimeError(f"no answer within {CLAUDE_TIMEOUT_SECONDS // 60} min")
+        try:
+            result = json.loads(stdout)
+        except ValueError:
+            result = {}
+        if self._process.returncode != 0 or result.get("is_error"):
+            reason = result.get("result") or (stderr.strip().splitlines() or [""])[-1]
+            raise RuntimeError(reason or f"claude exited with {self._process.returncode}")
+        notes = (result.get("structured_output") or {}).get("notes", "").strip()
+        if not notes:
+            raise RuntimeError("claude answered without notes")
+        return notes + "\n"
+
+
+def notes_prepared(store, version, prev_tag):
+    """Whether this release's notes for store are written already (an earlier run, or by hand)."""
+    path = store.paths(version)[0]
+    if not path.exists():
+        return False
+    if store is PLAY:
+        return True  # named after this version's code
+    if git("status", "--porcelain", "--", rel(path)):
+        return True
+    return bool(prev_tag and git("log", "--format=%h", f"{prev_tag}..HEAD", "--", rel(path)))
+
+
+def start_drafters(version, model, prev_tag):
+    """Starts Claude on each store's notes that step 3 will need, so they draft while the profiles
+    generate. The first release needs none."""
+    if model is None or prev_tag is None:
+        return {}
+    sections = released_sections(version) or unreleased_sections()
+    drafters = {}
+    for store in STORES:
+        entries = store_text(sections, store)
+        if entries and not notes_prepared(store, version, prev_tag):
+            drafters[store] = StoreNotesDrafter(store, entries, model).start()
+    if drafters:
+        names = " and ".join(store.name for store in drafters)
+        info(f"Claude ({model}) is drafting the {names} notes in the background")
+    return drafters
+
+
+def review_claude_draft(ui, drafter, fallback):
+    """Waits for Claude's draft and lets the user take it, edit it or ask for another.
+    Returns (text to write, whether to open it in $EDITOR); fallback when there is no draft."""
+    store = drafter.store
+    while True:
+        draft = drafter.wait()
+        if draft is None:
+            warn(f"Claude could not draft {store.name}'s notes: {drafter.failure}")
+            return fallback, False
+        report = ok if len(draft) <= store.limit else warn
+        report(f"Claude's draft is {len(draft)}/{store.limit} characters:")
+        block(draft)
+        choice = ui.choose(
+            "Use it?",
+            [
+                ("y", "use it"),
+                ("e", "use it, then edit it"),
+                ("r", "ask Claude for another draft"),
+                ("n", f"discard it and start from the {len(fallback)}-character entries"),
+            ],
+            default_key="y",
+        )
+        if choice in ("y", "e"):
+            return draft, choice == "e"
+        if choice == "n":
+            return fallback, False
+        drafter = drafter.redo(ui.ask("What should change? (blank for just a different take)"))
+
+
+# =========================================================================== steps
+
+
+def ensure_main():
+    branch = git("rev-parse", "--abbrev-ref", "HEAD")
+    if branch != "main":
+        error(f"on branch '{branch}'; releases are cut from main")
+        raise Abort("switch to main and re-run")
+    ok("on main")
+
+
+def sync_with_origin(ui, dry_run):
+    run_retrying(ui, ["git", "fetch", "--quiet", "origin", "main", "--tags"], "fetching origin")
+    behind = int(git("rev-list", "--count", "HEAD..origin/main"))
+    ahead = int(git("rev-list", "--count", "origin/main..HEAD"))
+    if behind:
+        warn(f"main is {behind} commit(s) behind origin/main")
+        if dry_run or ahead or not ui.confirm("Fast-forward main to origin/main now?", default=True):
+            raise Abort("bring main up to date with origin/main and re-run")
+        run(["git", "merge", "--ff-only", "--quiet", "origin/main"])
+        ok("fast-forwarded to origin/main")
+    elif ahead:
+        ok(f"up to date with origin/main ({ahead} unpushed commit(s) go out with the release)")
+    else:
+        ok("up to date with origin/main")
+
+
+def dirty_files():
+    status = run(["git", "status", "--porcelain", "--untracked-files=all"]).stdout
+    return [line[3:].split(" -> ")[-1] for line in status.splitlines()]
+
+
+def step_preflight(ui, version, dry_run):
+    """Returns the last release's tag, or None for the first release."""
+    header(1, f"Preflight — releasing {style(version, BOLD)}")
+
+    ensure_main()
+
+    if run(["gh", "auth", "status"], check=False).returncode != 0:
+        error("gh is not signed in")
+        raise Abort("run `gh auth login` and re-run")
+    ok("gh signed in")
+
+    sync_with_origin(ui, dry_run)
+
+    bump = "set cassette.version in gradle.properties to the version you're releasing"
+    if resolve_tag(version):
+        error(f"tag {version} already exists")
+        raise Abort(bump)
+    if run(["gh", "release", "view", version, "--repo", REPO], check=False).returncode == 0:
+        error(f"GitHub release {version} already exists")
+        raise Abort(bump)
+    prev_tag = previous_tag()
+    if prev_tag and version_tuple(prev_tag) >= version_tuple(version):
+        error(f"{version} isn't above the last release, {prev_tag}")
+        raise Abort(bump)
+    last = f"the last release is {prev_tag}" if prev_tag else "this is the first release"
+    ok(f"{version} isn't tagged or released yet; {last}")
+
+    unexpected = sorted(set(dirty_files()) - set(release_files(version)))
+    if unexpected:
+        warn("the working tree has changes outside the release files:")
+        block("\n".join(unexpected))
+        raise Abort("commit or put them aside, so the release commit only has release files")
+    ok("working tree clean" if not dirty_files() else "only release files are modified")
+
+    sections = released_sections(version) or unreleased_sections()
+    if not sections:
+        error("CHANGELOG.md has nothing under [Unreleased]")
+        raise Abort("add the release's entries to CHANGELOG.md and re-run")
+    for store in STORES:
+        platform_entries(sections, store.platform)  # an unknown platform tag stops here
+    count = sum(len(changelog_entries(text)) for text in sections.values())
+    ok(f"CHANGELOG.md has {count} entries to release")
+    return prev_tag
+
+
+def step_baseline(ui, args, dry_run):
+    header(2, "Baseline profiles")
+
+    if args.skip_baseline:
+        choice = "s"
+    else:
+        choice = ui.choose(
+            "Regenerate the phone app's baseline and startup profiles for this release?",
+            [("y", "yes, on the Gradle managed emulator (pixel6Api34)"), ("s", "skip")],
+            default_key="y",
+        )
+    if choice == "s":
+        info(f"skipped: the release ships the profiles committed in {rel(BASELINE_PROFILES)}")
+        return
+
+    command = ["./gradlew", *BASELINE_GRADLE_ARGS]
+    if dry_run:
+        info(f"[dry-run] would run: {' '.join(command)}")
+        return
+
+    while True:
+        message = "generating baseline profiles on the managed emulator"
+        code, log_path, elapsed = run_quietly(command, message, "baseline")
+        if code == 0:
+            break
+        error(f"baseline profile generation failed after {int(elapsed) // 60} min")
+        show_log_tail(log_path)
+        info("the journeys tap text and content descriptions: a renamed label breaks them")
+        action = ui.choose(
+            "What next?",
+            [("r", "retry"), ("s", "skip them and continue"), ("a", "abort")],
+            default_key="a",
+        )
+        if action == "s":
+            return
+        if action == "a":
+            raise Abort("fix the baseline profile journeys (:app:baselineprofile) and re-run")
+
+    changed = git("status", "--porcelain", "--", rel(BASELINE_PROFILES))
+    minutes, seconds = divmod(int(elapsed), 60)
+    ok(f"profiles generated in {minutes} min {seconds}s" + ("" if changed else " (unchanged)"))
+    if changed:
+        block("\n".join(baseline_profile_files()))
+    info(f"log: {rel(log_path)}")
+
+
+def write_notes(paths, text):
+    for path in paths:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+
+
+def sync_copies(paths):
+    """Play's Wear notes are a copy of the phone's."""
+    text = paths[0].read_text()
+    for path in paths[1:]:
+        if not path.exists() or path.read_text() != text:
+            path.write_text(text)
+
+
+def edit_notes(paths):
+    open_in_editor(paths[0])
+    sync_copies(paths)
+
+
+def write_store_notes(ui, store, version, prev_tag, sections, model, drafter, dry_run):
+    paths = store.paths(version)
+    names = ", ".join(rel(path) for path in paths)
+    subheader(f"{store.name}: {store.field}")
+    reviewed = False
+    if notes_prepared(store, version, prev_tag):
+        if not dry_run:
+            sync_copies(paths)
+        ok(f"{rel(paths[0])} is written already (keeping your edits)")
+    elif prev_tag is None and store is APP_STORE:
+        info("skipped: the App Store has no What's New for an app's first version")
+        return
+    else:
+        edit = False
+        entries = store_text(sections, store)
+        if prev_tag is None:
+            text = PLAY_DEFAULT_NOTES.read_text()
+            info(f"the first release: {rel(PLAY_DEFAULT_NOTES)}'s text")
+        elif not entries:
+            warn(f"no entries apply to {store.platform}: say what changed yourself")
+            text, edit = "- Fixes and improvements\n", True
+        else:
+            if drafter and drafter.entries != entries:  # CHANGELOG.md changed while it drafted
+                drafter.cancel()
+                drafter = None
+            if drafter is None and model:
+                drafter = StoreNotesDrafter(store, entries, model).start()
+            if drafter:
+                text, edit = review_claude_draft(ui, drafter, entries)
+                reviewed = True
+            else:
+                text = entries
+        if dry_run:
+            info(f"[dry-run] would write {names} ({len(text)} characters)")
+            if not reviewed:
+                block(text)
+            return
+        write_notes(paths, text)
+        ok(f"wrote {names}")
+        if edit and not ui.assume_yes:
+            edit_notes(paths)
+    if dry_run:
+        return
+
+    asked_claude = False
+    while True:
+        length = len(paths[0].read_text())
+        if length <= store.limit:
+            ok(f"{length}/{store.limit} characters")
+            break
+        warn(f"{length} characters; {store.name} takes at most {store.limit}")
+        options = [("e", f"edit it in {editor_name()}"), ("a", "abort and edit it by hand")]
+        if model:
+            options.insert(0, ("c", f"ask Claude ({model}) to shorten it"))
+        # With --yes the default runs once; if Claude's draft is still over, abort.
+        default = "c" if model and not asked_claude else "e"
+        action = ui.choose("Shorten it?", options, default_key=default)
+        if action == "a" or (ui.assume_yes and action != "c"):
+            raise Abort(f"cut {rel(paths[0])} to {store.limit} characters and re-run")
+        if action == "c":
+            asked_claude = reviewed = True
+            current = paths[0].read_text()
+            drafter = StoreNotesDrafter(store, current, model).start()
+            text, edit = review_claude_draft(ui, drafter, current)
+            write_notes(paths, text)
+            if not edit:
+                continue
+        edit_notes(paths)
+
+    if not reviewed:
+        block(paths[0].read_text())
+        if ui.confirm("Edit it?", default=False):
+            edit_notes(paths)
+            ok(f"now {len(paths[0].read_text())}/{store.limit} characters")
+
+
+def step_changelog(ui, version, prev_tag, model, drafters, dry_run):
+    header(3, "Changelog and store notes")
+
+    sections = released_sections(version)
+    if sections:
+        ok(f"CHANGELOG.md has a [{version}] section already (prepared earlier)")
+    elif dry_run:
+        info(f"[dry-run] would roll [Unreleased] into [{version}] in CHANGELOG.md")
+        sections = unreleased_sections()
+    else:
+        sections = roll_changelog(version, prev_tag)
+        ok(f"rolled [Unreleased] into [{version}] in CHANGELOG.md")
+    info(", ".join(f"{len(changelog_entries(text))} {c}" for c, text in sections.items()))
+    text = "\n\n".join(f"### {c}\n{t}" for c, t in sections.items())
+    if text.count("\n") < 40:
+        block(text)
+
+    for store in STORES:
+        drafter = drafters.get(store)
+        write_store_notes(ui, store, version, prev_tag, sections, model, drafter, dry_run)
+
+
+def merged_pull_requests():
+    # Any base: stacked pull requests, and early ones into master, reached main through others.
+    result = run([
+        "gh", "pr", "list", "--repo", REPO, "--state", "merged",
+        "--limit", "500", "--json", "number,title,author",
+    ])
+    return {pr["number"]: pr for pr in json.loads(result.stdout)}
+
+
+def is_excluded_author(login):
+    login = login.lower()
+    return any(pattern in login for pattern in EXCLUDED_AUTHOR_PATTERNS)
+
+
+def build_release_notes(version, prev_tag):
+    range_spec = f"{prev_tag}..HEAD" if prev_tag else "HEAD"
+    commits = git("log", "--first-parent", "--reverse", "--format=%s", range_spec).splitlines()
+    prs = merged_pull_requests()
+    lines, skipped = [], []
+    for subject in commits:
+        match = PR_NUMBER_REGEX.search(subject)
+        if not match:
+            continue
+        number = int(match.group(1))
+        pr = prs.get(number)
+        if pr is None:
+            skipped.append(number)
+            continue
+        login = pr["author"]["login"]
+        if is_excluded_author(login):
+            continue
+        lines.append(f"* {pr['title']} by @{login} in {REPO_URL}/pull/{number}")
+    notes = "## What's Changed\n" + "\n".join(lines) + "\n"
+    if prev_tag:
+        notes += f"\n\n**Full Changelog**: {REPO_URL}/compare/{prev_tag}...{version}\n"
+    return notes, len(lines), skipped
+
+
+def step_review(version, prev_tag):
+    header(4, "Review the release notes")
+    with Spinner("collecting merged pull requests"):
+        notes, count, skipped = build_release_notes(version, prev_tag)
+    info(f"last release: {prev_tag or 'none'} · {count} pull request(s) by people since then")
+    if skipped:
+        numbers = ", ".join(f"#{n}" for n in skipped)
+        warn(f"not among the recently merged pull requests (left out): {numbers}")
+    if count == 0:
+        warn("no pull requests by people since the last release: the release body is nearly empty")
+    block(notes)
+    return notes
+
+
+def watch_release_workflow(version):
+    """Follows the run the release started: True or False for its result, None if it never
+    showed up."""
+    run_id = ""
+    with Spinner("waiting for the Release workflow to start"):
+        for _ in range(24):
+            result = run([
+                "gh", "run", "list", "--repo", REPO, "--workflow", RELEASE_WORKFLOW,
+                "--event", "release", "--branch", version, "--limit", "1",
+                "--json", "databaseId", "--jq", ".[0].databaseId // empty",
+            ], check=False)
+            run_id = result.stdout.strip()
+            if run_id:
+                break
+            time.sleep(5)
+    if not run_id:
+        warn(f"no run yet; follow it at {REPO_URL}/actions/workflows/{RELEASE_WORKFLOW}")
+        return None
+    watch = ["gh", "run", "watch", run_id, "--repo", REPO, "--exit-status"]
+    if subprocess.run(watch, cwd=REPO_ROOT).returncode == 0:
+        ok("the Release workflow passed: the bundles are in its play-bundles artifact")
+        return True
+    error(f"the Release workflow failed: {REPO_URL}/actions/runs/{run_id}")
+    return False
+
+
+def step_publish(ui, version, notes, dry_run):
+    """Returns the Release workflow's result when watched, else None."""
+    header(5, "Publish")
+    files = [f for f in release_files(version) if (REPO_ROOT / f).exists()]
+    to_commit = run(["git", "status", "--porcelain", "--", *files]).stdout
+
+    if dry_run:
+        changed = ", ".join(line[3:] for line in to_commit.splitlines()) or "nothing"
+        info(f"[dry-run] would commit: {changed}")
+        info(f"[dry-run] would push main and create GitHub release {version}, tagged {version}")
+        return None
+
+    if not ui.confirm(f"Push main and create GitHub release {style(version, BOLD)}?", default=True):
+        raise Abort("nothing was pushed; re-run when ready (the changelog and notes are kept)")
+
+    if to_commit:
+        run(["git", "add", "--", *files])
+        run_retrying(ui, ["git", "commit", "--quiet", "-m", f"Prepare release {version}"], "committing")
+        ok(f"committed: Prepare release {version}")
+    run_retrying(ui, ["git", "push", "--quiet", "origin", "main"], "pushing main")
+    ok("pushed main")
+
+    # The tag goes on GitHub's main: if origin is another remote, it isn't the commit just pushed.
+    sha = git("rev-parse", "HEAD")
+    remote_sha = ""
+    for _ in range(5):
+        check = ["gh", "api", f"repos/{REPO}/commits/main", "--jq", ".sha"]
+        remote_sha = run(check, check=False).stdout.strip()
+        if remote_sha == sha:
+            break
+        time.sleep(2)
+    else:
+        error(f"GitHub's main is at {remote_sha[:9] or 'nothing'}, not the release commit {sha[:9]}")
+        raise Abort(f"push main to {REPO_URL} (is origin another remote?) and re-run")
+
+    with Spinner(f"creating GitHub release {version}"):
+        run([
+            "gh", "release", "create", version, "--repo", REPO, "--target", sha,
+            "--title", version, "--notes", notes,
+        ])
+    ok(f"released: {REPO_URL}/releases/tag/{version}")
+    build = git("rev-list", "--count", "--first-parent", "HEAD")
+    info(
+        "Google Play: the Release workflow builds and checks the phone and Wear bundles from the "
+        f"tag; upload them from its play-bundles artifact, with the notes in {rel(PLAY_CHANGELOGS)}"
+    )
+    info(f"App Store: CI's TestFlight job uploads this commit as {version} (build {build})")
+
+    if not ui.confirm("Watch the Release workflow until it finishes?", default=False):
+        return None
+    return watch_release_workflow(version)
+
+
+def next_versions(version):
+    major, minor, patch = version_tuple(version)
+    return f"{major}.{minor}.{patch + 1}", f"{major}.{minor + 1}.0"
+
+
+def bump_version(ui, current, requested, dry_run):
+    if requested:
+        target = requested
+        check_version(target)
+        if version_tuple(target) <= version_tuple(current):
+            raise Abort(f"{target} isn't above cassette.version, {current}")
+    else:
+        patch, minor = next_versions(current)
+        choice = ui.choose(
+            f"Move cassette.version on from {current}? Main's Drop and TestFlight builds take it.",
+            [("p", patch), ("m", minor), ("s", "not now: `scripts/release bump` later")],
+            default_key="p",
+        )
+        if choice == "s":
+            info(f"cassette.version stays {current}; `scripts/release bump` moves it on")
+            return
+        target = patch if choice == "p" else minor
+
+    if dry_run:
+        info(f"[dry-run] would set cassette.version={target}, commit it and push main")
+        return
+    set_version(target)
+    run(["git", "add", "--", "gradle.properties"])
+    message = f"Bump cassette.version to {target} [skip ci]"
+    run_retrying(ui, ["git", "commit", "--quiet", "-m", message], "committing")
+    run_retrying(ui, ["git", "push", "--quiet", "origin", "main"], "pushing main")
+    ok(f"cassette.version is {target} on main")
+
+
+def step_next_version(ui, version, watched, dry_run):
+    header(6, "Next version")
+    if watched is False:
+        warn(f"cassette.version stays {version} until its release builds")
+        info(
+            "a rerun from the run's page builds the tag again; for a fix that needs code, "
+            f"`gh release delete {version} --cleanup-tag`, fix main and run scripts/release again"
+        )
+        return
+    bump_version(ui, version, None, dry_run)
+
+
+def bump_command(ui, requested, dry_run):
+    header(1, "Move cassette.version on")
+    requested = requested.lstrip("vV") if requested else None
+    if requested:
+        check_version(requested)
+    ensure_main()
+    sync_with_origin(ui, dry_run)
+    if dirty_files():
+        raise Abort("the working tree has changes; commit or put them aside and re-run")
+    current = read_version()
+    if not resolve_tag(current):
+        warn(f"{current} isn't released yet (there's no tag)")
+        if not ui.confirm(f"Move on from {current} anyway?", default=False):
+            raise Abort("nothing changed")
+    bump_version(ui, current, requested, dry_run)
+
+
+# =========================================================================== main
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument("command", nargs="?", choices=["bump"], help="only move cassette.version on")
+    parser.add_argument("version", nargs="?", help="with bump: the version to move to")
+    parser.add_argument("--skip-baseline", action="store_true", help="keep the committed profiles")
+    parser.add_argument("--dry-run", action="store_true", help="show what would happen, change nothing")
+    parser.add_argument("-y", "--yes", action="store_true", help="take every default, never prompt")
+    parser.add_argument("--no-claude", action="store_true", help="write the store notes yourself")
+    parser.add_argument(
+        "--notes-model", default=CLAUDE_DEFAULT_MODEL, metavar="MODEL",
+        help=f"the Claude model that drafts the store notes (default: {CLAUDE_DEFAULT_MODEL})",
+    )
+    args = parser.parse_args()
+    if args.version and args.command != "bump":
+        parser.error("a version only goes with bump")
+
+    ui = Ui(assume_yes=args.yes)
+    drafters = {}
+    try:
+        if args.dry_run:
+            print(style("dry run: nothing will be written, pushed or created", YELLOW))
+        if args.command == "bump":
+            bump_command(ui, args.version, args.dry_run)
+            return
+        version = read_version()
+        model = claude_model(args)
+        prev_tag = step_preflight(ui, version, args.dry_run)
+        drafters = start_drafters(version, model, prev_tag)
+        step_baseline(ui, args, args.dry_run)
+        step_changelog(ui, version, prev_tag, model, drafters, args.dry_run)
+        notes = step_review(version, prev_tag)
+        watched = step_publish(ui, version, notes, args.dry_run)
+        step_next_version(ui, version, watched, args.dry_run)
+        print()
+        if args.dry_run:
+            print(style(f"dry run of {version} done: nothing was changed", BOLD, GREEN))
+        else:
+            print(style(f"🎉 Cassette {version} is on its way.", BOLD, GREEN))
+    except Abort as e:
+        print()
+        print(style("aborted: ", RED, BOLD) + str(e))
+        sys.exit(1)
+    except KeyboardInterrupt:
+        print()
+        print(style("interrupted: nothing further was changed", YELLOW))
+        sys.exit(130)
+    except subprocess.CalledProcessError as e:
+        print()
+        print(style("command failed: ", RED, BOLD) + " ".join(e.cmd))
+        if e.stderr:
+            block(e.stderr)
+        sys.exit(e.returncode)
+    finally:
+        for drafter in drafters.values():
+            drafter.cancel()
+
+
+if __name__ == "__main__":
+    main()

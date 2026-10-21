@@ -2,9 +2,12 @@ name: Release
 
 # The Play release bundles (decision 0019): the phone and Wear apps, signed with the upload key
 # (scripts/release-signing-wizard), their manifests and signatures checked, kept as artifacts with
-# their R8 mappings. Run it from the Actions tab on the branch or tag to release. Uploading to Play
-# waits for a service account, which needs the app in the Play Console first.
+# their R8 mappings. scripts/release starts it by publishing a GitHub release; it also runs from the
+# Actions tab on a branch or tag. Uploading to Play waits for a service account, which needs the app
+# in the Play Console first.
 on:
+  release:
+    types: [published]
   workflow_dispatch:
 
 concurrency:
@@ -19,6 +22,18 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
+
+      # A release builds the version its tag names: the bundles' version codes come from it.
+      - name: Check the version
+        if: github.event_name == 'release'
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          version="$(sed -n 's/^cassette\.version=//p' gradle.properties)"
+          if [ "$version" != "${TAG#v}" ]; then
+            echo "::error::The tag is $TAG, but cassette.version at it is $version."
+            exit 1
+          fi
 
       - name: Set up JDK
         uses: actions/setup-java@v6

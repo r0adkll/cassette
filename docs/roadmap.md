@@ -83,10 +83,10 @@ the repo on 2026-10-19. The release's decisions are in [0019](decisions/0019-sto
 - ~~Developer tools in store builds~~: kept, so reviewers without AXS components can use the sample bike
   (0019).
 - ~~iPad~~: ships, as do Android tablets and foldables, each with screenshot sets (0019).
-- **Versioning.** Every app's version is `cassette.version` in gradle.properties (#56): Android release
-  codes derive from it, Drop builds count commits (#57), iOS build numbers are the commit count. Still
-  to pick: the first public version, whether releases are tagged, and cutting CHANGELOG's
-  `[Unreleased]` into it.
+- ~~Versioning~~: every app's version is `cassette.version` in gradle.properties (#56): Android release
+  codes derive from it, Drop builds count commits (#57), iOS build numbers are the commit count. The
+  first public version is 1.0.0, and `scripts/release` cuts each release: the changelog, the store
+  notes, a GitHub release tagged `1.0.0` and the next version (0019).
 - **Languages.** English only, with strings in Kotlin; fine for v1, but say so in both consoles.
 - ~~Backups~~: automatic, everything but the capture log; none on Wear (0019).
 
@@ -115,7 +115,8 @@ the repo on 2026-10-19. The release's decisions are in [0019](decisions/0019-sto
   secrets exist (2026-10-19; both bundles checked against its fingerprint). Still to do: create the
   listing in the Play Console.
 - ~~Version codes~~: release's are `MMmmpp0F`, so the phone and Wear bundles never share one (#56, #57).
-- ~~AABs~~: the Release workflow (`.github/workflows/release.yml`, run by hand) builds both bundles with
+- ~~AABs~~: the Release workflow (`.github/workflows/release.yml`, started by `scripts/release`'s GitHub
+  release, or by hand) builds both bundles with
   the upload key, checks them and keeps them with their R8 mappings. Still to do: the Play upload from
   it (fastlane supply), once a service account exists.
 - Play Console: the app, the Wear form factor opt-in, internal testing track first.

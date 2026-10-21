@@ -7,6 +7,11 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Added
 
+- `scripts/release` cuts a release from main, as Campfire's does (decision 0019): the baseline
+  profiles, this file's `[Unreleased]` rolled into the version, the Play and App Store notes (drafted
+  by Claude Code from the entries for each platform), a GitHub release tagged with the version, which
+  now starts the Release workflow, and then the next version. Entries for one platform start with
+  `[Android]` or `[iOS]`.
 - Crash reports (decision 0020): release and internal builds on Android, and Release builds on
   iOS, send crashes to Firebase Crashlytics, with Kotlin stacks on iOS through CrashKiOS. Settings →
   About → Privacy → Send crash reports turns them off. `scripts/firebase-wizard` sets up Firebase.

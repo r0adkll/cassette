@@ -14,6 +14,10 @@ login: Apple has no API key route for them).
 
 `scripts/store-assets` rebuilds every image from `assets/`. The captions are in that script.
 
+`scripts/release` writes each release's notes: `metadata/android/en-US/changelogs/<version code>.txt`
+for the phone and Wear bundles (`default.txt` is the first release's) and
+`metadata/ios/en-US/release_notes.txt`, which the App Store doesn't take for a first version.
+
 The listings say Cassette is unofficial and not affiliated with SRAM, and the images show no SRAM names or
 marks (the add-bike step that shows the hub's maker and serial is left out). The bike is the sample
 (Diagnostics → Developer → Load sample bike), renamed "Road bike".
