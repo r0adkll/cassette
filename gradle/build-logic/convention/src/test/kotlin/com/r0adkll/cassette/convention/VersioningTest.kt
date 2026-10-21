@@ -46,4 +46,13 @@ class VersioningTest {
   fun `drop codes only cover drop builds`() {
     assertFailsWith<IllegalStateException> { dropVersionCode(58, "release", FormFactor.Phone) }
   }
+
+  @Test
+  fun `baseline profile build types take the code of the build type they extend`() {
+    assertEquals("release", extendedBuildType("nonMinifiedRelease"))
+    assertEquals("release", extendedBuildType("benchmarkRelease"))
+    assertEquals("internal", extendedBuildType("benchmarkInternal"))
+    assertEquals("internal", extendedBuildType("internal"))
+    assertEquals("debug", extendedBuildType("debug"))
+  }
 }

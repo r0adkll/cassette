@@ -36,9 +36,9 @@ fun Project.configureVersions(formFactor: FormFactor) {
   extensions.configure<ApplicationAndroidComponentsExtension> {
     onVariants { variant ->
       val code =
-        when (val buildType = variant.buildType) {
+        when (val buildType = extendedBuildType(variant.buildType.orEmpty())) {
           "release" -> providers.provider { releaseVersionCode(versionName, formFactor) }
-          else -> commitCount.map { dropVersionCode(it, buildType.orEmpty(), formFactor) }
+          else -> commitCount.map { dropVersionCode(it, buildType, formFactor) }
         }
       variant.outputs.forEach { it.versionCode.set(code) }
     }
@@ -70,5 +70,18 @@ fun dropVersionCode(commitCount: Int, buildType: String, formFactor: FormFactor)
       ?: error("No version code digit for the '$buildType' build type")
   return commitCount * 100 + buildTypeDigit * 10 + formFactor.digit
 }
+
+/**
+ * The build type a baseline profile build type extends (`nonMinifiedRelease` and `benchmarkRelease`
+ * are release's), so it takes that build type's code; any other build type is its own.
+ */
+fun extendedBuildType(buildType: String): String {
+  val prefix =
+    BASELINE_PROFILE_PREFIXES.firstOrNull { buildType.startsWith(it) && buildType != it }
+      ?: return buildType
+  return buildType.removePrefix(prefix).replaceFirstChar { it.lowercase() }
+}
+
+private val BASELINE_PROFILE_PREFIXES = listOf("nonMinified", "benchmark")
 
 private val SEMVER = """(\d+)\.(\d+)\.(\d+)""".toRegex()
