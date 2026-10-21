@@ -10,6 +10,10 @@ All notable changes to Cassette are documented here. The format follows
 - Crash reports (decision 0020): release and internal builds on Android, and Release builds on
   iOS, send crashes to Firebase Crashlytics, with Kotlin stacks on iOS through CrashKiOS. Settings →
   About → Privacy → Send crash reports turns them off. `scripts/firebase-wizard` sets up Firebase.
+- Settings → About → Open-source licences lists every library the app ships, one row per project
+  (AndroidX, Compose Multiplatform, Circuit…) that opens its libraries and licences, plus the bundled
+  fonts and icons and each licence's full text. The list is collected at build time for each app
+  (AboutLibraries), so the Android and iPhone apps each show their own.
 - An iPhone app (decision 0017): the shared screens on iOS, Core Bluetooth scanning and
   unpaired GATT reads (a peripheral's identifier stands in for its Bluetooth address), the background
   scan with state restoration, and the three notifications with "Snooze until tomorrow". On iOS,

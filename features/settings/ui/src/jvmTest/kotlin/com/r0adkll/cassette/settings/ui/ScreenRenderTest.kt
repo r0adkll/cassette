@@ -233,6 +233,122 @@ class ScreenRenderTest {
     }
   }
 
+  /** Licences, a project and a licence's text, with data shaped like the Android build's. */
+  @Test
+  fun licences() {
+    val apache = "Apache-2.0"
+    val androidX =
+      LibraryProject(
+        "AndroidX",
+        "AX",
+        "The Android Open Source Project",
+        "https://developer.android.com/jetpack/androidx",
+        listOf(
+            Triple("Activity", "androidx.activity:activity", "1.13.0"),
+            Triple("Activity Compose", "androidx.activity:activity-compose", "1.13.0"),
+            Triple("Android App Startup Runtime", "androidx.startup:startup-runtime", "1.1.1"),
+            Triple("Android Tracing", "androidx.tracing:tracing", "1.2.0"),
+            Triple("Annotation", "androidx.annotation:annotation", "1.9.1"),
+            Triple("Compose Foundation", "androidx.compose.foundation:foundation", "1.12.1"),
+            Triple("Compose UI", "androidx.compose.ui:ui", "1.12.1"),
+            Triple(
+              "Glance AppWidget External Protobuf",
+              "androidx.glance:glance-appwidget-external-protobuf",
+              "1.2.0",
+            ),
+            Triple("Lifecycle Runtime", "androidx.lifecycle:lifecycle-runtime", "2.10.0"),
+            Triple("WorkManager Runtime", "androidx.work:work-runtime", "2.12.0"),
+          )
+          .map { (name, coordinates, version) ->
+            val bsd = "protobuf" in coordinates
+            OpenSourceLibrary(
+              name,
+              coordinates,
+              version,
+              listOf(if (bsd) "BSD-3-Clause" else apache),
+            )
+          },
+        listOf(apache, "BSD-3-Clause"),
+      )
+    val others =
+      listOf(
+          listOf("Compose Multiplatform", "CM", 27),
+          listOf("Kotlin", "KT", 16),
+          listOf("Ktor", "KR", 15),
+          listOf("Circuit", "CI", 11),
+          listOf("SQLDelight", "SQ", 4),
+          listOf("Google Play services", "GP", 4),
+          listOf("Drop", "DR", 3),
+        )
+        .map { (name, code, count) ->
+          val licence = if (code == "GP") "ASDKL" else apache
+          LibraryProject(
+            name as String,
+            code as String,
+            null,
+            null,
+            List(count as Int) {
+              OpenSourceLibrary("$name $it", "$name:$it", "1.0", listOf(licence))
+            },
+            listOf(licence),
+          )
+        }
+    val licence = { key: String, name: String, short: String, text: String?, count: Int ->
+      LicenceInfo(key, name, short, text, "https://spdx.org/licenses/$key.html", count, listOf())
+    }
+    val catalog =
+      LicenceCatalog(
+        listOf(androidX) + others,
+        listOf(
+          licence(apache, "Apache License 2.0", "Apache 2.0", "Apache License", 167),
+          licence(
+            "ASDKL",
+            "Android Software Development Kit License",
+            "Android SDK License",
+            null,
+            4,
+          ),
+          licence(
+            "BSD-3-Clause",
+            "BSD 3-Clause \"New\" or \"Revised\" License",
+            "BSD 3-Clause",
+            "BSD",
+            2,
+          ),
+          licence("MIT", "MIT License", "MIT", "MIT", 1),
+        ),
+      )
+    val text =
+      LicenceText(
+        kicker = "167 libraries",
+        title = "Apache License 2.0",
+        intro = "AndroidX, Compose Multiplatform, Kotlin, Ktor, Circuit and 10 more.",
+        body =
+          "Apache License\nVersion 2.0, January 2004\nhttp://www.apache.org/licenses/\n\n" +
+            "TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION\n\n1. Definitions.\n\n" +
+            "\"License\" shall mean the terms and conditions for use, reproduction, and " +
+            "distribution as defined by Sections 1 through 9 of this document.",
+        url = null,
+      )
+    val detail = ProjectDetail(androidX, catalog.licences.filter { it.key in androidX.licences })
+    for (dark in listOf(true, false)) {
+      val mode = if (dark) "dark" else "light"
+      val shot = Shot("licences", RenderSize.Phone, state, UpdateStatus.Off)
+      render("settings-licences-$mode", dark, shot) {
+        LicencesUi(LicencesUiState(LoadState.Loaded(catalog), {}, {}, {}))
+      }
+      render("settings-licences-failed-$mode", dark, shot) {
+        LicencesUi(LicencesUiState(LoadState.Failed, {}, {}, {}))
+      }
+      render("settings-licences-project-$mode", dark, shot) {
+        LicenceProjectUi(LicenceProjectUiState("AndroidX", LoadState.Loaded(detail), {}, {}))
+      }
+      render("settings-licences-text-$mode", dark, shot) {
+        LicenceTextUi(LicenceTextUiState(LoadState.Loaded(text)) {})
+      }
+    }
+  }
+
   private fun render(
     name: String,
     dark: Boolean,

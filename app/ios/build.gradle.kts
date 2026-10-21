@@ -1,7 +1,11 @@
+import com.r0adkll.cassette.convention.resolveRootModulesWhenUnrequested
+import java.util.regex.Pattern
+
 plugins {
   alias(libs.plugins.kotlin.multiplatform)
   id("cassette.compose")
   id("cassette.di")
+  alias(libs.plugins.aboutlibraries)
 }
 
 // The iPhone app's Kotlin half (decision 0017): the graph and the Compose host, built as the static
@@ -43,6 +47,33 @@ kotlin {
       // Kotlin crashes reach Crashlytics with Kotlin stacks (decision 0020). The framework is
       // static, so the app's link resolves Firebase and CrashKiOS's link plugin isn't needed.
       implementation(libs.crashkios.crashlytics)
+      implementation(libs.compose.components.resources)
     }
   }
+}
+
+// Settings → About → Open-source licences: every library the framework links, exported at build
+// time into its Compose resources as files/aboutlibraries.json.
+val libraryDefinitions = layout.buildDirectory.dir("generated/aboutLibraries")
+
+aboutLibraries {
+  collect.fetchRemoteLicense = false
+  // Native targets resolve klibs, not classpaths: take every configuration of the device target.
+  collect.all = true
+  collect.filterVariants.add("iosArm64")
+  library.duplicationMode = com.mikepenz.aboutlibraries.plugin.DuplicateMode.MERGE
+  library.exclusionPatterns.add(Pattern.compile(".*-bom"))
+  export.outputFile = libraryDefinitions.map { it.file("files/aboutlibraries.json") }
+}
+
+resolveRootModulesWhenUnrequested()
+
+compose.resources {
+  packageOfResClass = "com.r0adkll.cassette.app.ios.resources"
+  // The only resources are iosMain's, which `auto` doesn't generate an accessor for.
+  generateResClass = always
+  customDirectory(
+    sourceSetName = "iosMain",
+    directoryProvider = tasks.named("exportLibraryDefinitions").map { libraryDefinitions.get() },
+  )
 }

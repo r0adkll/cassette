@@ -87,7 +87,7 @@ internal fun AboutBody(
     LinkRow("Terms of service", null, LucideIcons.Scale, AboutLinks.TERMS)
     SettingsRow(
       "Open-source licences",
-      subtitle = "Barlow, JetBrains Mono, Lucide",
+      subtitle = "The libraries, fonts and icons Cassette uses",
       icon = LucideIcons.FileText,
       onClick = onLicences,
       divider = false,

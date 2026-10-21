@@ -5,17 +5,25 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -25,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -42,6 +51,7 @@ import com.r0adkll.cassette.common.compose.UpdateStatus
 import com.r0adkll.cassette.common.compose.components.CategoryItem
 import com.r0adkll.cassette.common.compose.components.Chevron
 import com.r0adkll.cassette.common.compose.components.FloatingTopBar
+import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.SettingsRow
 import com.r0adkll.cassette.common.compose.components.SettingsSection
@@ -54,7 +64,6 @@ import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.startPane
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.screens.DiagnosticsScreen
-import com.r0adkll.cassette.common.screens.LicencesScreen
 import com.r0adkll.cassette.common.screens.SettingsCategory
 import com.r0adkll.cassette.common.screens.SettingsScreen
 import com.r0adkll.cassette.settings.api.ThemeMode
@@ -62,21 +71,18 @@ import com.slack.circuit.backstack.rememberSaveableBackStack
 import com.slack.circuit.codegen.annotations.CircuitInject
 import com.slack.circuit.foundation.NavigableCircuitContent
 import com.slack.circuit.foundation.rememberCircuitNavigator
-import com.slack.circuit.runtime.CircuitUiState
-import com.slack.circuit.runtime.Navigator
-import com.slack.circuit.runtime.presenter.Presenter
 import dev.zacsweers.metro.AppScope
-import dev.zacsweers.metro.Inject
 
 /**
  * A screen with a back button and a big title, content capped at phone width. Back floats while the
- * content scrolls under it (iteration 14).
+ * content scrolls under it (iteration 14). [kicker] is a small label over the title.
  */
 @Composable
 internal fun TitledScreen(
   title: String,
   onBack: () -> Unit,
   modifier: Modifier = Modifier,
+  kicker: String? = null,
   content: @Composable ColumnScope.() -> Unit,
 ) {
   Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
@@ -88,17 +94,59 @@ internal fun TitledScreen(
         .padding(horizontal = 20.dp, vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-      Spacer(Modifier.height(TopBarButtonSize))
-      Text(title, style = CassetteTheme.type.title, color = CassetteTheme.colors.text)
+      TitleBlock(title, kicker)
       content()
     }
-    FloatingTopBar(
-      Modifier.widthIn(max = 480.dp)
-        .safeDrawingPadding()
-        .padding(horizontal = 20.dp, vertical = 24.dp)
+    BackBar(onBack)
+  }
+}
+
+/** [TitledScreen] for content that runs long: [content] is a lazy list's, without its spacing. */
+@Composable
+internal fun TitledLazyScreen(
+  title: String,
+  onBack: () -> Unit,
+  modifier: Modifier = Modifier,
+  kicker: String? = null,
+  content: LazyListScope.() -> Unit,
+) {
+  Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+    val insets = WindowInsets.safeDrawing.asPaddingValues()
+    val direction = LocalLayoutDirection.current
+    LazyColumn(
+      Modifier.widthIn(max = 480.dp).fillMaxWidth(),
+      contentPadding =
+        PaddingValues(
+          start = insets.calculateStartPadding(direction) + 20.dp,
+          top = insets.calculateTopPadding() + 24.dp,
+          end = insets.calculateEndPadding(direction) + 20.dp,
+          bottom = insets.calculateBottomPadding() + 24.dp,
+        ),
     ) {
-      TopBarButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
+      item { TitleBlock(title, kicker, Modifier.padding(bottom = 14.dp)) }
+      content()
     }
+    BackBar(onBack)
+  }
+}
+
+@Composable
+private fun TitleBlock(title: String, kicker: String?, modifier: Modifier = Modifier) {
+  Column(modifier, verticalArrangement = Arrangement.spacedBy(14.dp)) {
+    Spacer(Modifier.height(TopBarButtonSize))
+    if (kicker != null) Kicker(kicker)
+    Text(title, style = CassetteTheme.type.title, color = CassetteTheme.colors.text)
+  }
+}
+
+@Composable
+private fun BackBar(onBack: () -> Unit) {
+  FloatingTopBar(
+    Modifier.widthIn(max = 480.dp)
+      .safeDrawingPadding()
+      .padding(horizontal = 20.dp, vertical = 24.dp)
+  ) {
+    TopBarButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
   }
 }
 
@@ -522,47 +570,3 @@ private fun Footnote(modifier: Modifier = Modifier) {
     modifier = modifier,
   )
 }
-
-data class LicencesUiState(val onBack: () -> Unit) : CircuitUiState
-
-@CircuitInject(LicencesScreen::class, AppScope::class)
-@Inject
-class LicencesPresenter(private val navigator: Navigator) : Presenter<LicencesUiState> {
-  @Composable override fun present() = LicencesUiState(onBack = { navigator.pop() })
-}
-
-/** Third-party notices (decision 0012: Lucide ISC; fonts OFL). */
-@CircuitInject(LicencesScreen::class, AppScope::class)
-@Composable
-fun LicencesUi(state: LicencesUiState, modifier: Modifier = Modifier) {
-  TitledScreen("Licences.", onBack = state.onBack, modifier) { LicencesList() }
-}
-
-@Composable
-private fun LicencesList() {
-  LICENCES.forEach { (name, licence, copyright) ->
-    SettingsSection(name) {
-      Text(licence, style = CassetteTheme.type.itemTitle, color = CassetteTheme.colors.text)
-      Text(copyright, style = CassetteTheme.type.bodySmall, color = CassetteTheme.colors.muted)
-    }
-  }
-}
-
-private val LICENCES =
-  listOf(
-    Triple(
-      "Barlow, Barlow Condensed",
-      "SIL Open Font License 1.1",
-      "Copyright 2017 The Barlow Project Authors (github.com/jpt/barlow)",
-    ),
-    Triple(
-      "JetBrains Mono",
-      "SIL Open Font License 1.1",
-      "Copyright 2020 The JetBrains Mono Project Authors",
-    ),
-    Triple(
-      "Lucide",
-      "ISC License",
-      "Copyright Lucide Contributors 2022; portions Copyright Cole Bemis 2013–2022 (Feather, MIT)",
-    ),
-  )

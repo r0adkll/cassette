@@ -51,7 +51,10 @@ fun SettingsSection(
   }
 }
 
-/** A row: optional icon, title and subtitle, and a trailing control (chevron, toggle, text). */
+/**
+ * A row: optional icon, title and subtitle, and a trailing control (chevron, toggle, text).
+ * [leading] puts something other than an icon first, such as a [CodeBadge].
+ */
 @Composable
 fun SettingsRow(
   title: String,
@@ -60,13 +63,14 @@ fun SettingsRow(
   icon: ImageVector? = null,
   onClick: (() -> Unit)? = null,
   divider: Boolean = true,
+  leading: (@Composable () -> Unit)? = icon?.let { { RowIcon(it) } },
   trailing: @Composable () -> Unit = { if (onClick != null) Chevron() },
 ) {
   RowLayout(
     title,
     modifier.then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
     subtitle,
-    icon,
+    leading,
     divider,
     trailing,
   )
@@ -95,7 +99,7 @@ fun SettingsSwitchRow(
       onValueChange = onCheckedChange,
     ),
     subtitle,
-    icon,
+    icon?.let { { RowIcon(it) } },
     divider,
   ) {
     Toggle(checked, onCheckedChange = null, interactionSource = interactions)
@@ -111,7 +115,7 @@ private fun RowLayout(
   title: String,
   interaction: Modifier,
   subtitle: String?,
-  icon: ImageVector?,
+  leading: (@Composable () -> Unit)?,
   divider: Boolean,
   trailing: @Composable () -> Unit,
 ) {
@@ -125,7 +129,7 @@ private fun RowLayout(
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-      if (icon != null) Icon(icon, null, tint = colors.text, modifier = Modifier.size(20.dp))
+      leading?.invoke()
       Column(Modifier.weight(1f)) {
         Text(title, style = CassetteTheme.type.itemTitle, color = colors.text)
         if (subtitle != null)
@@ -142,6 +146,11 @@ private fun RowLayout(
         thickness = 1.dp,
       )
   }
+}
+
+@Composable
+private fun RowIcon(icon: ImageVector) {
+  Icon(icon, null, tint = CassetteTheme.colors.text, modifier = Modifier.size(20.dp))
 }
 
 @Composable
