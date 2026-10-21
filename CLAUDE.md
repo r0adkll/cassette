@@ -14,8 +14,13 @@ ported. Don't build new features on the POC.
 
 - `./gradlew :app:android:assembleDebug`: the app. `assembleInternal` (here and in `:app:wear`) is the
   R8-optimised build CI uploads to Drop (same app id and key as debug); check R8 changes on a device with it.
-- Release: the Release workflow (run by hand) builds the Play bundles with the upload key
-  (`scripts/release-signing-wizard`). Locally: `set -a; source ~/.cassette/release.env; set +a`, then
+- Release: `scripts/release` (decision 0019) cuts `cassette.version` from main: baseline profiles,
+  CHANGELOG's `[Unreleased]` rolled into the version, each store's notes (Claude drafts them in the
+  background; `--no-claude` to write them yourself), the GitHub release and its tag, then the next
+  version. `--dry-run` changes nothing, `--skip-baseline` keeps the committed profiles, and
+  `scripts/release bump` only moves the version on. Gradle's output goes to `build/release/*.log`.
+- The Release workflow (started by the GitHub release, or by hand) builds the Play bundles with the
+  upload key (`scripts/release-signing-wizard`). Locally: `set -a; source ~/.cassette/release.env; set +a`, then
   `./gradlew :app:android:bundleRelease :app:wear:bundleRelease`; `scripts/check-release-manifests`
   fails on network or install permissions and debug components in the release manifests.
 - `./gradlew :common:compose:jvmTest`: renders the gallery to `common/compose/build/gallery/*.png` in every
@@ -101,6 +106,8 @@ ported. Don't build new features on the POC.
   (`./gradlew :data:db:generateCommonMainCassetteDatabaseSchema`, run on its own: it trips Gradle's
   task-ordering check alongside other tasks); CI runs `verifySqlDelightMigration`.
 - **Changelog:** behaviour changes get a CHANGELOG.md entry under `[Unreleased]` (Keep a Changelog).
+  An entry for one platform's apps starts with `[Android]` (phone and Wear) or `[iOS]` (iPhone, iPad
+  and Apple Watch); untagged entries apply to both. `scripts/release` builds each store's notes from them.
 - **Notifications:** keep a ledger of notification ids and channels in this file; give each PendingIntent
   its own request code (ledger below).
 - **Formatting:** ktfmt, Google style (2-space indents). Run `scripts/ktfmt --format` before committing (run it

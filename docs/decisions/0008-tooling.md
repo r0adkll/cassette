@@ -40,8 +40,8 @@ in `fastlane/`, are [0019](0019-store-release.md); this was sideload only until 
   for the phone and Wear apps. `scripts/release-signing-wizard` makes the key (kept in 1Password, and in
   `~/.cassette/release.env` for local builds) and sets `CASSETTE_UPLOAD_KEYSTORE_BASE64`,
   `CASSETTE_UPLOAD_KEYSTORE_PASSWORD`, `CASSETTE_UPLOAD_KEY_ALIAS` and `CASSETTE_UPLOAD_KEY_PASSWORD`.
-  Without `CASSETTE_UPLOAD_KEYSTORE`, release builds are unsigned. The Release workflow, run by hand,
-  builds both bundles with it, checks their manifests (`scripts/check-release-manifests`) and
+  Without `CASSETTE_UPLOAD_KEYSTORE`, release builds are unsigned. The Release workflow, started by
+  the GitHub release `scripts/release` publishes (or by hand), builds both bundles with it, checks their manifests (`scripts/check-release-manifests`) and
   signatures, and keeps them and their R8 mappings as artifacts.
 - The required check ("Test and build") is unit tests and a debug compile, without secrets. The internal
   build and its uploads run in a separate "Internal build" job once that passes, and isn't required, so a
