@@ -5,6 +5,9 @@ import UIKit
 /// buttons: Kotlin's UIKit predates it, so the bar items are made here. The system only moves a
 /// visible navigation bar's items into the vertical bar, so the navigation bar shows while a
 /// screen has items there, and screens only send items where the window has the bar.
+///
+/// The iOS 27.1 calls are only in the SDK of Xcode 27, which brings Swift 6.4: built with an
+/// older Xcode, as CI's is, the app never reports the bar, and the buttons float.
 final class VerticalBarHost: UINavigationController, VerticalBar {
   private var onChange: ((KotlinBoolean) -> Void)?
 
@@ -14,11 +17,13 @@ final class VerticalBarHost: UINavigationController, VerticalBar {
   override func viewDidLoad() {
     super.viewDidLoad()
     setNavigationBarHidden(true, animated: false)
-    if #available(iOS 27.1, *) {
-      registerForTraitChanges(UITraitCollection.systemTraitsAffectingVerticalBarEdge) {
-        (host: VerticalBarHost, _: UITraitCollection) in host.report()
+    #if compiler(>=6.4)
+      if #available(iOS 27.1, *) {
+        registerForTraitChanges(UITraitCollection.systemTraitsAffectingVerticalBarEdge) {
+          (host: VerticalBarHost, _: UITraitCollection) in host.report()
+        }
       }
-    }
+    #endif
   }
 
   override func viewDidLayoutSubviews() {
@@ -57,7 +62,9 @@ final class VerticalBarHost: UINavigationController, VerticalBar {
   private func button(_ item: VerticalBarItem) -> UIBarButtonItem {
     let button = UIBarButtonItem(image: item.image, primaryAction: UIAction { _ in item.onClick() })
     button.accessibilityLabel = item.label
-    if #available(iOS 27.1, *) { button.axisBehavior = .verticalPreferred }
+    #if compiler(>=6.4)
+      if #available(iOS 27.1, *) { button.axisBehavior = .verticalPreferred }
+    #endif
     // A count (the bikes needing a charge, in their status colour) or a dot.
     if #available(iOS 26.0, *), let background = item.badgeBackground {
       var badge = item.badgeText.map { UIBarButtonItem.Badge.string($0) } ?? .indicator()
@@ -76,7 +83,9 @@ final class VerticalBarHost: UINavigationController, VerticalBar {
 
   private func report() {
     var shown = false
-    if #available(iOS 27.1, *) { shown = traitCollection.verticalBarEdge != .unspecified }
+    #if compiler(>=6.4)
+      if #available(iOS 27.1, *) { shown = traitCollection.verticalBarEdge != .unspecified }
+    #endif
     onChange?(KotlinBoolean(value: shown))
   }
 }

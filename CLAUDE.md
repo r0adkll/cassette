@@ -75,6 +75,8 @@ ported. Don't build new features on the POC.
   fooled us ("Back" matched "background", "Front derailleur" matched Diagnostics text). Screenshots
   use `XCUIScreen.main` (the app's own capture is offset in landscape).
   `./gradlew :app:ios:linkDebugFrameworkIosSimulatorArm64` checks the Kotlin half (and its Metro graph).
+  CI builds with Xcode 26: Swift calls to APIs newer than its SDK (the iPhone Duo's, iOS 27.1) go
+  behind `#if compiler(>=6.4)` as well as `#available`, or CI's iOS app job fails to compile.
   Each target has a `PrivacyInfo.xcprivacy`; after adding a dependency or a file, defaults or clock
   API, `scripts/ios-privacy-scan` lists the required-reason APIs each Release binary uses.
 - Android on an emulator: `ANDROID_SERIAL=<serial> scripts/android-walk "Get started" "=Back" shot:bike`

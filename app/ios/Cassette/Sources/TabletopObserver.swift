@@ -5,7 +5,9 @@ import os
 /// Tabletop on the iPhone Duo (iOS 27.1, decision 0017): standing half open with the fold across
 /// the window, where the bike screen splits as it does on a half-open Android foldable. Compose's
 /// window posture can't see the Duo's hinge, so its status comes from a hinge interaction and the
-/// fold from the view's division region, here.
+/// fold from the view's division region, here. Like the vertical bar's calls, it builds only with
+/// Xcode 27's SDK (Swift 6.4).
+#if compiler(>=6.4)
 @available(iOS 27.1, *)
 final class TabletopObserver {
   private weak var view: UIView?
@@ -47,3 +49,4 @@ final class TabletopObserver {
       })
   }
 }
+#endif

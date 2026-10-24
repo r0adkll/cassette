@@ -47,10 +47,12 @@ private struct ComposeView: UIViewControllerRepresentable {
     let host = VerticalBarHost()
     let compose = Cassette.shared.mainViewController(verticalBar: host)
     host.setViewControllers([compose], animated: false)
-    if #available(iOS 27.1, *) {
-      let tabletop = TabletopObserver(view: compose.view)
-      host.onLayout = { tabletop.report() }
-    }
+    #if compiler(>=6.4)
+      if #available(iOS 27.1, *) {
+        let tabletop = TabletopObserver(view: compose.view)
+        host.onLayout = { tabletop.report() }
+      }
+    #endif
     return host
   }
 
