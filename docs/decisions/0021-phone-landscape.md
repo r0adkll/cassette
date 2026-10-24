@@ -12,7 +12,9 @@ is unchanged ([0012](0012-visual-direction.md)): these are layouts of the same c
 
 `ScreenLayout.Landscape` is compact height with at least medium width (a phone on its side). A
 window that is compact both ways (split screen) keeps the phone's column, and its screens with a
-footer scroll the footer with the rest (`FooterColumn`).
+footer scroll the footer with the rest (`FooterColumn`). Since
+[0024](0024-short-medium-windows.md), the split needs expanded width: a short window of medium width
+(a small phone or the closed iPhone Duo on its side) is too narrow for two panes.
 
 ## Layout: two panes (direction A)
 

@@ -40,10 +40,18 @@ struct CassetteApp: App {
   }
 }
 
-/// The shared Compose UI.
+/// The shared Compose UI, in the host for the iPhone Duo's vertical bar, with its tabletop fold
+/// observed.
 private struct ComposeView: UIViewControllerRepresentable {
   func makeUIViewController(context: Context) -> UIViewController {
-    Cassette.shared.mainViewController()
+    let host = VerticalBarHost()
+    let compose = Cassette.shared.mainViewController(verticalBar: host)
+    host.setViewControllers([compose], animated: false)
+    if #available(iOS 27.1, *) {
+      let tabletop = TabletopObserver(view: compose.view)
+      host.onLayout = { tabletop.report() }
+    }
+    return host
   }
 
   func updateUIViewController(_ controller: UIViewController, context: Context) {}

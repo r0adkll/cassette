@@ -156,6 +156,15 @@ class ScreenRenderTest {
           ready,
         ),
         Shot("landscape-updates", RenderSize.PhoneLandscape, state.copy(selected = Updates), ready),
+        // Too narrow to split (the closed iPhone Duo on its side): the phone's list (decision
+        // 0024).
+        Shot("passport-landscape", RenderSize.PassportLandscape, state, ready),
+        Shot(
+          "passport-landscape-notifications",
+          RenderSize.PassportLandscape,
+          state.copy(category = Notifications),
+          ready,
+        ),
       )
     for (dark in listOf(true, false)) {
       for (shot in screens) {
@@ -411,6 +420,7 @@ class ScreenRenderTest {
     Fold(852, 883),
     Tablet(1280, 800),
     PhoneLandscape(892, 412),
+    PassportLandscape(678, 466),
   }
 
   private companion object {

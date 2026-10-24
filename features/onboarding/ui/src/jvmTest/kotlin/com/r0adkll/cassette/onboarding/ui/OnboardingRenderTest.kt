@@ -70,6 +70,25 @@ class OnboardingRenderTest {
       render(File(out, "onboarding-landscape-permissions-$theme.png"), dark, askable, 892, 412) {
         PermissionsUi(PermissionsUiState {})
       }
+      // A passport-shaped fold's outer screen on its side (the iPhone Duo closed).
+      render(
+        File(out, "onboarding-passport-landscape-welcome-$theme.png"),
+        dark,
+        askable,
+        678,
+        466,
+      ) {
+        WelcomeUi(WelcomeUiState {})
+      }
+      render(
+        File(out, "onboarding-passport-landscape-permissions-$theme.png"),
+        dark,
+        askable,
+        678,
+        466,
+      ) {
+        PermissionsUi(PermissionsUiState {})
+      }
     }
   }
 

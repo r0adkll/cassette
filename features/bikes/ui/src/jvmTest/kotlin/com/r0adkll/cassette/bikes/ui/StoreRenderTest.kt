@@ -46,7 +46,6 @@ class StoreRenderTest {
     BikeUiState.Loaded(
       bikeId = 1,
       name = "Road bike",
-      position = "1 OF 2",
       status =
         BikeStatus(
           Good,

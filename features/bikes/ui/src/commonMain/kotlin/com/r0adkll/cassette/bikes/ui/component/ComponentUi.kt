@@ -32,8 +32,8 @@ import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.ScrollColumn
 import com.r0adkll.cassette.common.compose.components.SplitPanes
 import com.r0adkll.cassette.common.compose.components.StatCell
-import com.r0adkll.cassette.common.compose.components.TopBarButton
 import com.r0adkll.cassette.common.compose.components.TopBarButtonSize
+import com.r0adkll.cassette.common.compose.components.TopBarNavigation
 import com.r0adkll.cassette.common.compose.components.ValueStatusBlock
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
@@ -134,7 +134,7 @@ private fun LandscapeComponent(state: ComponentUiState, modifier: Modifier = Mod
 @Composable
 private fun BackBar(sink: (ComponentEvent) -> Unit, modifier: Modifier) {
   FloatingTopBar(modifier.padding(horizontal = 20.dp)) {
-    TopBarButton(LucideIcons.ArrowLeft, "Back", onClick = { sink(ComponentEvent.Back) })
+    TopBarNavigation(LucideIcons.ArrowLeft, "Back", onClick = { sink(ComponentEvent.Back) })
   }
 }
 

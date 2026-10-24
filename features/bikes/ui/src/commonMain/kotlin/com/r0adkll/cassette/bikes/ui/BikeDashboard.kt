@@ -17,13 +17,13 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -35,15 +35,18 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigationevent.NavigationEventInfo
@@ -54,18 +57,21 @@ import com.r0adkll.cassette.bikes.summary.weakest
 import com.r0adkll.cassette.bikes.ui.component.SheetGutter
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
 import com.r0adkll.cassette.common.compose.UpdateStatus
+import com.r0adkll.cassette.common.compose.components.BarAction
 import com.r0adkll.cassette.common.compose.components.BikeChip
 import com.r0adkll.cassette.common.compose.components.BikeRailItem
 import com.r0adkll.cassette.common.compose.components.ComponentTile
 import com.r0adkll.cassette.common.compose.components.FloatingTopBar
 import com.r0adkll.cassette.common.compose.components.Kicker
+import com.r0adkll.cassette.common.compose.components.LocalTopBarShown
 import com.r0adkll.cassette.common.compose.components.RailAddButton
 import com.r0adkll.cassette.common.compose.components.RailLink
 import com.r0adkll.cassette.common.compose.components.StatusBlockButton
 import com.r0adkll.cassette.common.compose.components.StatusBlockMeta
 import com.r0adkll.cassette.common.compose.components.StatusBlockText
-import com.r0adkll.cassette.common.compose.components.TopBarButton
+import com.r0adkll.cassette.common.compose.components.TopBarActions
 import com.r0adkll.cassette.common.compose.components.TopBarButtonSize
+import com.r0adkll.cassette.common.compose.components.TopBarNavigation
 import com.r0adkll.cassette.common.compose.components.WideStatusBlock
 import com.r0adkll.cassette.common.compose.endPane
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
@@ -130,7 +136,13 @@ private fun Dashboard(state: BikeUiState.Loaded, rail: Boolean) {
             modifier = Modifier.padding(horizontal = gutter),
           )
         } else {
-          ChipBar(state, Modifier.padding(horizontal = gutter))
+          // The wordmark scrolls; the bikes float in the top bar below.
+          Box(
+            Modifier.padding(horizontal = gutter).height(TopBarButtonSize),
+            contentAlignment = Alignment.CenterStart,
+          ) {
+            Kicker("Cassette")
+          }
         }
         // Screen readers get the plain title (decision 0015).
         WideStatusBlock(
@@ -162,19 +174,31 @@ private fun Dashboard(state: BikeUiState.Loaded, rail: Boolean) {
           }
         }
       }
-      // Add bike and Settings float over the chip bar's end (iteration 14; the rail has its own).
+      // The bikes, Add bike and Settings float over the content (iteration 14; the rail has its
+      // own). The sheet covers them, and iOS's glass would draw over it, so they hide meanwhile.
       if (!rail)
-        FloatingTopBar(
-          Modifier.safeDrawingPadding().padding(horizontal = gutter, vertical = 24.dp)
+        CompositionLocalProvider(
+          LocalTopBarShown provides (LocalTopBarShown.current && state.sheet == null)
         ) {
-          Spacer(Modifier.weight(1f))
-          TopBarButton(LucideIcons.BikePlus, "Add bike", onClick = { sink(BikeEvent.AddBike) })
-          TopBarButton(
-            LucideIcons.Settings,
-            if (updateWaiting) "Settings, app update available" else "Settings",
-            onClick = { sink(BikeEvent.OpenSettings) },
-            badge = updateWaiting,
-          )
+          FloatingTopBar(
+            Modifier.safeDrawingPadding().padding(horizontal = gutter, vertical = 24.dp)
+          ) {
+            // Keeps the wordmark clear: it stays in the content and scrolls under the bikes.
+            Kicker("Cassette", Modifier.alpha(0f).clearAndSetSemantics {})
+            BikeChips(state, Modifier.weight(1f))
+            TopBarActions(
+              listOf(
+                BarAction(LucideIcons.BikePlus, "Add bike") { sink(BikeEvent.AddBike) },
+                BarAction(
+                  LucideIcons.Settings,
+                  if (updateWaiting) "Settings, app update available" else "Settings",
+                  badge = updateWaiting,
+                ) {
+                  sink(BikeEvent.OpenSettings)
+                },
+              )
+            )
+          }
         }
     }
   }
@@ -228,34 +252,25 @@ private fun BikeRail(state: BikeUiState.Loaded, updateWaiting: Boolean, modifier
 }
 
 /**
- * The open foldable's top bar: the wordmark and a chip per bike. Add bike and Settings float over
- * its end, so they stay when it scrolls away.
+ * The open foldable's bikes, a chip each, in the floating top bar before Add bike and Settings, so
+ * they stay when the content scrolls. More than fit scroll sideways.
  */
 @Composable
-private fun ChipBar(state: BikeUiState.Loaded, modifier: Modifier) {
+private fun BikeChips(state: BikeUiState.Loaded, modifier: Modifier) {
   val sink = state.eventSink
   Row(
-    modifier.height(TopBarButtonSize),
+    modifier.horizontalScroll(rememberScrollState()),
+    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
     verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(8.dp),
   ) {
-    Kicker("Cassette")
-    Row(
-      Modifier.weight(1f).horizontalScroll(rememberScrollState()),
-      horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-      verticalAlignment = Alignment.CenterVertically,
-    ) {
-      state.choices().forEach { bike ->
-        BikeChip(
-          bike.name,
-          bike.tone,
-          selected = bike.id == state.bikeId,
-          onClick = { sink(BikeEvent.SelectBike(bike.id)) },
-        )
-      }
+    state.choices().forEach { bike ->
+      BikeChip(
+        bike.name,
+        bike.tone,
+        selected = bike.id == state.bikeId,
+        onClick = { sink(BikeEvent.SelectBike(bike.id)) },
+      )
     }
-    // Room for Add bike and Settings, which float over this end.
-    Spacer(Modifier.width(TopBarButtonSize * 2 + 8.dp))
   }
 }
 
@@ -328,10 +343,10 @@ private fun Tile(
 }
 
 /** Material's emphasized curves: the sheet decelerates in and accelerates out. */
-private val EmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
-private val EmphasizedAccelerate = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)
-private const val SheetInMillis = 340
-private const val SheetOutMillis = 220
+internal val EmphasizedDecelerate = CubicBezierEasing(0.05f, 0.7f, 0.1f, 1f)
+internal val EmphasizedAccelerate = CubicBezierEasing(0.3f, 0f, 0.8f, 0.15f)
+internal const val SheetInMillis = 340
+internal const val SheetOutMillis = 220
 
 private val SheetShape = RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp)
 
@@ -414,7 +429,11 @@ private fun BoxScope.ComponentSheet(
   }
 }
 
-/** Close, which component of how many, and previous and next to step through them. */
+/**
+ * Close, which component of how many, and previous and next to step through them. The buttons go in
+ * the system's bar where there is one (a sheet from the right edge gets it on the iPhone Duo), and
+ * give it back as the sheet starts to close.
+ */
 @Composable
 private fun SheetHeader(state: BikeUiState.Loaded, id: Long, modifier: Modifier) {
   val sink = state.eventSink
@@ -422,26 +441,30 @@ private fun SheetHeader(state: BikeUiState.Loaded, id: Long, modifier: Modifier)
   val index = components.indexOfFirst { it.id == id }.coerceAtLeast(0)
   val count = components.size
   Row(
-    modifier,
+    modifier.heightIn(min = TopBarButtonSize),
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(8.dp),
   ) {
-    TopBarButton(LucideIcons.X, "Close", onClick = { sink(BikeEvent.CloseSheet) })
-    Kicker(
-      "${components.getOrNull(index)?.code.orEmpty()} · ${index + 1} of $count",
-      Modifier.weight(1f).padding(start = 4.dp),
-    )
-    if (count > 1) {
-      TopBarButton(
-        LucideIcons.ChevronLeft,
-        "Previous component",
-        onClick = { sink(BikeEvent.ShowComponent(components[(index + count - 1) % count].id)) },
+    CompositionLocalProvider(
+      LocalTopBarShown provides (LocalTopBarShown.current && state.sheet != null)
+    ) {
+      TopBarNavigation(LucideIcons.X, "Close", onClick = { sink(BikeEvent.CloseSheet) })
+      Kicker(
+        "${components.getOrNull(index)?.code.orEmpty()} · ${index + 1} of $count",
+        Modifier.weight(1f).padding(start = 4.dp),
       )
-      TopBarButton(
-        LucideIcons.ChevronRight,
-        "Next component",
-        onClick = { sink(BikeEvent.ShowComponent(components[(index + 1) % count].id)) },
-      )
+      if (count > 1) {
+        TopBarActions(
+          listOf(
+            BarAction(LucideIcons.ChevronLeft, "Previous component") {
+              sink(BikeEvent.ShowComponent(components[(index + count - 1) % count].id))
+            },
+            BarAction(LucideIcons.ChevronRight, "Next component") {
+              sink(BikeEvent.ShowComponent(components[(index + 1) % count].id))
+            },
+          )
+        )
+      }
     }
   }
 }
@@ -480,6 +503,6 @@ private fun BlockRefresh(refresh: RefreshButton, onClick: () -> Unit) {
 }
 
 /** The bikes to switch between; just this one until the list has loaded. */
-private fun BikeUiState.Loaded.choices(): List<BikeChoice> = bikes.ifEmpty {
-  listOf(BikeChoice(bikeId, name, status.tone, status.meta.removePrefix("Seen ")))
+internal fun BikeUiState.Loaded.choices(): List<BikeChoice> = bikes.ifEmpty {
+  listOf(BikeChoice(bikeId, name, status.tone, status.meta.removePrefix("Seen "), status.summary))
 }

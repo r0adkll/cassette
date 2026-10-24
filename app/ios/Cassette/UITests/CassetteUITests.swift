@@ -26,7 +26,7 @@ final class CassetteUITests: XCTestCase {
     // Add bike: no Bluetooth on the Simulator.
     expect("Wake your bike.")
     shot("03-add-bike")
-    tap("Close")
+    button("Close").tap()
 
     // The empty bike screen, then Settings.
     expect("No bike yet.")
@@ -37,7 +37,7 @@ final class CassetteUITests: XCTestCase {
     tap("Notifications")
     expect("Notifications are off")
     shot("05-notifications")
-    tap("Back")
+    button("Back").tap()
 
     tap("Diagnostics")
     expect("scan (Core Bluetooth, FE51)")
@@ -47,9 +47,9 @@ final class CassetteUITests: XCTestCase {
     shot("06b-diagnostics-scrolled")
     tap("Load sample bike", scrolling: true)
     shot("07-sample-loaded")
-    tap("Back")
+    button("Back").tap()
     expect("Settings.")
-    tap("Back")
+    button("Back").tap()
 
     // The sample bike's screen (its title, which Diagnostics doesn't show).
     expect("Sample bike")
@@ -60,7 +60,30 @@ final class CassetteUITests: XCTestCase {
     shot("09-component")
     button("Back").tap()
 
+    switchBikes()
     demoRefreshLiveActivity()
+  }
+
+  /// Two more bikes, made up in Diagnostics, then the bikes sheet (decision 0026) from the bikes
+  /// pill, or from the vertical bar's Bikes on an iPhone Duo; both are labelled "3 bikes, …".
+  private func switchBikes() {
+    tap("Settings")
+    tap("Diagnostics")
+    expect("scan (Core Bluetooth, FE51)")
+    tap("Add a random bike", scrolling: true)
+    tap("Add a random bike")
+    button("Back").tap()
+    expect("Settings.")
+    button("Back").tap()
+
+    expect("Sample bike")
+    shot("10-bikes")
+    tap("3 bikes")
+    expect("Your bikes")
+    shot("11-bikes-sheet")
+    button("Close").tap()
+    XCTAssertTrue(
+      element("Your bikes").waitForNonExistence(timeout: 5), "The bikes sheet stayed open")
   }
 
   /// An iPad in landscape is a large window: the bike rail beside the dashboard (decision 0014).
@@ -76,7 +99,7 @@ final class CassetteUITests: XCTestCase {
     tap("Continue")
     expect("Wake your bike.")
     shot("t02-add-bike")
-    tap("Close")
+    button("Close").tap()
 
     // The wide empty screen, then Settings with Diagnostics in its pane.
     expect("No bike yet.")
@@ -174,6 +197,9 @@ final class CassetteUITests: XCTestCase {
         app.swipeUp()
         swipes += 1
       }
+      // A tap on a list that's still scrolling only stops it, and an iPhone Duo's list keeps
+      // scrolling, too slowly to see, for several seconds after a swipe.
+      sleep(10)
     }
     expect(text, file: file, line: line)
     target.tap()

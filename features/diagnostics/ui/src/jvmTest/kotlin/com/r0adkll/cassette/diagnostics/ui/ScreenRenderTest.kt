@@ -12,6 +12,7 @@ import com.r0adkll.cassette.capture.api.CaptureEvent
 import com.r0adkll.cassette.capture.api.WearAction
 import com.r0adkll.cassette.common.compose.AppPlatform
 import com.r0adkll.cassette.common.compose.LocalAppPlatform
+import com.r0adkll.cassette.common.compose.components.LocalInDetailPane
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.settings.api.CaptureHealth
 import com.r0adkll.cassette.surfaces.wear.sync.ConnectedWatch
@@ -50,23 +51,37 @@ class ScreenRenderTest {
       for ((name, panel) in wear) {
         val platform = if (name == "ios") AppPlatform.Ios else AppPlatform.Android
         render("diagnostics-$name-${if (dark) "dark" else "light"}", dark, platform) {
-          DiagnosticsUi(
-            DiagnosticsUiState(
-              health =
-                CaptureHealth("Armed (AllLowPower) · app start", 3.hours.ago, 5.minutes.ago, 42),
-              bluetoothReady = true,
-              bike = null,
-              now = now,
-              confirmRemove = false,
-              logEvents = 120,
-              sharing = false,
-              wear = panel,
-            ) {}
-          )
+          DiagnosticsUi(state(panel))
+        }
+      }
+      // In Settings' pane on a tablet (the window less the 320 dp list and its divider), laid out
+      // as the pane's categories are.
+      render(
+        "diagnostics-tablet-pane-${if (dark) "dark" else "light"}",
+        dark,
+        AppPlatform.Android,
+        width = 959,
+        height = 800,
+      ) {
+        CompositionLocalProvider(LocalInDetailPane provides true) {
+          DiagnosticsUi(state(wear.first().second, inPane = true))
         }
       }
     }
   }
+
+  private fun state(wear: WearDiagnostics, inPane: Boolean = false) =
+    DiagnosticsUiState(
+      health = CaptureHealth("Armed (AllLowPower) · app start", 3.hours.ago, 5.minutes.ago, 42),
+      bluetoothReady = true,
+      bike = null,
+      now = now,
+      confirmRemove = false,
+      logEvents = 120,
+      sharing = false,
+      wear = wear,
+      inPane = inPane,
+    ) {}
 
   private val kotlin.time.Duration.ago: Instant
     get() = now - this
@@ -78,10 +93,12 @@ class ScreenRenderTest {
     name: String,
     dark: Boolean,
     platform: AppPlatform,
+    width: Int = 412,
+    height: Int = 892,
     content: @Composable () -> Unit,
   ) {
     val scene =
-      ImageComposeScene(width = 412 * 2, height = 892 * 2, density = Density(2f)) {
+      ImageComposeScene(width = width * 2, height = height * 2, density = Density(2f)) {
         CassetteTheme(darkTheme = dark) {
           CompositionLocalProvider(LocalAppPlatform provides platform) {
             Box(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) { content() }

@@ -66,6 +66,13 @@ interface DeveloperTools {
   suspend fun loadSampleBike()
 
   /**
+   * Adds a made-up bike beside any others, for testing several: a random name and type, its
+   * components and their levels (some low or critical), and a month of history. Like the sample, no
+   * real hub or component can match it.
+   */
+  suspend fun addRandomBike()
+
+  /**
    * Records a low reading (7.40 V, reported low) for the bike's front derailleur, or its first
    * component, to exercise alerts without hardware. Returns false if the bike has no components.
    */

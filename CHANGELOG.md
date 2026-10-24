@@ -7,9 +7,39 @@ All notable changes to Cassette are documented here. The format follows
 
 ### Added
 
+- Diagnostics → Developer → Add a random bike adds a made-up bike beside the sample, with random
+  parts and levels (some low), for trying the app with several bikes.
+- With two bikes or more, a phone switches bikes from a pill at the top of the bike screen: how many
+  bikes there are and how many others need charging ("3 BIKES · 1 LOW"). It opens a sheet listing
+  every bike with its status and when it was seen, and why one needs charging. It replaces the
+  "1 OF 2" beside the bike's name, which couldn't be tapped.
+- [iOS] On iPhone Duo, the bikes are the vertical bar's first button, with a badge counting those
+  that need charging.
+
 ### Changed
 
+- On an open foldable or a tablet held upright, the bike chips stay in the top bar with Add bike and
+  Settings when the bike screen scrolls.
+- [iOS] The bike chips are Liquid Glass, the selected bike's smoked.
+- [iOS] On iPhone Duo, every screen's top-bar buttons are in the vertical bar under the status bar,
+  as iOS places them there: Back or Close at the top, then actions such as Add bike and Settings.
+  The component sheet's Close, Previous and Next go there too.
+- [iOS] On iPhone Duo standing half open, the bike screen splits at the fold as on a half-open
+  Android foldable: the readings above, Refresh below.
+- A short window too narrow to split in two (a small phone on its side, or a passport-shaped
+  foldable's outer screen on its side, such as iPhone Duo closed) keeps the phone's screens, with
+  room for their labels again; the bike screen shows the dashboard, with Refresh beside the status
+  and the components as tiles.
+- [iOS] Every iPad held sideways lists the bikes on the left, not only the 13-inch.
+- On an open foldable or a tablet, every Add bike step splits in two as waking the bike does, instead
+  of a phone's column for naming it, the power meter and keeping it fresh.
+
 ### Fixed
+
+- On an open foldable or a tablet, Diagnostics in Settings lines up with the other categories.
+
+- [iOS] On an open foldable or an iPad held upright, the bike screen's Add bike and Settings buttons
+  no longer show over an open component.
 
 ## [1.0.0] - 2026-10-21
 

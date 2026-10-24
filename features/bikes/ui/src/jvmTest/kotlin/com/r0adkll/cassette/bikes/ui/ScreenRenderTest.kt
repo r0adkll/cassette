@@ -21,6 +21,7 @@ import com.r0adkll.cassette.bikes.ui.add.AddBikeUiState
 import com.r0adkll.cassette.bikes.ui.add.FoundRow
 import com.r0adkll.cassette.bikes.ui.add.MeterRow
 import com.r0adkll.cassette.bikes.ui.add.WakeAndFound
+import com.r0adkll.cassette.bikes.ui.add.WideAddBike
 import com.r0adkll.cassette.bikes.ui.component.ComponentDetailModel
 import com.r0adkll.cassette.bikes.ui.component.ComponentUi
 import com.r0adkll.cassette.bikes.ui.component.ComponentUiState
@@ -28,6 +29,7 @@ import com.r0adkll.cassette.bikes.ui.component.HistoryRange
 import com.r0adkll.cassette.bikes.ui.picker.BikeOption
 import com.r0adkll.cassette.bikes.ui.picker.BikePicker
 import com.r0adkll.cassette.common.compose.LocalScreenLayout
+import com.r0adkll.cassette.common.compose.SizeClasses
 import com.r0adkll.cassette.common.compose.currentScreenLayout
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.compose.theme.StatusTone
@@ -92,6 +94,16 @@ class ScreenRenderTest {
           WakeAndFound(AddBikeUiState(step) {}, hinge = hinge)
         }
       }
+      // The steps after them split alike, at the hinge and down the middle of a tablet.
+      for ((name, step) in steps.drop(2)) {
+        val theme = if (dark) "dark" else "light"
+        render("add-bike-fold-$name-$theme", dark, fold) {
+          WideAddBike(AddBikeUiState(step) {}, hinge = hinge)
+        }
+        render("add-bike-tablet-$name-$theme", dark, RenderSize.Tablet) {
+          AddBikeUi(AddBikeUiState(step) {})
+        }
+      }
     }
   }
 
@@ -149,24 +161,47 @@ class ScreenRenderTest {
         }
       }
     }
+    // An 11-inch iPad on its side: expanded by Material's size classes, large by iOS's, so the rail
+    // (decision 0025).
+    for (dark in listOf(true, false)) {
+      val suffix = "ipad-landscape-${if (dark) "dark" else "light"}"
+      val ipad = RenderSize.IpadLandscape
+      render("bike-$suffix", dark, ipad, classes = SizeClasses.Apple) { BikeUi(bike) }
+      render("bike-sheet-$suffix", dark, ipad, classes = SizeClasses.Apple) {
+        BikeDashboard(
+          bike.copy(sheet = 1),
+          rail = true,
+          sheetContent = { ComponentUi(ComponentUiState(sampleComponent, inSheet = true) {}) },
+        )
+      }
+    }
   }
 
   /**
-   * A phone on its side (decision 0014): compact height keeps the phone layouts, which have to
-   * scroll and stay readable in a short, wide window.
+   * A phone on its side (decision 0021): two panes. And a short window too narrow for them, the
+   * closed iPhone Duo on its side (decision 0024): the phone's column, the dashboard for the bike.
    */
   @Test
   fun phoneLandscape() {
-    val size = RenderSize.PhoneLandscape
+    for ((prefix, size) in
+      listOf(
+        "landscape" to RenderSize.PhoneLandscape,
+        "passport-landscape" to RenderSize.PassportLandscape,
+      )) {
+      phoneLandscape(prefix, size)
+    }
+  }
+
+  private fun phoneLandscape(prefix: String, size: RenderSize) {
     val rows = sampleRows.take(4).map { FoundRow(it.code, it.name, it.source, it.value, it.tone) }
     for (dark in listOf(true, false)) {
       val theme = if (dark) "dark" else "light"
-      render("landscape-bike-$theme", dark, size) { BikeUi(sampleBike) }
-      render("landscape-bike-tip-$theme", dark, size) {
+      render("$prefix-bike-$theme", dark, size) { BikeUi(sampleBike) }
+      render("$prefix-bike-tip-$theme", dark, size) {
         BikeUi(sampleBike.copy(tip = Tip.entries.first()))
       }
-      render("landscape-bike-empty-$theme", dark, size) { BikeUi(BikeUiState.Empty {}) }
-      render("landscape-component-$theme", dark, size) {
+      render("$prefix-bike-empty-$theme", dark, size) { BikeUi(BikeUiState.Empty {}) }
+      render("$prefix-component-$theme", dark, size) {
         ComponentUi(ComponentUiState(sampleComponent) {})
       }
       val steps =
@@ -183,7 +218,7 @@ class ScreenRenderTest {
           "5-fresh" to AddBikeStep.KeepFresh(bluetoothReady = true, saving = false),
         )
       for ((name, step) in steps) {
-        render("landscape-add-bike-$name-$theme", dark, size) { AddBikeUi(AddBikeUiState(step) {}) }
+        render("$prefix-add-bike-$name-$theme", dark, size) { AddBikeUi(AddBikeUiState(step) {}) }
       }
     }
   }
@@ -212,7 +247,6 @@ class ScreenRenderTest {
       BikeUiState.Loaded(
         bikeId = 1,
         name = "Road bike",
-        position = null,
         status =
           BikeStatus(
             StatusTone.Good,
@@ -261,7 +295,6 @@ class ScreenRenderTest {
       BikeUiState.Loaded(
         bikeId = 1,
         name = "Road bike",
-        position = null,
         status =
           BikeStatus(
             StatusTone.Good,
@@ -372,7 +405,6 @@ class ScreenRenderTest {
             BikeUiState.Loaded(
               bikeId = 1,
               name = "Road bike",
-              position = null,
               status =
                 BikeStatus(
                   StatusTone.Low,
@@ -412,7 +444,6 @@ class ScreenRenderTest {
             BikeUiState.Loaded(
               bikeId = 1,
               name = "Road bike",
-              position = null,
               status =
                 BikeStatus(
                   StatusTone.Good,
@@ -424,6 +455,55 @@ class ScreenRenderTest {
               components = rows,
             ) {}
           )
+        }
+      }
+    }
+  }
+
+  /**
+   * Switching bikes on a phone (decision 0026): the bikes pill in the top bar, saying when another
+   * bike needs charging, and the bikes sheet it opens, upright and on its side.
+   */
+  @Test
+  fun bikeSwitcher() {
+    val bikes =
+      listOf(
+        BikeChoice(1, "Road bike", StatusTone.Good, "2 min ago", "Lowest: rear derailleur, 78%."),
+        BikeChoice(
+          2,
+          "Gravel bike",
+          StatusTone.Low,
+          "3 days ago",
+          "Front derailleur at 18%, about 5 days left (est.)",
+        ),
+        BikeChoice(3, "Commuter", StatusTone.Good, "Yesterday", "Lowest: right shifter, 2.89 V."),
+      )
+    val low = sampleBike.copy(bikes = bikes)
+    val critical =
+      sampleBike.copy(
+        bikes =
+          bikes.map {
+            if (it.id == 2L) it.copy(tone = StatusTone.Critical, summary = "Rear derailleur at 4%.")
+            else it
+          }
+      )
+    val good = sampleBike.copy(bikes = bikes.map { it.copy(tone = StatusTone.Good) })
+    for (dark in listOf(true, false)) {
+      val theme = if (dark) "dark" else "light"
+      render("bike-bikes-pill-$theme", dark) { BikeUi(low) }
+      render("bike-bikes-pill-critical-$theme", dark) { BikeUi(critical) }
+      render("bike-bikes-pill-good-$theme", dark) { BikeUi(good) }
+      // Too narrow for CHARGE NOW beside the buttons: the icon and number stay.
+      render("bike-bikes-pill-critical-small-$theme", dark, RenderSize.SmallPhone) {
+        BikeUi(critical)
+      }
+      for ((prefix, size) in
+        listOf("bike" to RenderSize.Phone, "landscape-bike" to RenderSize.PhoneLandscape)) {
+        render("$prefix-bikes-sheet-$theme", dark, size) {
+          Box(Modifier.fillMaxSize()) {
+            BikeUi(low)
+            BikesSheet(low, open = true, onClose = {})
+          }
         }
       }
     }
@@ -449,13 +529,14 @@ class ScreenRenderTest {
     dark: Boolean,
     size: RenderSize = RenderSize.Phone,
     atMillis: Long = 100,
+    classes: SizeClasses = SizeClasses.Material,
     content: @Composable () -> Unit,
   ) {
     val scene =
       ImageComposeScene(width = size.width * 2, height = size.height * 2, density = Density(2f)) {
         CassetteTheme(darkTheme = dark) {
           // The scene is the window, so its size class picks the layout as on a device.
-          CompositionLocalProvider(LocalScreenLayout provides currentScreenLayout()) {
+          CompositionLocalProvider(LocalScreenLayout provides currentScreenLayout(classes)) {
             Box(Modifier.fillMaxSize().background(CassetteTheme.colors.background)) { content() }
           }
         }
@@ -474,12 +555,22 @@ class ScreenRenderTest {
    */
   private enum class RenderSize(val width: Int, val height: Int) {
     Phone(412, 892),
+    /** A small phone, 360 dp wide (many Android phones at their default display size). */
+    SmallPhone(360, 780),
     Fold(852, 883),
     Tablet(1280, 800),
     /** The open fold turned so its hinge runs across, standing half open. */
     Tabletop(883, 852),
     /** A phone on its side: compact height, so still the phone layouts. */
     PhoneLandscape(892, 412),
+    /**
+     * A passport-shaped fold's outer screen on its side: the iPhone Duo closed, 678 × 466 pt.
+     * Compact height but only medium width, too narrow to split: the phone's column, and the
+     * dashboard for the bike (decision 0024).
+     */
+    PassportLandscape(678, 466),
+    /** An 11-inch iPad on its side, 1180 × 820 pt: rendered with iOS's size classes. */
+    IpadLandscape(1180, 820),
   }
 
   private val sampleBike
@@ -487,7 +578,6 @@ class ScreenRenderTest {
       BikeUiState.Loaded(
         bikeId = 1,
         name = "Road bike",
-        position = "1 OF 2",
         status =
           BikeStatus(
             StatusTone.Good,

@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -31,6 +29,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -53,15 +52,19 @@ import com.r0adkll.cassette.common.compose.ScreenLayout
 import com.r0adkll.cassette.common.compose.UpdateStatus
 import com.r0adkll.cassette.common.compose.components.CategoryItem
 import com.r0adkll.cassette.common.compose.components.Chevron
+import com.r0adkll.cassette.common.compose.components.DetailPaneGutter
+import com.r0adkll.cassette.common.compose.components.DetailPaneTitle
+import com.r0adkll.cassette.common.compose.components.DetailPaneWidth
 import com.r0adkll.cassette.common.compose.components.FloatingTopBar
 import com.r0adkll.cassette.common.compose.components.Kicker
+import com.r0adkll.cassette.common.compose.components.LocalInDetailPane
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.SettingsRow
 import com.r0adkll.cassette.common.compose.components.SettingsSection
 import com.r0adkll.cassette.common.compose.components.SettingsSwitchRow
 import com.r0adkll.cassette.common.compose.components.SplitPanes
-import com.r0adkll.cassette.common.compose.components.TopBarButton
-import com.r0adkll.cassette.common.compose.components.TopBarButtonSize
+import com.r0adkll.cassette.common.compose.components.TopBarNavigation
+import com.r0adkll.cassette.common.compose.components.TopBarSpacer
 import com.r0adkll.cassette.common.compose.components.WaitingDot
 import com.r0adkll.cassette.common.compose.endPane
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
@@ -194,7 +197,7 @@ internal fun TitledPanes(
 @Composable
 private fun TitleBlock(title: String, kicker: String?, modifier: Modifier = Modifier) {
   Column(modifier, verticalArrangement = Arrangement.spacedBy(14.dp)) {
-    Spacer(Modifier.height(TopBarButtonSize))
+    TopBarSpacer()
     if (kicker != null) Kicker(kicker)
     Text(title, style = CassetteTheme.type.title, color = CassetteTheme.colors.text)
   }
@@ -207,7 +210,7 @@ private fun BackBar(onBack: () -> Unit) {
       .safeDrawingPadding()
       .padding(horizontal = 20.dp, vertical = 24.dp)
   ) {
-    TopBarButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
+    TopBarNavigation(LucideIcons.ArrowLeft, "Back", onClick = onBack)
   }
 }
 
@@ -294,7 +297,7 @@ internal fun WideSettings(
           .padding(horizontal = 16.dp, vertical = 24.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
       ) {
-        Spacer(Modifier.height(TopBarButtonSize))
+        TopBarSpacer()
         Text(
           "Settings.",
           style = CassetteTheme.type.title,
@@ -317,37 +320,26 @@ internal fun WideSettings(
       FloatingTopBar(
         Modifier.safeDrawingPadding().width(320.dp).padding(start = 20.dp, top = 24.dp)
       ) {
-        TopBarButton(LucideIcons.ArrowLeft, "Back", onClick = { sink(SettingsEvent.Back) })
+        TopBarNavigation(LucideIcons.ArrowLeft, "Back", onClick = { sink(SettingsEvent.Back) })
       }
     }
     Box(Modifier.width(1.dp).fillMaxHeight().background(colors.line))
     Box(Modifier.weight(1f).fillMaxHeight().endPane()) {
       if (selected == SettingsCategory.Diagnostics) {
-        diagnostics()
+        // Its screens lay out as the categories do here.
+        CompositionLocalProvider(LocalInDetailPane provides true) { diagnostics() }
       } else {
-        // Capped so rows don't stretch across a tablet; the pane's spare width stays on the right.
+        // The pane's spare width stays on the right.
         Column(
-          Modifier.widthIn(max = 640.dp)
+          Modifier.widthIn(max = DetailPaneWidth)
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .safeDrawingPadding()
-            .padding(horizontal = 32.dp, vertical = 24.dp),
+            .padding(horizontal = DetailPaneGutter, vertical = 24.dp),
           verticalArrangement = Arrangement.spacedBy(14.dp),
         ) {
-          if (LocalScreenLayout.current == ScreenLayout.Landscape) {
-            // Short on height (decision 0021): level with the list's back button, not its title.
-            Box(
-              Modifier.heightIn(min = TopBarButtonSize),
-              contentAlignment = Alignment.CenterStart,
-            ) {
-              Text(selected.title(), style = CassetteTheme.type.title, color = colors.text)
-            }
-          } else {
-            // Lines the title up with the list's, which sits under its back button.
-            Spacer(Modifier.height(TopBarButtonSize))
-            Text(selected.title(), style = CassetteTheme.type.title, color = colors.text)
-          }
-          CategoryBody(selected, state, wide = true, gutter = 32.dp)
+          DetailPaneTitle(selected.title())
+          CategoryBody(selected, state, wide = true, gutter = DetailPaneGutter)
         }
       }
     }
