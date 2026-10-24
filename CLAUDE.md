@@ -75,6 +75,8 @@ ported. Don't build new features on the POC.
   fooled us ("Back" matched "background", "Front derailleur" matched Diagnostics text). Screenshots
   use `XCUIScreen.main` (the app's own capture is offset in landscape).
   `./gradlew :app:ios:linkDebugFrameworkIosSimulatorArm64` checks the Kotlin half (and its Metro graph).
+  CI builds with Xcode 26: Swift calls to APIs newer than its SDK (the iPhone Duo's, iOS 27.1) go
+  behind `#if compiler(>=6.4)` as well as `#available`, or CI's iOS app job fails to compile.
   Each target has a `PrivacyInfo.xcprivacy`; after adding a dependency or a file, defaults or clock
   API, `scripts/ios-privacy-scan` lists the required-reason APIs each Release binary uses.
 - Android on an emulator: `ANDROID_SERIAL=<serial> scripts/android-walk "Get started" "=Back" shot:bike`
@@ -117,7 +119,11 @@ ported. Don't build new features on the POC.
 - **Top bars float:** a screen's back, close, settings and add-bike buttons go in a `FloatingTopBar` of
   `TopBarButton`s laid over its scroll column; the column keeps `TopBarButtonSize` free at the top (text
   beside the buttons stays there and scrolls), and the bar pads by the system bars as the column does
-  (decision 0017). `TopBarButton` is glass on iOS, the solid circle on Android.
+  (decision 0017). `TopBarButton` is glass on iOS, the solid circle on Android. Screens don't call
+  it directly: back and close go through `TopBarNavigation`, and actions (settings, add bike)
+  through `TopBarActions`, which put them in the iPhone Duo's vertical bar there (Swift's
+  `VerticalBarHost`) and float them as `TopBarButton`s everywhere else. A column whose bar holds
+  only back or close keeps its room with `TopBarSpacer`, which gives it up on the Duo.
 - **iOS differences:** wording and rows that differ go through `LocalAppPlatform`; add an iOS render to
   the screen's `jvmTest` so iOS text is checked without a Simulator. Native UIKit views laid over Compose
   (`UIKitView`, `placedAsOverlay`) get no touches in CMP 1.12, so Compose owns the tap, and they ignore
@@ -140,17 +146,23 @@ ported. Don't build new features on the POC.
 
 ## Every screen, every size
 
-Decisions 0014, 0016, 0021 and 0022. A screen isn't done until it works as a phone column, a phone on its
-side, an open foldable and a tablet; "it caps at phone width and centres" is not support.
+Decisions 0014, 0016, 0021, 0022, 0024 and 0025. A screen isn't done until it works as a phone column,
+a phone on its side, an open foldable and a tablet; "it caps at phone width and centres" is not support.
 
 - **Layouts follow the window, not the device:** read `LocalScreenLayout` (`Column`, `Landscape`,
-  `Dashboard`, `DashboardWithRail`), which comes from Material's window size classes. Never branch on
-  our own dp figures, the device or the orientation. Split screen (compact both ways) is a `Column`.
+  `Dashboard`, `DashboardWithRail`), which comes from the window's size class: Material's on Android,
+  and on iOS a set of its own (`SizeClasses.Apple`: large from 1100 pt, so every iPad on its side
+  gets the rail; 0025). Size-class breakpoints live in `SizeClasses` only; never branch on our own
+  dp figures, the device or the orientation. Split screen (compact both ways) is a `Column`,
+  and so is a short window of medium width, too narrow to split (`isShortMediumWindow()`: a small
+  phone or the closed iPhone Duo on its side), where the bike screen takes the dashboard (0024).
 - **Wider than a phone, split in two** with `SplitPanes`: what the screen says and its one action on the
   left, what it lists on the right; each pane scrolls on its own. It splits at an open fold's hinge, so
   nothing sits on the fold, and gets a divider on a phone on its side. Pane content keeps the phone's
   width (480 dp) against the split, so a tablet reads as one page. Titled screens in Settings use
-  `TitledScreen` / `TitledLazyScreen` on a phone and `TitledPanes` wider; follow them elsewhere.
+  `TitledScreen` / `TitledLazyScreen` on a phone and `TitledPanes` wider; follow them elsewhere. A
+  screen that can show in a list's detail pane (Diagnostics in Settings') follows `LocalInDetailPane`:
+  `DetailPaneWidth` from the pane's start, `DetailPaneGutter`, `DetailPaneTitle`.
 - **Insets per pane:** each pane pads only by its own side's bars (`startPane()` / `endPane()`, which
   `SplitPanes` applies). Modifier insets (`safeDrawingPadding`) respect that; `WindowInsets…asPaddingValues()`
   doesn't, so a `LazyColumn` in a pane pads its sides with `windowInsetsPadding` and only its top and
@@ -161,8 +173,9 @@ side, an open foldable and a tablet; "it caps at phone width and centres" is not
 - **Long lists are lazy:** a list that can run past a screen or two (libraries, history, tables) is a
   `LazyColumn`; `PanelItem` keeps one panel's look across its items.
 - **Check every size before calling UI done:** the screen's `jvmTest` renders each `RenderSize`
-  (phone, `Fold` 852 × 883, `Tablet` 1280 × 800, `PhoneLandscape` 892 × 412), light and dark; look at
-  them. On an emulator, rotate with `adb shell settings put system accelerometer_rotation 0` and
+  (phone, `Fold` 852 × 883, `Tablet` 1280 × 800, `PhoneLandscape` 892 × 412, and `PassportLandscape`
+  678 × 466 and `IpadLandscape` 1180 × 820, rendered with `SizeClasses.Apple`, where the module has
+  them), light and dark; look at them. On an emulator, rotate with `adb shell settings put system accelerometer_rotation 0` and
   `adb shell settings put system user_rotation 1` (`0` to go back).
 - **New layouts are designed first** (decision 0006): mockups at those sizes with real data, approved,
   then built. Applying an existing pattern (the split above) to a new screen needs no new round.

@@ -79,6 +79,9 @@ sealed interface DiagnosticsEvent : CircuitUiEvent {
 
   data object LoadSampleBike : DiagnosticsEvent
 
+  /** Adds another, made-up bike, for testing several. */
+  data object AddRandomBike : DiagnosticsEvent
+
   /** Reloads the sample bike and runs a refresh in which it answers, without Bluetooth. */
   data object DemoRefresh : DiagnosticsEvent
 
@@ -164,6 +167,11 @@ class DiagnosticsPresenter(
           scope.launch {
             developerTools.loadSampleBike()
             capture.ensureBackgroundCapture("sample bike loaded")
+          }
+        DiagnosticsEvent.AddRandomBike ->
+          scope.launch {
+            developerTools.addRandomBike()
+            capture.ensureBackgroundCapture("random bike added")
           }
         DiagnosticsEvent.DemoRefresh ->
           scope.launch {

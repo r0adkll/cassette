@@ -19,9 +19,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.r0adkll.cassette.common.compose.components.DetailPaneGutter
+import com.r0adkll.cassette.common.compose.components.DetailPaneTitle
+import com.r0adkll.cassette.common.compose.components.DetailPaneWidth
 import com.r0adkll.cassette.common.compose.components.FloatingTopBar
-import com.r0adkll.cassette.common.compose.components.TopBarButton
+import com.r0adkll.cassette.common.compose.components.LocalInDetailPane
 import com.r0adkll.cassette.common.compose.components.TopBarButtonSize
+import com.r0adkll.cassette.common.compose.components.TopBarNavigation
+import com.r0adkll.cassette.common.compose.components.TopBarSpacer
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.protocol.ComponentKind
@@ -30,39 +35,50 @@ import kotlin.time.Duration.Companion.minutes
 
 /**
  * A diagnostics screen: back button and [action] in a row, then the title. A null [onBack] (the
- * screen's root inside Settings' pane) leaves the row out, with its [action].
+ * screen's root inside Settings' pane) leaves the row out, with its [action]. In Settings' pane
+ * ([LocalInDetailPane]) it lays out as the pane's categories do, from the pane's start.
  */
 @Composable
 internal fun DiagnosticsScaffold(
   title: String,
   onBack: (() -> Unit)?,
   modifier: Modifier = Modifier,
-  action: @Composable () -> Unit = {},
+  action: (@Composable () -> Unit)? = null,
   content: @Composable ColumnScope.() -> Unit,
 ) {
+  val inPane = LocalInDetailPane.current
+  val width = if (inPane) DetailPaneWidth else 480.dp
+  val padding =
+    Modifier.safeDrawingPadding()
+      .padding(horizontal = if (inPane) DetailPaneGutter else 20.dp, vertical = 24.dp)
   // The back row floats while the content scrolls under it (iteration 14; glass on iOS).
-  Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+  Box(
+    modifier.fillMaxSize(),
+    contentAlignment = if (inPane) Alignment.TopStart else Alignment.TopCenter,
+  ) {
     Column(
-      Modifier.widthIn(max = 480.dp)
+      Modifier.widthIn(max = width)
         .fillMaxWidth()
         .verticalScroll(rememberScrollState())
-        .safeDrawingPadding()
-        .padding(horizontal = 20.dp, vertical = 24.dp),
+        .then(padding),
       verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-      if (onBack != null) Spacer(Modifier.height(TopBarButtonSize))
-      Text(title, style = CassetteTheme.type.title, color = CassetteTheme.colors.text)
+      when {
+        // An action keeps the row where the system's bar takes Back.
+        onBack != null -> {
+          if (action != null) Spacer(Modifier.height(TopBarButtonSize)) else TopBarSpacer()
+          Text(title, style = CassetteTheme.type.title, color = CassetteTheme.colors.text)
+        }
+        inPane -> DetailPaneTitle(title)
+        else -> Text(title, style = CassetteTheme.type.title, color = CassetteTheme.colors.text)
+      }
       content()
     }
     if (onBack != null)
-      FloatingTopBar(
-        Modifier.widthIn(max = 480.dp)
-          .safeDrawingPadding()
-          .padding(horizontal = 20.dp, vertical = 24.dp)
-      ) {
-        TopBarButton(LucideIcons.ArrowLeft, "Back", onClick = onBack)
+      FloatingTopBar(Modifier.widthIn(max = width).then(padding)) {
+        TopBarNavigation(LucideIcons.ArrowLeft, "Back", onClick = onBack)
         Spacer(Modifier.weight(1f))
-        action()
+        action?.invoke()
       }
   }
 }

@@ -94,6 +94,12 @@ fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
         onClick = { sink(DiagnosticsEvent.LoadSampleBike) },
       )
       SettingsRow(
+        "Add a random bike",
+        subtitle = "Made up, with random levels and some low: for testing several bikes",
+        icon = LucideIcons.BikePlus,
+        onClick = { sink(DiagnosticsEvent.AddRandomBike) },
+      )
+      SettingsRow(
         "Demo refresh",
         subtitle =
           "The sample bike answers over 30 s, no Bluetooth needed: shows the Live Activity",

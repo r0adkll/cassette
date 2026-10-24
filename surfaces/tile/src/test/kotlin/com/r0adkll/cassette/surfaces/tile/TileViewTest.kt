@@ -20,7 +20,6 @@ class TileViewTest {
     BikeUiState.Loaded(
       1,
       "Road bike",
-      "1 OF 1",
       BikeStatus(tone, headline, "summary", meta),
       rows.toList(),
     ) {}

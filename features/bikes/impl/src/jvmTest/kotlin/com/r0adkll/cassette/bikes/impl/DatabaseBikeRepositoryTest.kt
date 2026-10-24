@@ -12,6 +12,7 @@ import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -72,6 +73,32 @@ class DatabaseBikeRepositoryTest {
       assertNull(awaitItem())
       cancelAndIgnoreRemainingEvents()
     }
+  }
+
+  @Test
+  fun randomBikesAddUpBesideTheSample() = runTest {
+    val dispatcher = StandardTestDispatcher(testScheduler)
+    val dispatchers = CassetteDispatchers(dispatcher, dispatcher, dispatcher)
+    val tools = DatabaseDeveloperTools(db, dispatchers, clock)
+    tools.loadSampleBike()
+    tools.addRandomBike()
+    tools.addRandomBike()
+    // Reloading the sample replaces only the sample.
+    tools.loadSampleBike()
+
+    val bikes = db.bikeQueries.selectAll().executeAsList()
+    assertEquals(3, bikes.size)
+    assertEquals(3, bikes.map { it.name }.toSet().size)
+    assertEquals(3, bikes.map { it.hub_serial }.toSet().size)
+    // No real hub has a negative serial, so capture can't match one.
+    assertTrue(bikes.all { it.hub_serial!! < 0 })
+    bikes
+      .filter { it.name != "Sample bike" }
+      .forEach { bike ->
+        val components = db.componentQueries.selectForBike(bike.id).executeAsList()
+        assertTrue(components.any { it.kind == ComponentKind.REAR_DERAILLEUR.name })
+        assertTrue(components.all { it.key.startsWith("sample:") })
+      }
   }
 
   @Test

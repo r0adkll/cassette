@@ -29,7 +29,8 @@ Phones in landscape are wide but too short for the dashboard; they split in two 
 The rail waits for large width rather than starting at expanded. The first build guessed the Fold at
 790 dp and drew the line at expanded; the open Fold is in fact expanded width, so it got the tablet
 layout, and the 240 dp rail left its dashboard too little room. The iPhone foldable (rumoured 4:3, about
-iPad mini size) gets whichever class its window is; M3 checks it.
+iPad mini size) gets whichever class its window is; M3 checks it. On iOS, large starts lower, so every
+iPad in landscape gets the rail ([0025](0025-ios-size-classes.md)).
 
 ## Bike screen: dashboard (iteration 10, C)
 
@@ -37,7 +38,8 @@ iPad mini size) gets whichever class its window is; M3 checks it.
   the component to charge next gets a wide tile with its 30-day trend, the rest share a two-column grid
   (three with the rail) with a small trend line each.
 - On large windows a rail lists the bikes (name, status icon and word, when seen), with Add bike and,
-  at its foot, Settings. Otherwise the bikes are chips in the top bar. Both replace the bike switcher.
+  at its foot, Settings. Otherwise the bikes are chips in the top bar. Both replace the bike switcher; a phone
+  has the bikes pill and its sheet (decision 0026).
 - Rejected: A · wide column (wastes the screen, runs across the hinge) and B · list–detail as the main
   layout.
 
@@ -58,7 +60,8 @@ history chart and the link to raw data.
 
 When the Fold is half open with the hinge horizontal (tabletop) on the bike screen, the screen splits at
 the hinge: readings on the top half, the scan on the bottom half. The posture and the hinge's position
-come from the same adaptive library (`windowPosture`: `isTabletop` and the hinge list).
+come from the same adaptive library (`windowPosture`: `isTabletop` and the hinge list). On iOS, where
+that library sees no hinge, the iPhone Duo reports its own fold (2026-10-23, decision 0017).
 
 - **Top:** the status block, then one tall column per component filled to its level. During a scan,
   components not heard from yet are grey and marked waiting; each one rises into colour as it answers.
@@ -88,7 +91,11 @@ come from the same adaptive library (`windowPosture`: `isTabletop` and the hinge
   half (10b).
 - **Add bike:** waking and found are one screen when wide: the listening pulse and timer on the left, the
   components appearing on the right as they answer (iteration 10). Name, power meter and keep-fresh
-  stay one column.
+  stayed one column until 2026-10-23: capped at the phone's width on an iPad, they read as a
+  squeezed phone with its button at the foot of a tall window. They now split as waking and found
+  do: the header, title and what to do on the left; on the right, in the panel colour, a heading
+  level with the close button ("Name", "Nearby · 2", "Permission"), the step's content and its
+  buttons at the foot (`WideAddBike`).
 - Both split with `SplitPanes`: at the open Fold's hinge (the posture's vertical hinge, which it
   reports even when flat), so nothing sits on the fold, or down the middle on a tablet. Built in M2.5
   step 6; the welcome keeps the phone's wording for the three points.
@@ -98,7 +105,9 @@ come from the same adaptive library (`windowPosture`: `isTabletop` and the hinge
   covers; wide windows show the list and the open category side by side, and with the rail Settings
   opens beside the bike rail. Rows keep the approved anatomy: icon, title, subtitle, switches in the text
   colour. Diagnostics' tools open in the category's pane. Rejected: S1 (the approved list with a detail
-  pane) and S2 (two columns).
+  pane) and S2 (two columns). The pane's content runs at most 640 dp from its start with a 32 dp
+  gutter, its title level with the list's; Diagnostics and its tools there do the same
+  (`LocalInDetailPane`, 2026-10-23: they had kept their phone column, narrower, centred and higher).
 - **Bikes (iteration 13, B2 · garage):** an "Open the last bike seen" switch (off pins the most recent
   bike; it is the same setting as the default bike), then a card per bike: name, type and when seen, a
   chip per component with its status dot, the bike's status, and OPENS FIRST on the pinned bike. Cards

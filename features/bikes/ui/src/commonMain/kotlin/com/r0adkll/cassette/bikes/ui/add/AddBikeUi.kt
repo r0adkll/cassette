@@ -54,7 +54,7 @@ import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.ScrollColumn
 import com.r0adkll.cassette.common.compose.components.SplitPanes
 import com.r0adkll.cassette.common.compose.components.StatusLabel
-import com.r0adkll.cassette.common.compose.components.TopBarButton
+import com.r0adkll.cassette.common.compose.components.TopBarNavigation
 import com.r0adkll.cassette.common.compose.components.pulses
 import com.r0adkll.cassette.common.compose.components.rememberPulses
 import com.r0adkll.cassette.common.compose.currentVerticalHinge
@@ -74,12 +74,10 @@ fun AddBikeUi(state: AddBikeUiState, modifier: Modifier = Modifier) {
     LandscapeAddBike(state, modifier)
     return
   }
-  // Wide windows put waking and found on one screen (decision 0014).
-  if (
-    LocalScreenLayout.current != ScreenLayout.Column &&
-      (step is AddBikeStep.Wake || step is AddBikeStep.Found)
-  ) {
-    WakeAndFound(state, modifier)
+  // Wide windows put waking and found on one screen (decision 0014), and split the rest alike.
+  if (LocalScreenLayout.current != ScreenLayout.Column) {
+    if (step is AddBikeStep.Wake || step is AddBikeStep.Found) WakeAndFound(state, modifier)
+    else WideAddBike(state, modifier)
     return
   }
   Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
@@ -180,7 +178,7 @@ private fun Header(step: Int, onClose: () -> Unit) {
   val colors = CassetteTheme.colors
   Row(verticalAlignment = Alignment.CenterVertically) {
     // Already outside the scrolling steps; glass on iOS (iteration 14).
-    TopBarButton(LucideIcons.X, "Close", onClick = onClose)
+    TopBarNavigation(LucideIcons.X, "Close", onClick = onClose)
     Spacer(Modifier.weight(1f))
     Kicker("Step $step of $ADD_BIKE_STEPS")
   }
@@ -341,10 +339,15 @@ private fun Found(step: AddBikeStep.Found) {
 }
 
 @Composable
-private fun Name(step: AddBikeStep.Name, sink: (AddBikeEvent) -> Unit) {
+private fun Name(
+  step: AddBikeStep.Name,
+  sink: (AddBikeEvent) -> Unit,
+  /** False where a heading over the step already says "Name" (wide windows). */
+  labelled: Boolean = true,
+) {
   val colors = CassetteTheme.colors
   val type = CassetteTheme.type
-  Kicker("Name")
+  if (labelled) Kicker("Name")
   BasicTextField(
     value = step.name,
     onValueChange = { sink(AddBikeEvent.NameChanged(it)) },
@@ -655,6 +658,69 @@ internal fun WakeAndFound(
           found == null -> CassetteButton("Waiting for the bike…", onClick = {}, primary = false)
           else -> Footer(found, sink, foundLabel = "This is my bike")
         }
+      }
+    },
+    modifier = modifier.fillMaxSize(),
+    hinge = hinge,
+  )
+}
+
+/**
+ * Naming, the power meter and keeping fresh on wide windows, laid out as [WakeAndFound]: the
+ * header, title and what to do on the left; what the step asks for on the right, in the panel
+ * colour, with its buttons at the foot where waking and found have theirs. Split at the hinge.
+ */
+@Composable
+internal fun WideAddBike(
+  state: AddBikeUiState,
+  modifier: Modifier = Modifier,
+  hinge: Rect? = currentVerticalHinge(),
+) {
+  val colors = CassetteTheme.colors
+  val sink = state.eventSink
+  val step = state.step
+  SplitPanes(
+    start = {
+      Column(
+        Modifier.fillMaxSize()
+          .verticalScroll(rememberScrollState())
+          .safeDrawingPadding()
+          .padding(start = 28.dp, end = 28.dp, top = 24.dp, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
+      ) {
+        Header(step.number, onClose = { sink(AddBikeEvent.Close) })
+        Intro(step)
+      }
+    },
+    end = {
+      Column(
+        Modifier.fillMaxSize()
+          .background(colors.panel)
+          .safeDrawingPadding()
+          .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+      ) {
+        // Level with the close button, as found's "Found" is.
+        Box(Modifier.height(44.dp), contentAlignment = Alignment.CenterStart) {
+          Kicker(
+            when (step) {
+              is AddBikeStep.Wake,
+              is AddBikeStep.Found -> "Found"
+              is AddBikeStep.Name -> "Name"
+              is AddBikeStep.PowerMeter ->
+                if (step.meters.isEmpty()) "Nearby" else "Nearby · ${step.meters.size}"
+              is AddBikeStep.KeepFresh -> "Permission"
+            }
+          )
+        }
+        Column(
+          Modifier.weight(1f).verticalScroll(rememberScrollState()),
+          verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+          if (step is AddBikeStep.Name) Name(step, sink, labelled = false)
+          else StepContent(step, sink)
+        }
+        Footer(step, sink)
       }
     },
     modifier = modifier.fillMaxSize(),

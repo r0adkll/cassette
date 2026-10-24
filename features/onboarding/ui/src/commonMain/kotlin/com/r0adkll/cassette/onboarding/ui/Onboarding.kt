@@ -59,7 +59,7 @@ import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.ScrollColumn
 import com.r0adkll.cassette.common.compose.components.SplitPanes
-import com.r0adkll.cassette.common.compose.components.TopBarButton
+import com.r0adkll.cassette.common.compose.components.TopBarNavigation
 import com.r0adkll.cassette.common.compose.currentVerticalHinge
 import com.r0adkll.cassette.common.compose.icons.CassetteMarks
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
@@ -429,7 +429,7 @@ fun PermissionsUi(state: PermissionsUiState, modifier: Modifier = Modifier) {
       verticalArrangement = Arrangement.spacedBy(16.dp),
       top = {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          TopBarButton(
+          TopBarNavigation(
             LucideIcons.ArrowLeft,
             "Back",
             onClick = { state.eventSink(PermissionsEvent.Back) },
@@ -465,7 +465,7 @@ private fun LandscapePermissions(state: PermissionsUiState, modifier: Modifier =
         verticalArrangement = Arrangement.spacedBy(16.dp),
       ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          TopBarButton(
+          TopBarNavigation(
             LucideIcons.ArrowLeft,
             "Back",
             onClick = { state.eventSink(PermissionsEvent.Back) },
@@ -520,7 +520,7 @@ internal fun WidePermissions(
         verticalArrangement = Arrangement.spacedBy(16.dp),
       ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-          TopBarButton(
+          TopBarNavigation(
             LucideIcons.ArrowLeft,
             "Back",
             onClick = { state.eventSink(PermissionsEvent.Back) },

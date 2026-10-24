@@ -8,13 +8,15 @@ internal builds, and the stores are added beside it.
 
 ## Decisions
 
-- **Developer tools ship in store builds.** Diagnostics → Developer (Load sample bike, Demo refresh,
-  Simulate a low battery, Remove bike) stays in every build, as Diagnostics does
+- **Developer tools ship in store builds.** Diagnostics → Developer (Load sample bike, Add a random
+  bike, Demo refresh, Simulate a low battery, Remove bike) stays in every build, as Diagnostics does
   ([0005](0005-diagnostics.md)). Reviewers don't have AXS components: the sample bike is how they see
   the app, and Demo refresh is how they see the Live Activity. The review notes walk them to it
   (`fastlane/metadata/ios/review_information/notes.txt`, and Play's App access). The sample bike
   carries a month of history so its charts and estimates show; it stays named "Sample bike" in the
-  app, and its keys never match a real component.
+  app, and its keys never match a real component. Add a random bike (2026-10-23) adds made-up bikes
+  beside it, for testing several: random names, parts and levels, some low or critical, built the
+  same way (negative hub serials and sample keys, so capture never matches them).
 - **Tablets ship.** Android tablets and foldables, and the iPad (the iOS app keeps iPhone and iPad),
   with the large-screen layouts ([0014](0014-large-screens.md)). The listings have 7" and 10" tablet
   sets on Play and an iPad set on the App Store.

@@ -20,9 +20,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,19 +36,25 @@ import com.r0adkll.cassette.common.compose.LocalAppUpdates
 import com.r0adkll.cassette.common.compose.LocalScreenLayout
 import com.r0adkll.cassette.common.compose.ScreenLayout
 import com.r0adkll.cassette.common.compose.UpdateStatus
+import com.r0adkll.cassette.common.compose.components.BarAction
+import com.r0adkll.cassette.common.compose.components.BarCount
+import com.r0adkll.cassette.common.compose.components.BikesPill
 import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.ComponentRow
 import com.r0adkll.cassette.common.compose.components.FloatingTopBar
 import com.r0adkll.cassette.common.compose.components.Kicker
+import com.r0adkll.cassette.common.compose.components.LocalTopBarShown
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.SplitPanes
 import com.r0adkll.cassette.common.compose.components.StatusBlock
 import com.r0adkll.cassette.common.compose.components.StatusBlockMeta
 import com.r0adkll.cassette.common.compose.components.StatusBlockText
-import com.r0adkll.cassette.common.compose.components.TopBarButton
+import com.r0adkll.cassette.common.compose.components.TopBarActions
 import com.r0adkll.cassette.common.compose.components.TopBarButtonSize
+import com.r0adkll.cassette.common.compose.components.hasSystemActionBar
 import com.r0adkll.cassette.common.compose.currentTabletopHinge
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
+import com.r0adkll.cassette.common.compose.isShortMediumWindow
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.screens.BikeScreen
 import com.r0adkll.cassette.settings.api.Tip
@@ -58,14 +68,25 @@ private val MaxContentWidth = 480.dp
 @Composable
 fun BikeUi(state: BikeUiState, modifier: Modifier = Modifier) {
   val layout = LocalScreenLayout.current
+  // Too narrow to split and too short for the phone's column to show more than the status: the
+  // dashboard keeps Refresh in its status band, and its components open in its sheet (0024).
+  val shortMedium = isShortMediumWindow()
   // Folding the phone with a sheet open carries the component over as its own screen.
   val openSheet = (state as? BikeUiState.Loaded)?.sheet
-  LaunchedEffect(layout, openSheet) {
-    if (layout.opensComponents && openSheet != null) {
+  LaunchedEffect(layout, shortMedium, openSheet) {
+    if (layout.opensComponents && !shortMedium && openSheet != null) {
       state.eventSink(BikeEvent.CloseSheet)
       state.eventSink(BikeEvent.OpenComponent(openSheet))
     }
   }
+  // The phone's bikes sheet (decision 0026). Wider windows list the bikes themselves, so it closes
+  // as the window grows into one, and when a bike removed elsewhere leaves just one.
+  var bikesOpen by rememberSaveable { mutableStateOf(false) }
+  val listsBikes =
+    (layout != ScreenLayout.Column && layout != ScreenLayout.Landscape) || shortMedium
+  val switches = state is BikeUiState.Loaded && state.bikes.size > 1
+  LaunchedEffect(listsBikes, switches) { if (listsBikes || !switches) bikesOpen = false }
+  val bikes = BikesControl(bikesOpen, onOpenChange = { bikesOpen = it })
   // Half open with the hinge horizontal: readings above the fold, the refresh below.
   val hinge = currentTabletopHinge()
   if (state is BikeUiState.Loaded && hinge != null) {
@@ -73,14 +94,14 @@ fun BikeUi(state: BikeUiState, modifier: Modifier = Modifier) {
     return
   }
   if (state is BikeUiState.Loaded && layout == ScreenLayout.Landscape) {
-    LandscapeBike(state, modifier)
+    LandscapeBike(state, bikes, modifier)
     return
   }
   if (state is BikeUiState.Empty && layout != ScreenLayout.Column) {
     WideEmptyBike(state.eventSink, modifier)
     return
   }
-  if (state is BikeUiState.Loaded && layout != ScreenLayout.Column) {
+  if (state is BikeUiState.Loaded && (layout != ScreenLayout.Column || shortMedium)) {
     BikeDashboard(state, rail = layout == ScreenLayout.DashboardWithRail, modifier)
     return
   }
@@ -93,13 +114,7 @@ fun BikeUi(state: BikeUiState, modifier: Modifier = Modifier) {
         .padding(vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-      // The wordmark scrolls; the buttons float over it (iteration 14).
-      Row(
-        Modifier.padding(horizontal = 20.dp).height(TopBarButtonSize),
-        verticalAlignment = Alignment.CenterVertically,
-      ) {
-        Kicker("Cassette")
-      }
+      Wordmark(state)
       when (state) {
         is BikeUiState.Loading -> Unit
         is BikeUiState.Empty -> EmptyBike(state.eventSink)
@@ -107,27 +122,89 @@ fun BikeUi(state: BikeUiState, modifier: Modifier = Modifier) {
       }
     }
     TopBar(
-      onAddBike = { state.eventSink(BikeEvent.AddBike) }.takeIf { state is BikeUiState.Loaded },
-      onSettings = { state.eventSink(BikeEvent.OpenSettings) },
-      modifier =
-        Modifier.widthIn(max = MaxContentWidth).safeDrawingPadding().padding(vertical = 24.dp),
+      state,
+      bikes,
+      Modifier.widthIn(max = MaxContentWidth).safeDrawingPadding().padding(vertical = 24.dp),
     )
+    if (state is BikeUiState.Loaded) BikesSheet(state, bikes.open, onClose = bikes::close)
   }
 }
 
+/** Whether the bikes sheet is open (decision 0026), and the way to open or close it. */
+private class BikesControl(val open: Boolean, private val onOpenChange: (Boolean) -> Unit) {
+  fun show() = onOpenChange(true)
+
+  fun close() = onOpenChange(false)
+}
+
+/**
+ * The wordmark, which scrolls while the top bar's buttons float over its row (iteration 14). The
+ * bikes pill takes its place when there's more than one bike (decision 0026).
+ */
 @Composable
-private fun TopBar(onAddBike: (() -> Unit)?, onSettings: () -> Unit, modifier: Modifier) {
-  FloatingTopBar(modifier.padding(horizontal = 20.dp)) {
-    Spacer(Modifier.weight(1f))
-    // The empty state has its own Add bike button.
-    if (onAddBike != null) TopBarButton(LucideIcons.BikePlus, "Add bike", onClick = onAddBike)
-    val update by LocalAppUpdates.current.status.collectAsState()
-    TopBarButton(
-      LucideIcons.Settings,
-      if (update is UpdateStatus.Available) "Settings, app update available" else "Settings",
-      onClick = onSettings,
-      badge = update is UpdateStatus.Available,
-    )
+private fun Wordmark(state: BikeUiState) {
+  Row(
+    Modifier.padding(horizontal = 20.dp).height(TopBarButtonSize),
+    verticalAlignment = Alignment.CenterVertically,
+  ) {
+    if (!showsBikesPill(state)) Kicker("Cassette")
+  }
+}
+
+/** Two bikes or more, and no system bar to put the bikes button in (the Duo's has it). */
+@Composable
+private fun showsBikesPill(state: BikeUiState): Boolean =
+  state is BikeUiState.Loaded && state.bikes.size > 1 && !hasSystemActionBar()
+
+/**
+ * The phone's top bar: the bikes pill when there are several, then Add bike and Settings. On the
+ * iPhone Duo they all go in the vertical bar, the bikes first with a count of those that need
+ * charging. It hides while the bikes sheet is open, which has its own.
+ */
+@Composable
+private fun TopBar(state: BikeUiState, bikes: BikesControl, modifier: Modifier) {
+  val update by LocalAppUpdates.current.status.collectAsState()
+  val updateWaiting = update is UpdateStatus.Available
+  val loaded = state as? BikeUiState.Loaded
+  val choices = loaded?.bikes.orEmpty()
+  val attention = loaded?.let { choices.attention(it.bikeId) }
+  val description = bikesDescription(choices.size, attention)
+  val pill = showsBikesPill(state)
+  CompositionLocalProvider(LocalTopBarShown provides (LocalTopBarShown.current && !bikes.open)) {
+    FloatingTopBar(modifier.padding(horizontal = 20.dp)) {
+      // The pill takes what the buttons leave, and shortens its label to fit it.
+      if (pill)
+        Box(Modifier.weight(1f)) {
+          BikesPill(
+            choices.size,
+            attention?.tone,
+            attention?.names?.size ?: 0,
+            description,
+            onClick = bikes::show,
+          )
+        }
+      else Spacer(Modifier.weight(1f))
+      TopBarActions(
+        listOfNotNull(
+          BarAction(
+              LucideIcons.Bike,
+              description,
+              count = attention?.let { BarCount(it.names.size, it.tone) },
+              onClick = bikes::show,
+            )
+            .takeIf { choices.size > 1 && !pill },
+          // The empty state has its own Add bike button.
+          BarAction(LucideIcons.BikePlus, "Add bike") { state.eventSink(BikeEvent.AddBike) }
+            .takeIf { loaded != null },
+          BarAction(
+            LucideIcons.Settings,
+            if (updateWaiting) "Settings, app update available" else "Settings",
+            badge = updateWaiting,
+            onClick = { state.eventSink(BikeEvent.OpenSettings) },
+          ),
+        )
+      )
+    }
   }
 }
 
@@ -140,7 +217,19 @@ private val ScreenLayout.opensComponents: Boolean
  * left, its components (and a tip) scrolling on the right.
  */
 @Composable
-private fun LandscapeBike(state: BikeUiState.Loaded, modifier: Modifier = Modifier) {
+private fun LandscapeBike(
+  state: BikeUiState.Loaded,
+  bikes: BikesControl,
+  modifier: Modifier = Modifier,
+) {
+  Box(modifier.fillMaxSize()) {
+    LandscapePanes(state, bikes)
+    BikesSheet(state, bikes.open, onClose = bikes::close)
+  }
+}
+
+@Composable
+private fun LandscapePanes(state: BikeUiState.Loaded, bikes: BikesControl) {
   SplitPanes(
     start = {
       Box {
@@ -153,13 +242,7 @@ private fun LandscapeBike(state: BikeUiState.Loaded, modifier: Modifier = Modifi
             Modifier.weight(1f).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(12.dp),
           ) {
-            // The wordmark scrolls; the buttons float over it, as on the phone.
-            Row(
-              Modifier.padding(horizontal = 20.dp).height(TopBarButtonSize),
-              verticalAlignment = Alignment.CenterVertically,
-            ) {
-              Kicker("Cassette")
-            }
+            Wordmark(state)
             BikeName(state)
             BikeStatus(state)
           }
@@ -167,11 +250,7 @@ private fun LandscapeBike(state: BikeUiState.Loaded, modifier: Modifier = Modifi
             RefreshButton(state.refresh, onClick = { state.eventSink(BikeEvent.Refresh) })
           }
         }
-        TopBar(
-          onAddBike = { state.eventSink(BikeEvent.AddBike) },
-          onSettings = { state.eventSink(BikeEvent.OpenSettings) },
-          modifier = Modifier.safeDrawingPadding().padding(vertical = 16.dp),
-        )
+        TopBar(state, bikes, Modifier.safeDrawingPadding().padding(vertical = 16.dp))
       }
     },
     end = {
@@ -197,7 +276,7 @@ private fun LandscapeBike(state: BikeUiState.Loaded, modifier: Modifier = Modifi
         }
       }
     },
-    modifier = modifier.fillMaxSize(),
+    modifier = Modifier.fillMaxSize(),
     divider = true,
   )
 }
@@ -221,30 +300,15 @@ private fun LoadedBike(state: BikeUiState.Loaded) {
   }
 }
 
-/** The bike's name, and which of the bikes it is. */
+/** The bike's name; the bikes pill in the top bar switches it (decision 0026). */
 @Composable
 private fun BikeName(state: BikeUiState.Loaded) {
-  val colors = CassetteTheme.colors
-  Row(Modifier.padding(horizontal = 20.dp), verticalAlignment = Alignment.Bottom) {
-    Text(
-      state.name,
-      style =
-        CassetteTheme.type.display.copy(fontSize = CassetteTheme.type.display.fontSize * 1.07f),
-      color = colors.text,
-      modifier = Modifier.weight(1f),
-    )
-    state.position?.let { position ->
-      Row(Modifier.padding(bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
-        Kicker(position)
-        Icon(
-          LucideIcons.ChevronDown,
-          null,
-          tint = colors.muted,
-          modifier = Modifier.size(14.dp),
-        )
-      }
-    }
-  }
+  Text(
+    state.name,
+    style = CassetteTheme.type.display.copy(fontSize = CassetteTheme.type.display.fontSize * 1.07f),
+    color = CassetteTheme.colors.text,
+    modifier = Modifier.padding(horizontal = 20.dp),
+  )
 }
 
 @Composable

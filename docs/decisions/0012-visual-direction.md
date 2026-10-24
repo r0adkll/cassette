@@ -46,7 +46,8 @@ SRAM-app quality, which must be our own (never SRAM's artwork).
 
 ## Screens
 
-- **Bike**: bike name (switcher), then the status block. The block summarises instead of repeating the
+- **Bike**: bike name (with several bikes, the top bar's bikes pill switches them: decision 0026), then
+  the status block. The block summarises instead of repeating the
   list: overall status, what to charge next and roughly when, last seen and whether background capture is
   on. Below it, one panel row per component: code badge, name, source line, value, status icon and word, a
   thin status-coloured bar. Refresh is the one primary button.

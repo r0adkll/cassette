@@ -117,7 +117,6 @@ class BikePresenterTest {
       overviews.emit(roadBike)
       val loaded = awaitLoaded()
       assertEquals("Road bike", loaded.name)
-      assertEquals("1 OF 2", loaded.position)
 
       loaded.eventSink(BikeEvent.OpenComponent(7))
       assertEquals(ComponentScreen(7), navigator.awaitNextScreen())

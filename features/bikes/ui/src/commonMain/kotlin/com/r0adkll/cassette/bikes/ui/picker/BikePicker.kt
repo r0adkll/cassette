@@ -26,8 +26,8 @@ import com.r0adkll.cassette.common.compose.components.FloatingTopBar
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.StatusLabel
-import com.r0adkll.cassette.common.compose.components.TopBarButton
 import com.r0adkll.cassette.common.compose.components.TopBarButtonSize
+import com.r0adkll.cassette.common.compose.components.TopBarNavigation
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.compose.theme.StatusTone
@@ -125,7 +125,7 @@ fun BikePicker(
         .safeDrawingPadding()
         .padding(horizontal = 20.dp, vertical = 24.dp)
     ) {
-      TopBarButton(LucideIcons.X, "Close", onClick = onClose)
+      TopBarNavigation(LucideIcons.X, "Close", onClick = onClose)
     }
   }
 }

@@ -19,8 +19,6 @@ sealed interface BikeUiState : CircuitUiState {
   data class Loaded(
     val bikeId: Long,
     val name: String,
-    /** "1 OF 2"; null when there's only one bike. */
-    val position: String?,
     val status: BikeStatus,
     val components: List<ComponentRowModel>,
     /** The status block's title: the plain headline, or a playful one (decision 0015). */
@@ -28,7 +26,10 @@ sealed interface BikeUiState : CircuitUiState {
     val refresh: RefreshButton = RefreshButton.Idle,
     /** At most one tip at a time, under the components. */
     val tip: Tip? = null,
-    /** Every bike, for the tablet rail and the foldable's chips (decision 0014). */
+    /**
+     * Every bike, for the tablet rail and the foldable's chips (decision 0014), and the phone's
+     * bikes pill and sheet (decision 0026).
+     */
     val bikes: List<BikeChoice> = emptyList(),
     /** Each component's last 30 days (0 to 1, oldest first), by component id, for the tiles. */
     val trends: Map<Long, List<Float>> = emptyMap(),
@@ -45,8 +46,18 @@ sealed interface BikeUiState : CircuitUiState {
   ) : BikeUiState
 }
 
-/** A bike to switch to: its name, overall status and when it was seen ("2 min ago"). */
-data class BikeChoice(val id: Long, val name: String, val tone: StatusTone, val seen: String)
+/**
+ * A bike to switch to: its name, overall status and when it was seen ("2 min ago"), and its status
+ * block's summary ("Front derailleur at 18%, about 5 days left"), which the bikes sheet shows for a
+ * bike that needs charging.
+ */
+data class BikeChoice(
+  val id: Long,
+  val name: String,
+  val tone: StatusTone,
+  val seen: String,
+  val summary: String = "",
+)
 
 sealed interface RefreshButton {
   data object Idle : RefreshButton

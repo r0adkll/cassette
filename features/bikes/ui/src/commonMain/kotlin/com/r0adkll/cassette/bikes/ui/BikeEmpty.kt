@@ -2,6 +2,7 @@ package com.r0adkll.cassette.bikes.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -24,10 +25,11 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
 import com.r0adkll.cassette.common.compose.UpdateStatus
+import com.r0adkll.cassette.common.compose.components.BarAction
 import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.SplitPanes
-import com.r0adkll.cassette.common.compose.components.TopBarButton
+import com.r0adkll.cassette.common.compose.components.TopBarActions
 import com.r0adkll.cassette.common.compose.currentVerticalHinge
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteRed
@@ -78,13 +80,20 @@ internal fun WideEmptyBike(
         verticalArrangement = Arrangement.spacedBy(16.dp),
       ) {
         val update by LocalAppUpdates.current.status.collectAsState()
-        TopBarButton(
-          LucideIcons.Settings,
-          if (update is UpdateStatus.Available) "Settings, app update available" else "Settings",
-          onClick = { eventSink(BikeEvent.OpenSettings) },
-          modifier = Modifier.align(Alignment.End),
-          badge = update is UpdateStatus.Available,
-        )
+        val updateWaiting = update is UpdateStatus.Available
+        Box(Modifier.align(Alignment.End)) {
+          TopBarActions(
+            listOf(
+              BarAction(
+                LucideIcons.Settings,
+                if (updateWaiting) "Settings, app update available" else "Settings",
+                badge = updateWaiting,
+              ) {
+                eventSink(BikeEvent.OpenSettings)
+              }
+            )
+          )
+        }
         Column(
           Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(top = 8.dp),
           verticalArrangement = Arrangement.spacedBy(28.dp),

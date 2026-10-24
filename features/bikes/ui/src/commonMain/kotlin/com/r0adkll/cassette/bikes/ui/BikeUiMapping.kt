@@ -6,13 +6,12 @@ import com.r0adkll.cassette.bikes.summary.toSummary
 import com.r0adkll.cassette.core.level
 import kotlin.time.Instant
 
-/** The bike screen's state: the shared summary, plus the screen's own position and events. */
+/** The bike screen's state: the shared summary, plus the screen's own events. */
 fun BikeOverview.toLoaded(now: Instant, eventSink: (BikeEvent) -> Unit = {}): BikeUiState.Loaded {
   val summary = toSummary(now)
   return BikeUiState.Loaded(
     bikeId = summary.bikeId,
     name = summary.name,
-    position = if (bikeCount > 1) "1 OF $bikeCount" else null,
     status = summary.status,
     components = summary.components,
     eventSink = eventSink,
@@ -27,6 +26,7 @@ fun List<BikeOverview>.toChoices(now: Instant): List<BikeChoice> = map { overvie
     name = summary.name,
     tone = summary.status.tone,
     seen = summary.status.meta.removePrefix("Seen "),
+    summary = summary.status.summary,
   )
 }
 

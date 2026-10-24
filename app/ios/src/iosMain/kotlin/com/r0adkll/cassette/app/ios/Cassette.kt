@@ -1,6 +1,13 @@
 package com.r0adkll.cassette.app.ios
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.window.ComposeUIViewController
 import co.touchlab.crashkios.crashlytics.enableCrashlytics
 import co.touchlab.crashkios.crashlytics.setCrashlyticsUnhandledExceptionHook
@@ -10,6 +17,8 @@ import com.r0adkll.cassette.app.shared.CrashCollection
 import com.r0adkll.cassette.app.shared.followCrashReports
 import com.r0adkll.cassette.common.compose.AppInfo
 import com.r0adkll.cassette.common.compose.LocalAppUpdates
+import com.r0adkll.cassette.common.compose.LocalPlatformTabletopHinge
+import com.r0adkll.cassette.common.compose.components.LocalSystemActionBar
 import com.r0adkll.cassette.common.screens.DeepLinks
 import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.settings.api.ThemeMode
@@ -93,32 +102,65 @@ object Cassette {
     DeepLinks.parse(url)?.let(links::trySend)
   }
 
-  fun mainViewController(): UIViewController {
+  /** The iPhone Duo's fold while it stands in tabletop, in points ([showTabletop]). */
+  private var tabletopFold by mutableStateOf<TabletopFold?>(null)
+
+  /**
+   * The iPhone Duo standing half open with its fold across the window, or null when it isn't
+   * (Swift's `TabletopObserver`, iOS 27.1): the bike screen splits at the fold (decision 0017).
+   */
+  fun showTabletop(fold: TabletopFold?) {
+    tabletopFold = fold
+  }
+
+  /** The app's UI. [verticalBar] takes the screens' top-bar actions where the window has it. */
+  fun mainViewController(verticalBar: VerticalBar): UIViewController {
     scope.launch { graph.captureController.ensureBackgroundCapture("app opened") }
+    val actionBar = VerticalActionBar(verticalBar)
     return ComposeUIViewController {
-      CassetteRoot(
-        circuit = graph.circuit,
-        settings = graph.settings,
-        bikes = graph.bikeRepository,
-        permissions = graph.permissions,
-        // TestFlight updates the app: App updates stays hidden.
-        updates = LocalAppUpdates.current,
-        appInfo = appInfo(),
-        launchLink = null,
-        newLinks = links.receiveAsFlow(),
-        systemBars = { _, mode ->
-          // The status bar follows the window's style; System leaves it to the phone.
-          LaunchedEffect(mode) {
-            UIApplication.sharedApplication.keyWindow?.overrideUserInterfaceStyle =
-              when (mode) {
-                ThemeMode.System -> UIUserInterfaceStyle.UIUserInterfaceStyleUnspecified
-                ThemeMode.Light -> UIUserInterfaceStyle.UIUserInterfaceStyleLight
-                ThemeMode.Dark -> UIUserInterfaceStyle.UIUserInterfaceStyleDark
-              }
-          }
-        },
-      )
+      // Compose's window coordinates are the controller's view's, in pixels.
+      val scale = LocalDensity.current.density
+      val hinge = tabletopFold?.run {
+        Rect(
+          (left * scale).toFloat(),
+          (top * scale).toFloat(),
+          (right * scale).toFloat(),
+          (bottom * scale).toFloat(),
+        )
+      }
+      CompositionLocalProvider(
+        LocalSystemActionBar provides actionBar,
+        LocalPlatformTabletopHinge provides hinge,
+      ) {
+        Root()
+      }
     }
+  }
+
+  @Composable
+  private fun Root() {
+    CassetteRoot(
+      circuit = graph.circuit,
+      settings = graph.settings,
+      bikes = graph.bikeRepository,
+      permissions = graph.permissions,
+      // TestFlight updates the app: App updates stays hidden.
+      updates = LocalAppUpdates.current,
+      appInfo = appInfo(),
+      launchLink = null,
+      newLinks = links.receiveAsFlow(),
+      systemBars = { _, mode ->
+        // The status bar follows the window's style; System leaves it to the phone.
+        LaunchedEffect(mode) {
+          UIApplication.sharedApplication.keyWindow?.overrideUserInterfaceStyle =
+            when (mode) {
+              ThemeMode.System -> UIUserInterfaceStyle.UIUserInterfaceStyleUnspecified
+              ThemeMode.Light -> UIUserInterfaceStyle.UIUserInterfaceStyleLight
+              ThemeMode.Dark -> UIUserInterfaceStyle.UIUserInterfaceStyleDark
+            }
+        }
+      },
+    )
   }
 
   private fun appInfo(): AppInfo {

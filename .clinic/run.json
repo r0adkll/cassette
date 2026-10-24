@@ -68,6 +68,7 @@
     },
     {
       "command" : "scripts/ios-run --device",
+      "device" : "ios",
       "icon" : "iphone.radiowaves.left.and.right",
       "id" : "ios-device",
       "name" : "iOS (iPhone)"
