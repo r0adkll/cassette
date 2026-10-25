@@ -56,7 +56,25 @@ final class WatchRenderTests: XCTestCase {
         .background(Palette(dark: true).block(bike.status(at: date).tone).fill)
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
       face("stack-\(name)", CGSize(width: 184, height: 92)) { card }
+      // Battery with the power meter picked (decision 0027): itself, whatever the bike says.
+      face("gauge-picked-\(name)", CGSize(width: 50, height: 50)) {
+        WeakestGaugeView(bike: bike, date: date, picked: "POWER_METER")
+      }
     }
+  }
+
+  func testPicks() {
+    let low = Samples.road().status(at: date)
+    XCTAssertEqual(low.picked("POWER_METER")?.code, "PM")
+    XCTAssertEqual(low.featured("POWER_METER")?.code, "FD")
+    XCTAssertEqual(Samples.road(.good).status(at: date).featured("POWER_METER")?.code, "PM")
+    XCTAssertEqual(Samples.road(.good).status(at: date).featured("FORK")?.code, "RD")
+    XCTAssertEqual(ComponentEntity.choices(Samples.road()).map(\.id).first, "weakest")
+    XCTAssertEqual(ComponentEntity.choices(Samples.road()).count, 6)
+    let shown = BatteryShown(status: low, picked: "POWER_METER")
+    XCTAssertEqual(shown.tone, .good)
+    XCTAssertEqual(shown.label, "PM")
+    XCTAssertEqual(BatteryShown(status: Samples.gravel.status(at: date), picked: nil).label, "OLD")
   }
 
   func testRefreshRelevantWords() {

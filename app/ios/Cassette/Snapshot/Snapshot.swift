@@ -69,6 +69,24 @@ struct WidgetStatus: Codable {
     default: word
     }
   }
+
+  /// The component of `kind` a widget or complication picked (decision 0027): the weakest of
+  /// them if the bike has several; nil when it has none, or nothing was picked.
+  func picked(_ kind: String?) -> WidgetComponent? {
+    guard let kind else { return nil }
+    let same = components.filter { $0.kind == kind }
+    return same.filter { $0.value != "—" }.min { $0.level < $1.level } ?? same.first
+  }
+
+  /// The component a small widget names under the status (decision 0027): while something is
+  /// low or needs charging now, the one that set it, so it agrees with the headline; otherwise
+  /// the `preferred` one when the bike has it, else the weakest. `featured` in `BikeSummary.kt`.
+  func featured(_ preferred: String?) -> WidgetComponent? {
+    switch tone {
+    case .low, .critical: components.first { $0.tone == tone } ?? weakest
+    default: picked(preferred) ?? weakest
+    }
+  }
 }
 
 struct WidgetComponent: Codable, Identifiable {
@@ -79,6 +97,8 @@ struct WidgetComponent: Codable, Identifiable {
   var level: Double
   var tone: Tone
   var word: String
+  /// The `ComponentKind` name a widget or complication picks it by; nil from an app before 0027.
+  var kind: String? = nil
 
   /// Android's compact value for the medium widget: "78", "≈11", "2.91" (an estimate keeps its ≈).
   var compact: String {

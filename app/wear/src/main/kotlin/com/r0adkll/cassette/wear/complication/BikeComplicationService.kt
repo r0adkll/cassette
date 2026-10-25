@@ -19,34 +19,47 @@ import androidx.wear.watchface.complications.datasource.SuspendingComplicationDa
 import com.r0adkll.cassette.bikes.summary.BikeStatus
 import com.r0adkll.cassette.bikes.summary.BikeSummary
 import com.r0adkll.cassette.bikes.summary.ComponentRowModel
+import com.r0adkll.cassette.bikes.summary.componentKindOrNull
 import com.r0adkll.cassette.bikes.summary.toSummary
 import com.r0adkll.cassette.common.compose.theme.DarkCassetteColors
 import com.r0adkll.cassette.common.compose.theme.StatusTone
-import com.r0adkll.cassette.surfaces.wear.sync.defaultBike
+import com.r0adkll.cassette.protocol.ComponentKind
+import com.r0adkll.cassette.surfaces.wear.sync.bike
 import com.r0adkll.cassette.wear.R
 import com.r0adkll.cassette.wear.WearActivity
 import com.r0adkll.cassette.wear.WearApplication
 import kotlinx.coroutines.flow.first
 
 /**
- * The default bike's complications (decision 0013): the weakest component as a ranged value ("78",
- * "RD") and the status as short text ("GOOD", "FD LOW"), each with the status icon. Tapping opens
- * the bike.
+ * A bike's complications (decision 0013): the weakest component as a ranged value ("78", "RD") and
+ * the status as short text ("GOOD", "FD LOW"), each with the status icon. Tapping opens the bike.
+ * Each one picks its bike and component when it goes on a face ([ComplicationConfigActivity],
+ * decision 0027); a picked component shows as itself in both shapes ("92", "92%", "PM").
  */
 class BikeComplicationService : SuspendingComplicationDataSourceService() {
   private val graph
     get() = (application as WearApplication).graph
 
   override suspend fun onComplicationRequest(request: ComplicationRequest): ComplicationData? {
-    val bike = graph.phoneData.snapshot.first()?.defaultBike()?.toSummary(graph.clock.now())
-    return data(request.complicationType, bike)
+    val pick = graph.complicationPicks.get(request.complicationInstanceId) ?: ComplicationPick()
+    val bike = graph.phoneData.snapshot.first()?.bike(pick.bikeId)?.toSummary(graph.clock.now())
+    return data(request.complicationType, bike, componentKindOrNull(pick.kind))
   }
 
-  override fun getPreviewData(type: ComplicationType): ComplicationData? = data(type, PREVIEW)
+  override fun onComplicationDeactivated(complicationInstanceId: Int) {
+    graph.complicationPicks.remove(complicationInstanceId)
+  }
 
-  private fun data(type: ComplicationType, bike: BikeSummary?): ComplicationData? {
+  override fun getPreviewData(type: ComplicationType): ComplicationData? =
+    data(type, PREVIEW, picked = null)
+
+  private fun data(
+    type: ComplicationType,
+    bike: BikeSummary?,
+    picked: ComponentKind?,
+  ): ComplicationData? {
     if (bike == null) return NoDataComplicationData()
-    val model = bike.complication()
+    val model = bike.complication(picked)
     val description = text(model.description)
     val icon =
       MonochromaticImage.Builder(Icon.createWithResource(this, model.tone.drawable)).build()
@@ -111,6 +124,15 @@ class BikeComplicationService : SuspendingComplicationDataSourceService() {
           .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK),
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
       )
+
+    /** Re-renders one complication, after its pick changed. */
+    fun update(context: Context, complicationId: Int) {
+      ComplicationDataSourceUpdateRequester.create(
+          context,
+          ComponentName(context, BikeComplicationService::class.java),
+        )
+        .requestUpdate(complicationId)
+    }
 
     /** Re-renders every complication from this data source. */
     fun update(context: Context) {

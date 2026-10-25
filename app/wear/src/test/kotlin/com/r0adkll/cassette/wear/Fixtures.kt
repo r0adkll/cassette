@@ -5,6 +5,8 @@ import com.r0adkll.cassette.surfaces.wear.sync.WearComponent
 import com.r0adkll.cassette.surfaces.wear.sync.WearReading
 import com.r0adkll.cassette.surfaces.wear.sync.WearRefresh
 import com.r0adkll.cassette.surfaces.wear.sync.WearSnapshot
+import com.r0adkll.cassette.wear.complication.ComplicationPick
+import com.r0adkll.cassette.wear.complication.ComplicationPicks
 import com.r0adkll.cassette.wear.data.PhoneData
 import com.r0adkll.cassette.wear.updates.WatchUpdate
 import com.r0adkll.cassette.wear.updates.WatchUpdates
@@ -27,6 +29,20 @@ class FakePhoneData(snapshot: WearSnapshot? = null) : PhoneData {
   override suspend fun requestRefresh(): Boolean {
     requests++
     return reachable
+  }
+}
+
+class FakeComplicationPicks : ComplicationPicks {
+  val picks = mutableMapOf<Int, ComplicationPick>()
+
+  override fun get(complicationId: Int) = picks[complicationId]
+
+  override fun set(complicationId: Int, pick: ComplicationPick) {
+    picks[complicationId] = pick
+  }
+
+  override fun remove(complicationId: Int) {
+    picks.remove(complicationId)
   }
 }
 

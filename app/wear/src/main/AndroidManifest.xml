@@ -42,7 +42,8 @@
                 android:resource="@drawable/tile_preview" />
         </service>
 
-        <!-- Complications (decision 0013): the default bike's weakest component and status. -->
+        <!-- Complications (decision 0013): a bike's weakest component and status, or the component
+             picked when it went on the face (decision 0027). -->
         <service
             android:name=".complication.BikeComplicationService"
             android:exported="true"
@@ -59,7 +60,26 @@
             <meta-data
                 android:name="android.support.wearable.complications.UPDATE_PERIOD_SECONDS"
                 android:value="3600" />
+            <!-- Picking the bike and component when it goes on a face (decision 0027). A face's
+                 own default slot skips it: the default bike, the weakest component. -->
+            <meta-data
+                android:name="android.support.wearable.complications.PROVIDER_CONFIG_ACTION"
+                android:value="com.r0adkll.cassette.wear.CONFIGURE_COMPLICATION" />
+            <meta-data
+                android:name="androidx.watchface.complications.datasource.DEFAULT_CONFIG_SUPPORTED"
+                android:value="true" />
         </service>
+
+        <activity
+            android:name=".complication.ComplicationConfigActivity"
+            android:exported="true"
+            android:taskAffinity="">
+            <intent-filter>
+                <action android:name="com.r0adkll.cassette.wear.CONFIGURE_COMPLICATION" />
+                <category android:name="android.support.wearable.complications.category.PROVIDER_CONFIG" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <!-- The phone sent new data: update the tile and complications. -->
         <service

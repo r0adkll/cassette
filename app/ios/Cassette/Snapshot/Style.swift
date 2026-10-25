@@ -136,8 +136,13 @@ enum Samples {
     let words: [Tone: String] = [
       .good: "GOOD", .low: "LOW", .critical: "CHARGE NOW", .stale: "OLD", .unknown: "UNKNOWN",
     ]
+    let kinds = [
+      "RD": "REAR_DERAILLEUR", "FD": "FRONT_DERAILLEUR", "L": "LEFT_SHIFTER", "R": "RIGHT_SHIFTER",
+      "PM": "POWER_METER",
+    ]
     return WidgetComponent(
-      id: id, code: code, name: name, value: value, level: level, tone: tone, word: words[tone]!)
+      id: id, code: code, name: name, value: value, level: level, tone: tone, word: words[tone]!,
+      kind: kinds[code])
   }
 
   static func road(_ tone: Tone = .low) -> WidgetBike {

@@ -42,6 +42,8 @@ data class ComponentRowModel(
   val value: String,
   val level: Float,
   val tone: StatusTone,
+  /** What a widget or complication picks it by, so the pick outlives a replaced part (0027). */
+  val kind: ComponentKind = ComponentKind.UNKNOWN,
 )
 
 /**
@@ -64,6 +66,34 @@ fun List<ComponentRowModel>.weakest(): ComponentRowModel? = filter {
   it.value != "—"
 }
   .minByOrNull { it.level }
+
+/**
+ * The component of [kind] a widget or complication picked (decision 0027): the weakest of them if
+ * the bike has several; null when it has none.
+ */
+fun List<ComponentRowModel>.picked(kind: ComponentKind): ComponentRowModel? = filter {
+  it.kind == kind
+}
+  .let { same -> same.weakest() ?: same.firstOrNull() }
+
+/**
+ * The component a small widget names under the bike's status (decision 0027): while something is
+ * low or needs charging now, the one that set it, so the line agrees with the headline; otherwise
+ * the [preferred] one when the bike has it, else the weakest.
+ */
+fun List<ComponentRowModel>.featured(
+  tone: StatusTone,
+  preferred: ComponentKind?,
+): ComponentRowModel? =
+  when (tone) {
+    StatusTone.Low,
+    StatusTone.Critical -> firstOrNull { it.tone == tone } ?: weakest()
+    else -> preferred?.let(::picked) ?: weakest()
+  }
+
+/** A pick's kind from its stored name; null for none, or a kind this build doesn't know. */
+fun componentKindOrNull(name: String?): ComponentKind? =
+  ComponentKind.entries.firstOrNull { it.name == name }
 
 private fun BikeOverview.status(stale: Boolean, now: Instant): BikeStatus {
   val seen = bike.lastSeenAt?.let { "Seen ${ago(now - it)}" } ?: "Never seen"
@@ -139,6 +169,7 @@ private fun ComponentWithReading.toRow(stale: Boolean): ComponentRowModel {
     value = value,
     level = reading?.level ?: 0f,
     tone = tone,
+    kind = component.kind,
   )
 }
 

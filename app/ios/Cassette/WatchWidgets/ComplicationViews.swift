@@ -8,22 +8,52 @@ import WidgetKit
 /// The watch is always dark.
 private let palette = Palette(dark: true)
 
-/// Circular, "Weakest battery": the weakest component's level on a gauge, with its code ("OLD" once
-/// the bike goes stale).
+/// What the Battery complication shows (decision 0027): a picked component as itself, in its own
+/// status, whatever the rest of the bike says; otherwise the weakest, in the bike's status, with
+/// "OLD" for its code once the bike goes stale.
+struct BatteryShown {
+  var status: WidgetStatus
+  var component: WidgetComponent?
+  var isPicked: Bool
+
+  init(status: WidgetStatus, picked: String?) {
+    self.status = status
+    let pick = status.picked(picked)
+    component = pick ?? status.weakest
+    isPicked = pick != nil
+  }
+
+  var tone: Tone { isPicked ? component?.tone ?? status.tone : status.tone }
+
+  /// The code under the value: the component's, "OLD" for a stale bike's weakest, "NEW" for none.
+  var label: String {
+    if isPicked { return component?.code ?? "" }
+    return status.tone == .stale ? "OLD" : component?.code ?? "NEW"
+  }
+
+  func accessibility(_ bike: WidgetBike) -> String {
+    guard let component else { return "\(bike.name): \(status.headline)" }
+    let word = isPicked ? component.word : status.word
+    return "\(bike.name): \(component.name) \(component.value), \(word.lowercased())"
+  }
+}
+
+/// Circular, "Battery": the weakest component's level (or the picked one's) on a gauge, with its
+/// code.
 struct WeakestGaugeView: View {
   var bike: WidgetBike
   var date: Date
+  var picked: String? = nil
 
   var body: some View {
-    let status = bike.status(at: date)
-    let weakest = status.weakest
-    Gauge(value: weakest?.fill ?? 0) {
-      Text(status.tone == .stale ? "OLD" : weakest?.code ?? "NEW").font(.condensed(11))
+    let shown = BatteryShown(status: bike.status(at: date), picked: picked)
+    Gauge(value: shown.component?.fill ?? 0) {
+      Text(shown.label).font(.condensed(11))
     } currentValueLabel: {
       // This style shows only the value label: the code goes under the value, as on Wear.
       VStack(spacing: -1) {
-        Text(weakest?.compact ?? "–").font(.condensed(18))
-        Text(status.tone == .stale ? "OLD" : weakest?.code ?? "NEW")
+        Text(shown.component?.compact ?? "–").font(.condensed(18))
+        Text(shown.label)
           .font(.condensed(10))
           .tracking(0.6)
           .foregroundStyle(.secondary)
@@ -31,15 +61,10 @@ struct WeakestGaugeView: View {
     }
     // The ring fills to the level, as Wear's ranged value does.
     .gaugeStyle(.accessoryCircularCapacity)
-    .tint(palette.status(status.tone))
+    .tint(palette.status(shown.tone))
     .widgetAccentable()
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel(label(status))
-  }
-
-  private func label(_ status: WidgetStatus) -> String {
-    guard let weakest = status.weakest else { return "\(bike.name): \(status.headline)" }
-    return "\(bike.name): \(weakest.name) \(weakest.value), \(status.word.lowercased())"
+    .accessibilityLabel(shown.accessibility(bike))
   }
 }
 

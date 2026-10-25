@@ -22,7 +22,7 @@ struct BikeWidget: Widget {
       BikeEntryView(entry: entry)
     }
     .configurationDisplayName("Bike")
-    .description("A bike's batteries: the weakest, or every component.")
+    .description("A bike's batteries: the weakest or the one you pick, or every component.")
     .supportedFamilies([
       .systemSmall, .systemMedium, .systemLarge,
       .accessoryCircular, .accessoryRectangular, .accessoryInline,
@@ -34,6 +34,8 @@ struct BikeWidget: Widget {
 struct BikeEntry: TimelineEntry {
   var date: Date
   var bike: WidgetBike?
+  /// The component the small widget prefers (decision 0027); nil for the weakest.
+  var component: String? = nil
 }
 
 struct BikeProvider: AppIntentTimelineProvider {
@@ -41,19 +43,20 @@ struct BikeProvider: AppIntentTimelineProvider {
 
   func snapshot(for configuration: PickBike, in context: Context) async -> BikeEntry {
     // The widget gallery shows the sample bike until there's a real one.
-    let bike = SnapshotStore.load()?.bike(configuration.bike.flatMap { Int64($0.id) })
+    let bike = SnapshotStore.load()?.bike(configuration.bikeId)
     if bike == nil && context.isPreview { return placeholder(in: context) }
-    return BikeEntry(date: .now, bike: bike)
+    return BikeEntry(date: .now, bike: bike, component: configuration.component?.kind)
   }
 
   func timeline(for configuration: PickBike, in context: Context) async -> Timeline<BikeEntry> {
-    let bike = SnapshotStore.load()?.bike(configuration.bike.flatMap { Int64($0.id) })
+    let bike = SnapshotStore.load()?.bike(configuration.bikeId)
+    let component = configuration.component?.kind
     let now = Date.now
     // A step each time the clock's words change; the app reloads when the data does.
     let changes = clockChanges(
       after: now, seen: [bike?.lastSeenDate].compactMap { $0 },
       staleAt: [bike?.staleAt].compactMap { $0 }.map(Date.init(epochMillis:)))
-    let entries = ([now] + changes).map { BikeEntry(date: $0, bike: bike) }
+    let entries = ([now] + changes).map { BikeEntry(date: $0, bike: bike, component: component) }
     return Timeline(entries: entries, policy: .atEnd)
   }
 }
@@ -77,7 +80,7 @@ struct BikeEntryView: View {
   @ViewBuilder private func content(_ bike: WidgetBike, _ look: Look) -> some View {
     switch family {
     case .systemSmall:
-      SmallView(bike: bike, date: entry.date, look: look)
+      SmallView(bike: bike, date: entry.date, look: look, preferred: entry.component)
         .containerBackground(for: .widget) {
           SmallBackground(tone: bike.status(at: entry.date).tone, look: look)
         }

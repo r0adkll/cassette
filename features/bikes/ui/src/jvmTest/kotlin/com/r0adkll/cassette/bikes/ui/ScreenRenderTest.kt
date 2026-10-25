@@ -28,6 +28,8 @@ import com.r0adkll.cassette.bikes.ui.component.ComponentUiState
 import com.r0adkll.cassette.bikes.ui.component.HistoryRange
 import com.r0adkll.cassette.bikes.ui.picker.BikeOption
 import com.r0adkll.cassette.bikes.ui.picker.BikePicker
+import com.r0adkll.cassette.bikes.ui.picker.ComponentOption
+import com.r0adkll.cassette.bikes.ui.picker.ComponentPicker
 import com.r0adkll.cassette.common.compose.LocalScreenLayout
 import com.r0adkll.cassette.common.compose.SizeClasses
 import com.r0adkll.cassette.common.compose.currentScreenLayout
@@ -517,12 +519,82 @@ class ScreenRenderTest {
         BikeOption(1, "Road bike", "Charge soon. Seen 2 min ago", StatusTone.Low),
         BikeOption(2, "Gravel bike", "All good. Seen 3 days ago", StatusTone.Good),
       )
-    for (dark in listOf(true, false)) {
-      render("widget-bike-picker-${if (dark) "dark" else "light"}", dark) {
-        BikePicker(options, selected = 2, onPick = {}, onClose = {})
+    for ((size, name) in pickerSizes) {
+      for (dark in listOf(true, false)) {
+        render("widget-bike-picker$name-${if (dark) "dark" else "light"}", dark, size) {
+          BikePicker(options, selected = 2, onPick = {}, onClose = {})
+        }
       }
     }
   }
+
+  @Test
+  fun widgetComponentPicker() {
+    val options =
+      listOf(
+        ComponentOption(null, null, "Weakest", "Whichever is lowest · now RD 78%", null, null),
+        ComponentOption(
+          "REAR_DERAILLEUR",
+          "RD",
+          "Rear derailleur",
+          "Reported · fw 2.55.8",
+          "78%",
+          StatusTone.Good,
+        ),
+        ComponentOption(
+          "FRONT_DERAILLEUR",
+          "FD",
+          "Front derailleur",
+          "Estimated from 8.09 V",
+          "≈96%",
+          StatusTone.Good,
+        ),
+        ComponentOption(
+          "LEFT_SHIFTER",
+          "L",
+          "Left shifter",
+          "Coin cell",
+          "2.91 V",
+          StatusTone.Good,
+        ),
+        ComponentOption(
+          "RIGHT_SHIFTER",
+          "R",
+          "Right shifter",
+          "Coin cell",
+          "2.89 V",
+          StatusTone.Good,
+        ),
+        ComponentOption(
+          "POWER_METER",
+          "PM",
+          "Power meter",
+          "Reported by the power meter",
+          "92%",
+          StatusTone.Good,
+        ),
+      )
+    for ((size, name) in pickerSizes) {
+      for (dark in listOf(true, false)) {
+        render("widget-component-picker$name-${if (dark) "dark" else "light"}", dark, size) {
+          ComponentPicker("Road bike", options, selected = null, onPick = {}, onBack = {})
+        }
+      }
+    }
+    render("widget-component-picker-picked-dark", true) {
+      ComponentPicker("Road bike", options, selected = "POWER_METER", onPick = {}, onBack = {})
+    }
+  }
+
+  /** The widget pickers' sizes: a phone, then split in two from a phone on its side up. */
+  private val pickerSizes =
+    listOf(
+      RenderSize.Phone to "",
+      RenderSize.PhoneLandscape to "-landscape",
+      RenderSize.PassportLandscape to "-passport-landscape",
+      RenderSize.Fold to "-fold",
+      RenderSize.Tablet to "-tablet",
+    )
 
   private fun render(
     name: String,

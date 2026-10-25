@@ -1,6 +1,7 @@
 package com.r0adkll.cassette.wear.di
 
 import android.app.Application
+import com.r0adkll.cassette.wear.complication.ComplicationPicks
 import com.r0adkll.cassette.wear.data.PhoneData
 import com.r0adkll.cassette.wear.tile.TileRefresh
 import com.slack.circuit.foundation.Circuit
@@ -18,6 +19,7 @@ interface WearAppGraph {
   val phoneData: PhoneData
   val clock: Clock
   val tileRefresh: TileRefresh
+  val complicationPicks: ComplicationPicks
 
   @Provides
   @SingleIn(AppScope::class)

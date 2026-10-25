@@ -34,6 +34,14 @@ final class WidgetRenderTests: XCTestCase {
       } background: {
         SmallBackground(tone: .stale, look: look)
       }
+      // The power meter preferred (decision 0027): shown while all is good, then the one to charge.
+      for tone in [Tone.good, .low] {
+        home("small-preferred-\(tone.rawValue.lowercased())", .small, dark) {
+          SmallView(bike: Samples.road(tone), date: date, look: look, preferred: "POWER_METER")
+        } background: {
+          SmallBackground(tone: tone, look: look)
+        }
+      }
       home("small-empty", .small, dark) {
         NoBikeView(look: look)
       } background: {

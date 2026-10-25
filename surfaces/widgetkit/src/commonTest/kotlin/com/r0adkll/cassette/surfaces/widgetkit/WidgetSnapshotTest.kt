@@ -83,6 +83,7 @@ class WidgetSnapshotTest {
     assertEquals("FD", fd.code)
     assertEquals("11%", fd.value)
     assertEquals("Low", fd.tone)
+    assertEquals("FRONT_DERAILLEUR", fd.kind)
 
     // Stale starts a millisecond past 14 days, as isStale says.
     assertEquals((seen + 14.days + 1.milliseconds).toEpochMilliseconds(), bike.staleAt)

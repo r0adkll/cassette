@@ -118,6 +118,46 @@ class BikeSummaryTest {
   }
 
   @Test
+  fun aPreferredComponentShowsWhileAllIsGood() {
+    val good =
+      overview(
+          component(1, ComponentKind.REAR_DERAILLEUR, percent = 78, status = BatteryStatus.OK),
+          component(2, ComponentKind.POWER_METER, percent = 92, method = ReadMethod.Gatt),
+        )
+        .toSummary(now)
+
+    assertEquals(
+      "PM",
+      good.components.featured(good.status.tone, ComponentKind.POWER_METER)?.code,
+    )
+    assertEquals("RD", good.components.featured(good.status.tone, null)?.code)
+    // A bike without it shows the weakest.
+    assertEquals("RD", good.components.featured(good.status.tone, ComponentKind.FORK)?.code)
+  }
+
+  @Test
+  fun theComponentToChargeTakesOverFromThePreferredOne() {
+    val low =
+      overview(
+          component(1, ComponentKind.REAR_DERAILLEUR, percent = 78, status = BatteryStatus.OK),
+          component(2, ComponentKind.FRONT_DERAILLEUR, mV = 7_400, status = BatteryStatus.LOW),
+          component(3, ComponentKind.POWER_METER, percent = 92, method = ReadMethod.Gatt),
+        )
+        .toSummary(now)
+
+    assertEquals("FD", low.components.featured(low.status.tone, ComponentKind.POWER_METER)?.code)
+    // A picked component stays itself, whatever the bike's status.
+    assertEquals("PM", low.components.picked(ComponentKind.POWER_METER)?.code)
+  }
+
+  @Test
+  fun pickedKindsReadBackFromTheirNames() {
+    assertEquals(ComponentKind.POWER_METER, componentKindOrNull("POWER_METER"))
+    assertEquals(null, componentKindOrNull("A_NEWER_KIND"))
+    assertEquals(null, componentKindOrNull(null))
+  }
+
+  @Test
   fun relativeTimes() {
     assertEquals("just now", ago(30.minutes / 60))
     assertEquals("5 min ago", ago(5.minutes))

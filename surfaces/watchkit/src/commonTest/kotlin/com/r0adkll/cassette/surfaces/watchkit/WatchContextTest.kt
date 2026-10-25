@@ -12,7 +12,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 
 class WatchContextTest {
-  private fun snapshot(value: String, level: Float, tone: String = "Good") =
+  private fun snapshot(value: String, level: Float, tone: String = "Good", pm: String = "92%") =
     WidgetSnapshot(
       writtenAt = 1,
       defaultBikeId = 1,
@@ -30,7 +30,10 @@ class WatchContextTest {
                 summary = "",
                 weakestId = 2,
                 components =
-                  listOf(WidgetComponent(2, "RD", "Rear derailleur", value, level, tone, "GOOD")),
+                  listOf(
+                    WidgetComponent(2, "RD", "Rear derailleur", value, level, tone, "GOOD"),
+                    WidgetComponent(3, "PM", "Power meter", pm, 0.92f, "Good", "GOOD"),
+                  ),
               ),
           )
         ),
@@ -57,5 +60,7 @@ class WatchContextTest {
     assertEquals(before, WatchContext.complicationKey(snapshot("78%", 0.781f)))
     assertNotEquals(before, WatchContext.complicationKey(snapshot("77%", 0.77f)))
     assertNotEquals(before, WatchContext.complicationKey(snapshot("78%", 0.78f, tone = "Low")))
+    // A complication can pick a component that isn't the weakest.
+    assertNotEquals(before, WatchContext.complicationKey(snapshot("78%", 0.78f, pm = "91%")))
   }
 }
