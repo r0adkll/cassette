@@ -19,7 +19,8 @@ internal builds, and the stores are added beside it.
   same way (negative hub serials and sample keys, so capture never matches them).
 - **Tablets ship.** Android tablets and foldables, and the iPad (the iOS app keeps iPhone and iPad),
   with the large-screen layouts ([0014](0014-large-screens.md)). The listings have 7" and 10" tablet
-  sets on Play and an iPad set on the App Store.
+  sets on Play and an iPad set on the App Store, and an iPhone Duo set (2026-10-24): uncaptioned
+  Simulator captures, open then closed, as the iPad's are.
 - **Listings** live in `fastlane/` for supply and deliver, text and images, rebuilt by
   `scripts/store-assets` (`fastlane/README.md`). They say Cassette is unofficial and not affiliated with
   SRAM, keep SRAM and AXS out of the app names and App Store keywords, and show no SRAM names or marks.

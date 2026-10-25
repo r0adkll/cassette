@@ -1,7 +1,8 @@
 import XCTest
 
 /// The App Store screenshots (fastlane/README.md): the sample bike, renamed as a rider would name
-/// theirs, on an iPhone or an iPad in landscape. Only runs when asked, from a fresh install:
+/// theirs, on an iPhone (a closed iPhone Duo too) or an iPad in landscape. Only runs when asked,
+/// from a fresh install:
 ///
 ///   IOS_UITEST_ONLY=CassetteUITests/StoreScreenshots TEST_RUNNER_STORE_SCREENSHOTS=1 \
 ///     IOS_SIMULATOR=<udid> scripts/ios-uitest
@@ -95,6 +96,9 @@ final class StoreScreenshots: XCTestCase {
         app.swipeUp()
         swipes += 1
       }
+      // A tap on a list that's still scrolling only stops it, and an iPhone Duo's list keeps
+      // scrolling, too slowly to see, for several seconds after a swipe.
+      sleep(10)
     }
     expect(text, file: file, line: line)
     target.tap()

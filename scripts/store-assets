@@ -6,7 +6,7 @@
 #   scripts/store-assets --no-render  lays out from what's already in fastlane/assets
 #
 # Sources: Android screens come from StoreRenderTest (features/bikes/ui) into fastlane/assets/screens.
-# iOS, iPad, Apple Watch and Wear OS screens are device captures in fastlane/assets/captures,
+# iOS, iPad, iPhone Duo, Apple Watch and Wear OS screens are device captures in fastlane/assets/captures,
 # retaken by hand (fastlane/README.md says how). Captions are in this file.
 # Needs Chrome, ImageMagick (magick) and rsvg-convert.
 set -euo pipefail
@@ -136,6 +136,13 @@ surface watch "And on your Apple Watch." 4
 ipad=0
 for shot in "$assets"/captures/ipad-13/s0*.png; do
   copy "$shot" "$ios/$(( ++ipad ))_ipad13_$(basename "$shot")"
+done
+
+# iPhone Duo, as captured and uncaptioned: open (the inner display, on its side) first, then
+# closed. One set takes both displays' sizes.
+duo=0
+for shot in "$assets"/captures/iphone-duo/open-s0*.png "$assets"/captures/iphone-duo/closed-s0*.png; do
+  copy "$shot" "$ios/$(( ++duo ))_duo_$(basename "$shot")"
 done
 
 watch=0
