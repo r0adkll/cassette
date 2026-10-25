@@ -43,9 +43,16 @@ internal builds, and the stores are added beside it.
   500 characters; the App Store's What's New is `release_notes.txt`, none for the first version.
   Claude Code drafts both from the entries, which are written for us rather than for riders, and the
   release manager takes, edits or redoes the draft. Then it commits, pushes main and publishes a
-  GitHub release tagged with the bare version (`1.0.0`), which starts the Release workflow; CI's
-  TestFlight job builds the same commit. Last, it moves `cassette.version` on (a `[skip ci]` commit),
-  so main's Drop and TestFlight builds stop carrying the released version.
+  GitHub release tagged with the bare version (`1.0.0`), which starts the Release workflow. Last, it
+  moves `cassette.version` on (a `[skip ci]` commit), so main's Drop and TestFlight builds stop
+  carrying the released version.
+- **The App Store build comes from a Mac** (2026-10-24). An app built with Xcode 26 runs
+  letterboxed on the iPhone Duo; Xcode 27.1's builds fill both its screens and get the vertical
+  bar. GitHub's runners have Xcode 26 (its `xcode-27` image is a preview), so CI keeps uploading
+  main's TestFlight builds with it but skips the release commit ("Prepare release"), and
+  `scripts/app-store-wizard` archives that commit on a Mac with Xcode 27.1 or later and uploads it
+  under the same number, the commit count. Once GitHub's runners have Xcode 27.1, CI can build
+  releases again.
 - **Backups.** Everything the app keeps goes to a new phone, automatically: the database (bikes,
   components and their history) and settings. The capture log doesn't: it records this phone's
   scans, and it shouldn't eat into Android's 25 MB backup quota.

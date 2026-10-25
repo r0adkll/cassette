@@ -23,6 +23,15 @@ ported. Don't build new features on the POC.
   upload key (`scripts/release-signing-wizard`). Locally: `set -a; source ~/.cassette/release.env; set +a`, then
   `./gradlew :app:android:bundleRelease :app:wear:bundleRelease`; `scripts/check-release-manifests`
   fails on network or install permissions and debug components in the release manifests.
+- App Store: `scripts/app-store-wizard` walks the first submission in 16 stages (the App Store Connect
+  app, the API key and CI's TestFlight secrets, internal testing, the fastlane listing and privacy
+  answers, `scripts/release`, App Review); `scripts/app-store-wizard <stage>` resumes. Its values and
+  the key live in `~/.cassette/` (`app-store.env`, the `.p8`, fastlane's `app-store-connect.json`).
+  CI's API key signs only bundle IDs that are registered already: a new target's ID is registered
+  from a Mac first (`xcodebuild -allowProvisioningUpdates` with Xcode's account and no key, as stage
+  3 does), or the TestFlight job fails with "Authentication failed". The release commit's store
+  build is archived on a Mac with Xcode 27.1 (stage 15; CI's Xcode 26 builds run letterboxed on
+  the iPhone Duo), so CI's TestFlight job skips commits titled "Prepare release".
 - `./gradlew :common:compose:jvmTest`: renders the gallery to `common/compose/build/gallery/*.png` in every
   status state, light and dark. Feature UI modules render their screens to `build/screens/` the same way
   (e.g. `:features:bikes:ui:jvmTest`). Use them to check UI without a device; CI uploads both.

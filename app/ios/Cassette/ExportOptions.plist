@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- CI's TestFlight upload (decision 0017): exporting the archive uploads it to App Store Connect. -->
+<!-- CI's TestFlight upload (decision 0017) and the release's, from a Mac (decision 0019, scripts/app-store-wizard):
+     exporting the archive uploads it to App Store Connect. -->
 <plist version="1.0">
 <dict>
 	<key>method</key>

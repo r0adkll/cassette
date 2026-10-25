@@ -267,10 +267,13 @@ jobs:
   # TestFlight (internal testers) from main. Needs the App Store Connect API key in
   # APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID and APP_STORE_CONNECT_KEY_BASE64 (the
   # .p8, base64); without them the job only says so. Signing is automatic (cloud-managed).
+  # Not the release commit: its store build comes from a Mac with Xcode 27.1 under the same build
+  # number (scripts/app-store-wizard, decision 0019), since Xcode 26 builds run letterboxed on
+  # the iPhone Duo.
   testflight:
     name: TestFlight
     needs: ios-app
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'Prepare release ') }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v7
