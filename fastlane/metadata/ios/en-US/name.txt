@@ -1,1 +1,1 @@
-Cassette
+Cassette: Bike Battery Monitor

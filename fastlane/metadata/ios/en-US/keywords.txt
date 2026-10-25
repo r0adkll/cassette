@@ -1,1 +1,1 @@
-battery,derailleur,shifter,cycling,wireless shifting,drivetrain,power meter,dropper,widget,road,mtb
+cycling,wireless shifting,drivetrain,power meter,dropper,widget,road,mtb,gravel,ebike,bicycle
