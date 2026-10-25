@@ -257,68 +257,42 @@ clean_path() {
   printf '%s' "${p/#\~/$HOME}"
 }
 
-# The TestFlight job's commands, run here on the checkout at $1 (this one by default), numbered
-# as CI numbers it: the release's store build, and the fallback when CI can't sign or upload.
-# With no API key saved, Xcode's own account signs and uploads.
+# The TestFlight job's commands, run here: the fallback when CI can't sign or upload.
 archive_here() {
-  local src=${1:-.} out="$PWD/build/app-store" build log
-  build=$(git -C "$src" rev-list --count --first-parent HEAD)
+  local out=build/app-store build log xcode
+  build=$(git rev-list --count --first-parent HEAD)
   log="$out/archive.log"
   if ! xcodebuild -showsdks 2>/dev/null | grep -q watchos; then
     warn "Xcode's watchOS platform is missing: xcodebuild -downloadPlatform watchOS"
     return 1
   fi
-  [[ -f "$src/app/ios/Cassette/Firebase/GoogleService-Info.plist" ]] ||
+  [[ -f app/ios/Cassette/Firebase/GoogleService-Info.plist ]] ||
     warn "No Firebase config here, so this build won't send crash reports (scripts/firebase-wizard)."
+  xcode=$(xcodebuild -version | sed -n 's/^Xcode //p')
+  [[ "$(printf '%s\n' 27.1 "$xcode" | sort -V | head -n1)" == 27.1 ]] ||
+    warn "This is Xcode $xcode: its build runs letterboxed on the iPhone Duo (CI's has 27.1)."
   mkdir -p "$out"
-  rm -rf "$out/Cassette.xcarchive" "$out/export"
-  local auth=(-allowProvisioningUpdates)
-  if [[ -f "$APP_STORE_CONNECT_KEY_PATH" ]]; then
-    auth+=(-authenticationKeyPath "$APP_STORE_CONNECT_KEY_PATH"
-      -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID"
-      -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID")
-  fi
-  say "Archiving build $build from $(git -C "$src" rev-parse --short HEAD) with"
-  say "$(xcodebuild -version | head -n1); the output goes to $log."
+  local auth=(-allowProvisioningUpdates
+    -authenticationKeyPath "$APP_STORE_CONNECT_KEY_PATH"
+    -authenticationKeyID "$APP_STORE_CONNECT_KEY_ID"
+    -authenticationKeyIssuerID "$APP_STORE_CONNECT_ISSUER_ID")
+  say "Archiving build $build from $(git rev-parse --short HEAD); the output goes to $log."
   note "Gradle builds the Kotlin framework first: allow 10 minutes or more."
-  if (cd "$src" && scripts/xcodegen) > "$log" 2>&1 &&
-    xcodebuild -project "$src/app/ios/Cassette/Cassette.xcodeproj" -scheme Cassette \
+  if scripts/xcodegen > "$log" 2>&1 &&
+    xcodebuild -project app/ios/Cassette/Cassette.xcodeproj -scheme Cassette \
       -configuration Release -destination 'generic/platform=iOS' \
       -archivePath "$out/Cassette.xcarchive" "${auth[@]}" \
       CURRENT_PROJECT_VERSION="$build" archive >> "$log" 2>&1 &&
     xcodebuild -exportArchive -archivePath "$out/Cassette.xcarchive" \
-      -exportOptionsPlist "$src/app/ios/Cassette/ExportOptions.plist" \
+      -exportOptionsPlist app/ios/Cassette/ExportOptions.plist \
       -exportPath "$out/export" "${auth[@]}" >> "$log" 2>&1; then
     step "Uploaded build $build. Apple processes it for 10 to 30 minutes, then emails you."
+    note "CI's build of this same commit would be refused as a duplicate; the next commit's is fine."
   else
     warn "It failed. The end of $log:"
     tail -n 20 "$log"
     return 1
   fi
-}
-
-# The release's store build (decision 0019), from a worktree of the release commit: Xcode 27.1 or
-# later, since Xcode 26 builds (CI's) run letterboxed on the iPhone Duo. CI's TestFlight job
-# skips that commit, so its build number is free.
-archive_release() {
-  local sha=$1 dir="$PWD/build/app-store/release" xcode status=0
-  xcode=$(xcodebuild -version | sed -n 's/^Xcode //p')
-  if [[ "$(printf '%s\n' 27.1 "$xcode" | sort -V | head -n1)" != 27.1 ]]; then
-    warn "This is Xcode $xcode; the store build needs 27.1 or later (sudo xcode-select -s <Xcode>)."
-    return 1
-  fi
-  git worktree remove --force "$dir" 2>/dev/null || rm -rf "$dir"
-  git worktree prune
-  git worktree add --quiet --detach "$dir" "$sha" || return 1
-  # Not in git: the crash reports config, and the Android SDK's path Gradle reads.
-  if [[ -f app/ios/Cassette/Firebase/GoogleService-Info.plist ]]; then
-    mkdir -p "$dir/app/ios/Cassette/Firebase"
-    cp app/ios/Cassette/Firebase/GoogleService-Info.plist "$dir/app/ios/Cassette/Firebase/"
-  fi
-  [[ -f local.properties ]] && cp local.properties "$dir/"
-  archive_here "$dir" || status=1
-  git worktree remove --force "$dir"
-  return "$status"
 }
 
 # A Release build with Xcode's own account, stopped once signing has passed: automatic signing
@@ -373,10 +347,6 @@ s_start() {
     exit 1
   fi
   step "gh is signed in; git, python3 and Xcode ($(xcodebuild -version | head -n1)) are here."
-  local xcode
-  xcode=$(xcodebuild -version | sed -n 's/^Xcode //p')
-  [[ "$(printf '%s\n' 27.1 "$xcode" | sort -V | head -n1)" == 27.1 ]] ||
-    warn "The release's store build (stage $(stage_number s_release)) needs Xcode 27.1 or later."
   if command -v fastlane >/dev/null 2>&1; then
     step "fastlane is here (it uploads the listing)."
   elif command -v brew >/dev/null 2>&1 && confirm "fastlane uploads the listing. Install it with Homebrew now?"; then
@@ -545,8 +515,7 @@ s_first_build() {
   stage "The first TestFlight build"
   say "CI's TestFlight job archives main's Release build ($VERSION, numbered by commit count)"
   say "and uploads it. Main's next push does that on its own; this re-runs it on the latest."
-  note "GitHub's runners have Xcode 26, whose builds run letterboxed on an iPhone Duo; the store"
-  note "build comes from this Mac's Xcode at the release (stage $(stage_number s_release))."
+  note "It builds with Xcode 27.1 (GitHub's xcode-27 image), so the app fills the iPhone Duo."
   printf '\n'
   local run job uploaded
   run=$(gh run list --workflow build.yml --branch main --event push --status success --limit 1 \
@@ -576,11 +545,7 @@ s_first_build() {
   fi
   printf '\n'
   if confirm "Archive and upload from this Mac instead, with its Xcode?"; then
-    if archive_here; then
-      note "CI's build of this same commit would be refused as a duplicate; the next commit's is fine."
-    else
-      resume_hint s_first_build
-    fi
+    archive_here || resume_hint s_first_build
   fi
   pause
 }
@@ -706,9 +671,8 @@ s_version_page() {
 s_release() {
   stage "Release $VERSION"
   say "The store build is the release commit's. scripts/release (decision 0019) rolls the"
-  say "changelog into $VERSION, pushes main and tags it, then moves main on to the next"
-  say "version. CI tests that commit but leaves its upload to this Mac: the iPhone Duo needs"
-  say "an Xcode 27.1 build, and GitHub's runners have Xcode 26."
+  say "changelog into $VERSION, pushes main and tags it, and CI's TestFlight job uploads"
+  say "that commit; then it moves main on to the next version."
   note "Merge the listing changes into main first if they're still on a branch."
   printf '\n'
   local sha="" run="" tries
@@ -732,24 +696,7 @@ s_release() {
     resume_hint s_release
     exit 1
   fi
-  # scripts/release made the commit here, as a rule; fetch it otherwise.
-  git cat-file -e "$sha" 2>/dev/null || git fetch --quiet origin "$sha" 2>/dev/null || true
-  RELEASE_BUILD=$(git rev-list --count --first-parent "$sha" 2>/dev/null || true)
-  if [[ -z "$RELEASE_BUILD" ]]; then
-    warn "The release commit ($sha) isn't here: git fetch origin"
-    resume_hint s_release
-    exit 1
-  fi
-  write_env RELEASE_BUILD "$RELEASE_BUILD"
-  step "The release build is $VERSION ($RELEASE_BUILD), from $(git rev-parse --short "$sha")."
-  printf '\n'
-  if confirm "Archive and upload it from this Mac now? (Skip it if it's uploaded already.)"; then
-    until archive_release "$sha"; do
-      confirm "Try again?" || { resume_hint s_release; exit 1; }
-    done
-  fi
-  printf '\n'
-  # CI's run on the release commit (its tests; it skips the upload) can take a moment to appear.
+  # CI's run on the release commit can take a moment to appear.
   for tries in 1 2 3 4 5 6; do
     run=$(gh run list --workflow build.yml --commit "$sha" --event push --limit 1 \
       --json databaseId --jq '.[0].databaseId' 2>/dev/null || true)
@@ -757,15 +704,18 @@ s_release() {
     sleep 10
   done
   if [[ -z "$run" ]]; then
-    warn "No CI run for the release commit yet: gh run list --commit $sha"
+    warn "No CI run for the release commit ($sha) yet: gh run list --commit $sha"
   else
-    say "Checking CI passed on the release commit (run $run)."
-    if gh run watch "$run" --exit-status --interval 30; then
-      step "CI passed."
-    else
+    say "Watching CI on the release commit (run $run); the TestFlight job comes last."
+    gh run watch "$run" --exit-status --interval 30 ||
       warn "CI failed on the release commit: gh run view $run --log-failed"
-      note "Fix main and cut the next version rather than submitting this build."
-    fi
+  fi
+  # scripts/release made the commit here, as a rule; fetch it otherwise.
+  git cat-file -e "$sha" 2>/dev/null || git fetch --quiet origin "$sha" 2>/dev/null || true
+  RELEASE_BUILD=$(git rev-list --count --first-parent "$sha" 2>/dev/null || true)
+  if [[ -n "$RELEASE_BUILD" ]]; then
+    write_env RELEASE_BUILD "$RELEASE_BUILD"
+    step "The release build is $VERSION ($RELEASE_BUILD)."
   fi
   pause
 }

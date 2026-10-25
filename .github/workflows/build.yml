@@ -267,14 +267,16 @@ jobs:
   # TestFlight (internal testers) from main. Needs the App Store Connect API key in
   # APP_STORE_CONNECT_KEY_ID, APP_STORE_CONNECT_ISSUER_ID and APP_STORE_CONNECT_KEY_BASE64 (the
   # .p8, base64); without them the job only says so. Signing is automatic (cloud-managed).
-  # Not the release commit: its store build comes from a Mac with Xcode 27.1 under the same build
-  # number (scripts/app-store-wizard, decision 0019), since Xcode 26 builds run letterboxed on
-  # the iPhone Duo.
+  # The release commit's build is the one submitted to App Review, so it's built with Xcode 27.1:
+  # Xcode 26 builds run letterboxed on the iPhone Duo (decision 0019). GitHub's xcode-27 image is a
+  # preview, and its default Xcode is 27.0.
   testflight:
     name: TestFlight
     needs: ios-app
-    if: ${{ github.event_name == 'push' && !startsWith(github.event.head_commit.message, 'Prepare release ') }}
-    runs-on: macos-latest
+    if: ${{ github.event_name == 'push' }}
+    runs-on: xcode-27
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
     steps:
       - uses: actions/checkout@v7
         with:
@@ -324,6 +326,7 @@ jobs:
           KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
           ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
         run: |
+          xcodebuild -version
           brew install xcodegen
           scripts/xcodegen
           build="$(git rev-list --count --first-parent HEAD)"
@@ -338,4 +341,4 @@ jobs:
           xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Cassette.xcarchive" \
             -exportOptionsPlist app/ios/Cassette/ExportOptions.plist \
             -exportPath "$RUNNER_TEMP/export" "${auth[@]}"
-          echo "TestFlight: build $build uploaded" >> "$GITHUB_STEP_SUMMARY"
+          echo "TestFlight: build $build uploaded, from $(xcodebuild -version | head -n1)" >> "$GITHUB_STEP_SUMMARY"
