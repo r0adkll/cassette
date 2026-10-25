@@ -60,6 +60,9 @@ ported. Don't build new features on the POC.
 - Tile: `adb shell cmd statusbar add-tile com.r0adkll.cassette.debug/com.r0adkll.cassette.surfaces.tile.BikeTileService`
   (then `click-tile`, and `remove-tile` when done); read its state from
   `adb shell dumpsys activity service com.android.systemui/.SystemUIService`.
+- Open in App (decision 0008): `adb shell am start -a android.intent.action.VIEW -d
+  cassette://drop/<Build ID> com.r0adkll.cassette.debug` does what a Drop Build page's button does
+  (debug and internal builds only). A local build has the debug key, so Drop offers it as a reinstall.
 - Wear (decision 0013): `./gradlew :app:wear:assembleDebug`, installed with adb on a watch or a Wear OS
   emulator. Drop's builds install from the Wear Build page (its adb command) and then update themselves; a
   local build has the debug key, so it can't take a Drop update (uninstall it first). It shares the phone app's id and key, which the Data Layer needs. Without a paired phone, the

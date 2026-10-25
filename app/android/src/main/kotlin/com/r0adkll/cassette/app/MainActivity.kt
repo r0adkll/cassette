@@ -32,7 +32,12 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     lifecycleScope.launch { app.graph.captureController.ensureBackgroundCapture("app opened") }
     val updates = app.updates
-    if (savedInstanceState == null) updates.check()
+    if (savedInstanceState == null) {
+      // Open in App on a Drop Build page offers that Build; a check of this channel follows when
+      // its sheet closes. Not again when Recents brings the link's task back.
+      val openedBuild = intent.dropBuild()?.takeUnless { intent.fromHistory() }
+      if (openedBuild != null) updates.checkBuild(openedBuild) else updates.check()
+    }
 
     // A restored activity keeps its back stack; only a fresh start follows the launching link.
     val launchLink = if (savedInstanceState == null) intent.link() else null
@@ -73,7 +78,12 @@ class MainActivity : ComponentActivity() {
   override fun onNewIntent(intent: Intent) {
     super.onNewIntent(intent)
     intent.link()?.let(newLinks::trySend)
+    intent.dropBuild()?.let(app.updates::checkBuild)
   }
 
   private fun Intent.link(): List<Screen>? = data?.toString()?.let(DeepLinks::parse)
+
+  private fun Intent.dropBuild(): String? = data?.toString()?.let(DeepLinks::dropBuild)
+
+  private fun Intent.fromHistory() = flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY != 0
 }

@@ -5,7 +5,9 @@ import com.slack.circuit.runtime.screen.Screen
 /**
  * Links into the app from notifications and widgets. They are only sent to the app's own activity,
  * never exported: `cassette://bike/{bikeId}` and
- * `cassette://bike/{bikeId}/component/{componentId}`.
+ * `cassette://bike/{bikeId}/component/{componentId}`. The one link a browser opens is Drop's Open
+ * in App, `cassette://drop/{buildId}`, in the builds Drop installs (decision 0008); it opens no
+ * screen.
  */
 object DeepLinks {
   const val SCHEME = "cassette"
@@ -26,5 +28,11 @@ object DeepLinks {
         listOf(bike, ComponentScreen(parts[3].toLongOrNull() ?: return null))
       else -> null
     }
+  }
+
+  /** The Build ID in Drop's Open in App link; null for any other link. */
+  fun dropBuild(link: String): String? {
+    val buildId = link.removePrefix("$SCHEME://drop/").takeIf { it != link } ?: return null
+    return buildId.trimEnd('/').takeIf { it.isNotEmpty() && '/' !in it }
   }
 }

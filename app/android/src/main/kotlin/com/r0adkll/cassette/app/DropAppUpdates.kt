@@ -10,6 +10,7 @@ import com.r0adkll.cassette.common.compose.AvailableBuild
 import com.r0adkll.cassette.common.compose.ReinstallReason
 import com.r0adkll.cassette.common.compose.UpdateStatus
 import com.r0adkll.drop.Drop
+import com.r0adkll.drop.DropState
 import com.r0adkll.drop.ReinstallReason as DropReinstallReason
 import com.r0adkll.drop.Update
 import com.r0adkll.drop.UpdateCheckResult
@@ -58,9 +59,49 @@ class DropAppUpdates(
           UpdateCheckResult.UnknownProduct -> UpdateStatus.UpToDate
           UpdateCheckResult.SignInRequired -> UpdateStatus.Failed("Sign in to Drop to check")
           is UpdateCheckResult.Failed -> UpdateStatus.Failed(result.message)
+          // Answers about one Build, which only checkBuild asks for.
+          is UpdateCheckResult.OpenedInApp,
+          UpdateCheckResult.AlreadyInstalled,
+          is UpdateCheckResult.BuildExpired -> UpdateStatus.UpToDate
         }
       lastChecked.value = Clock.System.now()
     }
+  }
+
+  /**
+   * Offers the Build that Open in App on a Drop Build page opened (`cassette://drop/{buildId}`,
+   * decision 0008) in Drop's update sheet, whichever channel it's on: installing it moves this
+   * install to that channel. The sheet also says when it's the installed Build or has expired.
+   */
+  fun checkBuild(buildId: String) {
+    if (!enabled) return
+    // Drop's sheet shows the last answer, so a check still running finishes first.
+    val running = checking
+    checking = scope.launch {
+      running?.join()
+      when (val result = drop.check(buildId)) {
+        is UpdateCheckResult.OpenedInApp -> offer(result.update.toBuild())
+        is UpdateCheckResult.Available -> offer(result.update.toBuild())
+        is UpdateCheckResult.ReinstallRequired -> offer(result.update.toBuild(reinstall = true))
+        // The status stays this channel's.
+        UpdateCheckResult.AlreadyInstalled,
+        is UpdateCheckResult.BuildExpired -> sheetOpen = true
+        // Nothing for the sheet to say (a Build Drop has no copy of for this app, or no answer):
+        // App updates says why.
+        UpdateCheckResult.SignInRequired ->
+          status.value = UpdateStatus.Failed("Sign in to Drop to check")
+        is UpdateCheckResult.Failed -> status.value = UpdateStatus.Failed(result.message)
+        // Answers to an Update check, not about one Build.
+        UpdateCheckResult.UpToDate,
+        UpdateCheckResult.UnknownProduct,
+        is UpdateCheckResult.ChannelEnded -> Unit
+      }
+    }
+  }
+
+  private fun offer(build: AvailableBuild) {
+    status.value = UpdateStatus.Available(build)
+    sheetOpen = true
   }
 
   override fun open() {
@@ -69,7 +110,17 @@ class DropAppUpdates(
 
   fun closeSheet() {
     sheetOpen = false
-    check()
+    // A download the sheet started stays on offer: checking would put this channel's answer in
+    // its place, which for a Build opened from another channel is a different build.
+    when (drop.state.value) {
+      DropState.Idle,
+      is DropState.UpdateAvailable,
+      is DropState.NotInstallable -> check()
+      is DropState.Downloading,
+      is DropState.ReadyToInstall,
+      is DropState.Installing,
+      is DropState.Failed -> Unit
+    }
   }
 
   /** What the App updates page shows of a build (iteration 13). */

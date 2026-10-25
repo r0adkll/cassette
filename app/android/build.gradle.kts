@@ -109,9 +109,17 @@ baselineProfile {
 
 // Builds from CI go to Drop; the debug and internal builds get its SDK (in-app updates), release
 // the no-op.
+val dropBuildTypes = setOf("debug", "internal")
+
 drop {
   serverUrl = "https://drop.thescavengers.software"
-  enableFor { it.buildType == "debug" || it.buildType == "internal" }
+  enableFor { it.buildType in dropBuildTypes }
+}
+
+// And the link Open in App on a Drop Build page opens (decision 0008).
+androidComponents.onVariants { variant ->
+  if (variant.buildType in dropBuildTypes)
+    variant.sources.manifests.addStaticManifestFile("src/drop/AndroidManifest.xml")
 }
 
 // Settings → About → Open-source licences: every dependency's licence, collected per variant into

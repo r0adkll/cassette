@@ -124,6 +124,8 @@ class DropWatchUpdates(private val application: Application, private val clock: 
 internal fun DropState.toWatchUpdate(): WatchUpdate =
   when (this) {
     DropState.Idle -> WatchUpdate.None
+    // Only Open in App's check comes to this, and Wear Build pages don't offer it.
+    is DropState.NotInstallable -> WatchUpdate.None
     is DropState.UpdateAvailable ->
       if (update.requiresReinstall != null) WatchUpdate.None
       else WatchUpdate.Available(update.versionCode, update.fileSize, update.channel)
