@@ -19,11 +19,16 @@ internal builds, and the stores are added beside it.
   same way (negative hub serials and sample keys, so capture never matches them).
 - **Tablets ship.** Android tablets and foldables, and the iPad (the iOS app keeps iPhone and iPad),
   with the large-screen layouts ([0014](0014-large-screens.md)). The listings have 7" and 10" tablet
-  sets on Play and an iPad set on the App Store.
+  sets on Play and an iPad set on the App Store, and an iPhone Duo set (2026-10-24): uncaptioned
+  Simulator captures, open then closed, as the iPad's are.
 - **Listings** live in `fastlane/` for supply and deliver, text and images, rebuilt by
   `scripts/store-assets` (`fastlane/README.md`). They say Cassette is unofficial and not affiliated with
   SRAM, keep SRAM and AXS out of the app names and App Store keywords, and show no SRAM names or marks.
   Play's category is Tools; the App Store's are Utilities, then Sports. Support goes to GitHub issues.
+  The store name is "Cassette: Bike Battery Monitor" (2026-10-23), with the subtitle "Shifters,
+  derailleurs & more": "Cassette" alone is taken on the App Store, and Play matches it. The app is
+  still Cassette on the home screen and in the app. Words in the name and subtitle count for App Store
+  search, so the keywords don't repeat them.
 - **Signing.** Play App Signing holds the app signing key, one for the phone and Wear apps (the Data
   Layer needs it, [0013](0013-wear.md)); we keep an upload key, made by `scripts/release-signing-wizard`
   ([0008](0008-tooling.md)).
@@ -41,6 +46,12 @@ internal builds, and the stores are added beside it.
   GitHub release tagged with the bare version (`1.0.0`), which starts the Release workflow; CI's
   TestFlight job builds the same commit. Last, it moves `cassette.version` on (a `[skip ci]` commit),
   so main's Drop and TestFlight builds stop carrying the released version.
+- **Store builds use Xcode 27.1** (2026-10-24). An app built with Xcode 26 runs letterboxed on the
+  iPhone Duo; Xcode 27.1's builds fill both its screens and get the vertical bar, as the Duo
+  screenshots show. CI's TestFlight job, whose build of the release commit is the one submitted,
+  runs on GitHub's `xcode-27` image (a preview, which defaults to Xcode 27.0) with 27.1 selected.
+  The iOS app job stays on `macos-latest` and Xcode 26, so the app still builds against the older
+  SDK. Both move to the standard image once it has Xcode 27.1.
 - **Backups.** Everything the app keeps goes to a new phone, automatically: the database (bikes,
   components and their history) and settings. The capture log doesn't: it records this phone's
   scans, and it shouldn't eat into Android's 25 MB backup quota.

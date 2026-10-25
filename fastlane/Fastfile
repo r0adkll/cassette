@@ -1,6 +1,9 @@
 # Store listings only, for now: text and images, no builds (README.md here). The Play bundle and
 # App Store build lanes come with the release CI job.
 
+# README.md here is ours: fastlane would rewrite it as a list of lanes on every run.
+skip_docs
+
 platform :android do
   desc "Uploads the Play listing (text and images) from metadata/android"
   lane :listing do

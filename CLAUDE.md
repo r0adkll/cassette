@@ -23,6 +23,13 @@ ported. Don't build new features on the POC.
   upload key (`scripts/release-signing-wizard`). Locally: `set -a; source ~/.cassette/release.env; set +a`, then
   `./gradlew :app:android:bundleRelease :app:wear:bundleRelease`; `scripts/check-release-manifests`
   fails on network or install permissions and debug components in the release manifests.
+- App Store: `scripts/app-store-wizard` walks the first submission in 16 stages (the App Store Connect
+  app, the API key and CI's TestFlight secrets, internal testing, the fastlane listing and privacy
+  answers, `scripts/release`, App Review); `scripts/app-store-wizard <stage>` resumes. Its values and
+  the key live in `~/.cassette/` (`app-store.env`, the `.p8`, fastlane's `app-store-connect.json`).
+  CI's API key signs only bundle IDs that are registered already: a new target's ID is registered
+  from a Mac first (`xcodebuild -allowProvisioningUpdates` with Xcode's account and no key, as stage
+  3 does), or the TestFlight job fails with "Authentication failed".
 - `./gradlew :common:compose:jvmTest`: renders the gallery to `common/compose/build/gallery/*.png` in every
   status state, light and dark. Feature UI modules render their screens to `build/screens/` the same way
   (e.g. `:features:bikes:ui:jvmTest`). Use them to check UI without a device; CI uploads both.
@@ -75,8 +82,9 @@ ported. Don't build new features on the POC.
   fooled us ("Back" matched "background", "Front derailleur" matched Diagnostics text). Screenshots
   use `XCUIScreen.main` (the app's own capture is offset in landscape).
   `./gradlew :app:ios:linkDebugFrameworkIosSimulatorArm64` checks the Kotlin half (and its Metro graph).
-  CI builds with Xcode 26: Swift calls to APIs newer than its SDK (the iPhone Duo's, iOS 27.1) go
-  behind `#if compiler(>=6.4)` as well as `#available`, or CI's iOS app job fails to compile.
+  CI's iOS app job builds with Xcode 26: Swift calls to APIs newer than its SDK (the iPhone Duo's,
+  iOS 27.1) go behind `#if compiler(>=6.4)` as well as `#available`, or it fails to compile. The
+  TestFlight job, whose builds ship, uses Xcode 27.1 on GitHub's `xcode-27` image (decision 0019).
   Each target has a `PrivacyInfo.xcprivacy`; after adding a dependency or a file, defaults or clock
   API, `scripts/ios-privacy-scan` lists the required-reason APIs each Release binary uses.
 - Android on an emulator: `ANDROID_SERIAL=<serial> scripts/android-walk "Get started" "=Back" shot:bike`

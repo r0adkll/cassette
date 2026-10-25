@@ -9,7 +9,7 @@ login: Apple has no API key route for them).
 |---|---|
 | `metadata/android/en-US/` | Play: title, short and full description, `changelogs/`, and `images/` (icon, feature graphic, phone, 7", 10" and Wear screenshots) |
 | `metadata/ios/` | App Store: `en-US/` text and URLs, categories, `review_information/notes.txt` |
-| `screenshots/ios/en-US/` | App Store screenshots: iPhone 6.9" and 6.3", iPad 13", Apple Watch (deliver sorts them by pixel size) |
+| `screenshots/ios/en-US/` | App Store screenshots: iPhone 6.9" and 6.3", iPad 13", iPhone Duo, Apple Watch (deliver sorts them by pixel size) |
 | `assets/` | Sources: the caption and feature graphic pages, Android renders (`screens/`) and device captures (`captures/`) |
 
 `scripts/store-assets` rebuilds every image from `assets/`. The captions are in that script.
@@ -33,6 +33,7 @@ marks (the add-bike step that shows the hub's maker and serial is left out). The
 | Wear | 454 × 454 | Emulator captures, `assets/captures/wear/` |
 | iPhone | 1320 × 2868 and 1206 × 2622, captioned | The bike and component: Simulator captures, `assets/captures/iphone-6.9/` and `iphone-6.3/`. Widgets and Apple Watch: the widget test's renders (`assets/captures/widgets/`) laid out by `assets/surfaces.html` |
 | iPad 13" | 2064 × 2752 | Simulator captures, `assets/captures/ipad-13/` |
+| iPhone Duo | 2853 × 2007 open and 1398 × 2034 closed, in one set | Simulator captures, `assets/captures/iphone-duo/` (`open-*` first, then `closed-*`) |
 | Apple Watch | 416 × 496 (Series 10–12, 46 mm) | Simulator capture, `assets/captures/watch/` |
 
 Play's rules: no device frames, Wear shots only the app's UI (no text, frames or masks), taglines under
@@ -55,6 +56,13 @@ All in dark mode with a clean status bar, on Simulators of your own:
 
   The iPad stays in portrait: the rotation the test asks for doesn't happen on the iPadOS 26
   Simulator.
+- iPhone Duo: an iPhone Duo Simulator (iOS 27.1) and a build from Xcode 27.1, or the app runs
+  letterboxed. Closed: the same `StoreScreenshots` run, saved as `closed-s01-bike.png` and
+  `closed-s02-component.png`. Open: XCUITest can't open the Duo or reach its inner display, so
+  open it in DeviceHub (Xcode 27's Simulator), `xcrun simctl launch <udid>
+  com.r0adkll.cassette.debug` (a deep link stops at an "Open in Cassette?" prompt) and shoot the
+  inner display, `LCD-1` in `xcrun simctl io <udid> enumerate`: `xcrun simctl io <udid> screenshot
+  --display=3 open-s01-bike.png`; then tap Rear derailleur and shoot `open-s02-component.png`.
 - Apple Watch: a Series 11 (46 mm) Simulator paired (`xcrun simctl pair`) to the iPhone after its
   run, the `CassetteWatch` scheme installed, the phone app then the watch app launched;
   `xcrun simctl io <watch> screenshot`.
