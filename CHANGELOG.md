@@ -15,8 +15,20 @@ All notable changes to Cassette are documented here. The format follows
   "1 OF 2" beside the bike's name, which couldn't be tapped.
 - [iOS] On iPhone Duo, the bikes are the vertical bar's first button, with a badge counting those
   that need charging.
+- The bike widget can prefer a component when it's small: it shows that one while everything's
+  fine, and the one to charge once something is low. On Android it's the widget's settings' second
+  question, after the bike; on iPhone, "Component" in its edit menu.
+- [Android] Putting Cassette's complication on a Wear OS watch face asks which bike and which
+  component it shows. A picked component always shows itself, in its own colour; "Weakest" works as
+  before and is what a face's own default slot gets.
+- [iOS] The Apple Watch's "Weakest battery" complication is now "Battery", and the face editor lists
+  each bike's components beside the weakest. A picked component always shows itself, in its own
+  colour.
 
 ### Changed
+
+- [Android] The widget's settings split in two on a phone on its side, an open foldable and a
+  tablet, as the app's screens do.
 
 - On an open foldable or a tablet held upright, the bike chips stay in the top bar with Add bike and
   Settings when the bike screen scrolls.

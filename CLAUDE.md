@@ -69,6 +69,10 @@ ported. Don't build new features on the POC.
   -a com.google.android.wearable.app.DEBUG_SURFACE --es operation add-tile --ecn component
   com.r0adkll.cassette.debug/com.r0adkll.cassette.wear.tile.BikeTileService`, then `-a
   com.google.android.wearable.app.DEBUG_SYSUI --es operation show-tile --ei index 0`.
+  A complication's settings (decision 0027) open without a face: `adb shell am start -n
+  com.r0adkll.cassette.debug/com.r0adkll.cassette.wear.complication.ComplicationConfigActivity --ei
+  android.support.wearable.complications.EXTRA_CONFIG_COMPLICATION_ID 42`; the pick lands in
+  `shared_prefs/complications.xml` (`run-as`). The emulator's default face has no complication slots on.
 - iOS (decision 0017): `scripts/xcodegen` (not a bare `xcodegen generate`: it sets the version from
   `cassette.version`), then build the `Cassette`
   scheme in Xcode or with `xcodebuild` (its build phase runs `:app:ios:embedAndSignAppleFrameworkForXcode`).

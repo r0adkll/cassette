@@ -25,14 +25,15 @@ struct BikeStatusWidget: Widget {
   }
 }
 
-/// "Weakest battery": the weakest component's level, as a circular gauge or in a corner.
+/// "Battery": the weakest component's level, or the one picked (decision 0027), as a circular gauge
+/// or in a corner. Its kind stays "weakest", so faces keep it from before it was renamed.
 struct WeakestWidget: Widget {
   var body: some WidgetConfiguration {
-    AppIntentConfiguration(kind: "weakest", intent: PickBike.self, provider: BikeProvider()) { entry in
+    AppIntentConfiguration(kind: "weakest", intent: PickBike.self, provider: BikeProvider(components: true)) { entry in
       WeakestEntryView(entry: entry)
     }
-    .configurationDisplayName("Weakest battery")
-    .description("The lowest battery on a bike.")
+    .configurationDisplayName("Battery")
+    .description("A bike's lowest battery, or the one you pick.")
     .supportedFamilies([.accessoryCircular, .accessoryCorner])
   }
 }
@@ -41,38 +42,55 @@ struct BikeEntry: TimelineEntry {
   var date: Date
   var bike: WidgetBike?
   var relevance: TimelineEntryRelevance?
+  /// The component picked (decision 0027); nil for the weakest.
+  var component: String? = nil
 }
 
 struct BikeProvider: AppIntentTimelineProvider {
+  /// Whether the face editor offers each bike's components too (the Battery complication).
+  var components = false
+
   func placeholder(in context: Context) -> BikeEntry { BikeEntry(date: Samples.now, bike: Samples.road()) }
 
   func snapshot(for configuration: PickBike, in context: Context) async -> BikeEntry {
-    let bike = SnapshotStore.load()?.bike(configuration.bike.flatMap { Int64($0.id) })
+    let bike = SnapshotStore.load()?.bike(configuration.bikeId)
     if bike == nil && context.isPreview { return placeholder(in: context) }
-    return BikeEntry(date: .now, bike: bike)
+    return BikeEntry(date: .now, bike: bike, component: configuration.component?.kind)
   }
 
   func timeline(for configuration: PickBike, in context: Context) async -> Timeline<BikeEntry> {
-    let bike = SnapshotStore.load()?.bike(configuration.bike.flatMap { Int64($0.id) })
+    let bike = SnapshotStore.load()?.bike(configuration.bikeId)
+    let component = configuration.component?.kind
     let now = Date.now
     // A step each time the clock's words change; the watch app reloads when the data does.
     let changes = clockChanges(
       after: now, seen: [bike?.lastSeenDate].compactMap { $0 },
       staleAt: [bike?.staleAt].compactMap { $0 }.map(Date.init(epochMillis:)))
     let entries = ([now] + changes).map { date in
-      BikeEntry(date: date, bike: bike, relevance: bike.flatMap { relevance($0, date: date) })
+      BikeEntry(
+        date: date, bike: bike, relevance: bike.flatMap { relevance($0, date: date) }, component: component)
     }
     return Timeline(entries: entries, policy: .atEnd)
   }
 
-  /// The face editor's choices: the default bike, then each bike by name.
+  /// The face editor's choices: the default bike, then each bike by name. With `components`, each
+  /// is followed by its components: "Default bike · weakest", "Default bike · RD", "Road bike · PM".
   func recommendations() -> [AppIntentRecommendation<PickBike>] {
-    let bikes = SnapshotStore.load()?.bikes ?? []
-    return [AppIntentRecommendation(intent: PickBike(), description: "Default bike")]
-      + bikes.map {
-        AppIntentRecommendation(
-          intent: PickBike(bike: BikeEntity(id: String($0.id), name: $0.name)), description: Text($0.name))
+    let snapshot = SnapshotStore.load()
+    let bikes: [(BikeEntity?, String, WidgetBike?)] =
+      [(nil, "Default bike", snapshot?.bike(nil))]
+      + (snapshot?.bikes ?? []).map { (BikeEntity(id: String($0.id), name: $0.name), $0.name, $0) }
+    return bikes.flatMap { entity, name, bike -> [AppIntentRecommendation<PickBike>] in
+      guard components else {
+        return [AppIntentRecommendation(intent: PickBike(bike: entity), description: Text(name))]
       }
+      return ComponentEntity.choices(bike).map { choice in
+        let code = bike?.current.components.first { $0.kind == choice.kind }?.code
+        return AppIntentRecommendation(
+          intent: PickBike(bike: entity, component: choice),
+          description: Text("\(name) · \(choice.kind == nil ? "weakest" : code ?? choice.name)"))
+      }
+    }
   }
 
   /// The card rises in the Smart Stack when the bike wakes with something low (the pre-ride
@@ -129,9 +147,9 @@ struct WeakestEntryView: View {
     if let bike = entry.bike {
       Group {
         if family == .accessoryCorner {
-          CornerView(bike: bike, date: entry.date)
+          CornerView(bike: bike, date: entry.date, picked: entry.component)
         } else {
-          WeakestGaugeView(bike: bike, date: entry.date)
+          WeakestGaugeView(bike: bike, date: entry.date, picked: entry.component)
         }
       }
       .widgetURL(bike.link)
@@ -142,25 +160,25 @@ struct WeakestEntryView: View {
   }
 }
 
-/// Corner: the weakest value in the corner, its gauge curving along the bezel.
+/// Corner: the weakest value (or the picked one's) in the corner, its gauge curving along the bezel.
 struct CornerView: View {
   var bike: WidgetBike
   var date: Date
+  var picked: String? = nil
 
   var body: some View {
-    let status = bike.status(at: date)
-    let weakest = status.weakest
-    Text(weakest?.value ?? "–")
+    let shown = BatteryShown(status: bike.status(at: date), picked: picked)
+    Text(shown.component?.value ?? "–")
       .font(.condensed(20))
       .widgetCurvesContent()
       .widgetLabel {
-        Gauge(value: weakest?.fill ?? 0) {
-          Text(status.tone == .stale ? "OLD" : weakest?.code ?? "")
+        Gauge(value: shown.component?.fill ?? 0) {
+          Text(shown.label)
         } currentValueLabel: {
-          Text(weakest?.code ?? "")
+          Text(shown.component?.code ?? "")
         }
-        .tint(Palette(dark: true).status(status.tone))
+        .tint(Palette(dark: true).status(shown.tone))
       }
-      .accessibilityLabel("\(bike.name): \(weakest.map { "\($0.name) \($0.value)" } ?? status.headline)")
+      .accessibilityLabel(shown.accessibility(bike))
   }
 }

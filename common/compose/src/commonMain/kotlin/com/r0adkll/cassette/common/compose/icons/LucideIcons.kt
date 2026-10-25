@@ -521,6 +521,17 @@ object LucideIcons {
     }
   }
 
+  /** Lucide `arrow-down-wide-narrow`. */
+  val ArrowDownWideNarrow: ImageVector by lazy {
+    lucide("ArrowDownWideNarrow") {
+      stroke("m3 16 4 4 4-4")
+      stroke("M7 20V4")
+      stroke("M11 4h10")
+      stroke("M11 8h7")
+      stroke("M11 12h4")
+    }
+  }
+
   /** Cassette's `bike-plus`: Lucide `bike` plus a +. */
   val BikePlus: ImageVector by lazy {
     lucide("BikePlus") {

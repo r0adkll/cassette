@@ -73,6 +73,11 @@ data class WidgetComponent(
   val level: Float,
   val tone: String,
   val word: String,
+  /**
+   * The [com.r0adkll.cassette.protocol.ComponentKind] name a widget or complication picks it by
+   * (decision 0027). Optional, so a watch app a release behind still reads the snapshot.
+   */
+  val kind: String? = null,
 )
 
 object WidgetCodec {
@@ -144,6 +149,7 @@ private fun BikeSummary.toWidget(): WidgetStatus =
           level = it.level,
           tone = it.tone.name,
           word = it.tone.word,
+          kind = it.kind.name,
         )
       },
   )

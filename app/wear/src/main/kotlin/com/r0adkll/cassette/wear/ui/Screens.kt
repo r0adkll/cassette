@@ -1,6 +1,7 @@
 package com.r0adkll.cassette.wear.ui
 
 import android.os.Parcelable
+import com.slack.circuit.runtime.screen.PopResult
 import com.slack.circuit.runtime.screen.Screen
 import kotlinx.parcelize.Parcelize
 
@@ -15,3 +16,13 @@ import kotlinx.parcelize.Parcelize
 
 /** Once: allow the app to install its own updates. */
 @Parcelize data object AllowUpdatesScreen : Screen, Parcelable
+
+/** A complication going on a face (decision 0027), first: which bike. */
+@Parcelize data class PickBikeScreen(val complicationId: Int) : Screen, Parcelable
+
+/** Then which of [bikeId]'s components it shows (null: the default bike's). */
+@Parcelize
+data class PickComponentScreen(val complicationId: Int, val bikeId: Long?) : Screen, Parcelable
+
+/** What [PickComponentScreen] pops with once the pick is saved; the bike step passes it on. */
+@Parcelize data object ComplicationPicked : PopResult, Parcelable

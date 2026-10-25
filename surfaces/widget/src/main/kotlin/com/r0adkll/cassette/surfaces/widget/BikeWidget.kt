@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.longPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.Image
@@ -44,13 +45,15 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.r0adkll.cassette.bikes.summary.ComponentRowModel
-import com.r0adkll.cassette.bikes.summary.weakest
+import com.r0adkll.cassette.bikes.summary.componentKindOrNull
+import com.r0adkll.cassette.bikes.summary.featured
 import com.r0adkll.cassette.bikes.ui.BikeUiState
 import com.r0adkll.cassette.bikes.ui.toLoaded
 import com.r0adkll.cassette.common.compose.components.word
 import com.r0adkll.cassette.common.screens.DeepLinks
 import com.r0adkll.cassette.common.screens.deepLinkIntent
 import com.r0adkll.cassette.core.BikeId
+import com.r0adkll.cassette.protocol.ComponentKind
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -61,6 +64,7 @@ import kotlinx.coroutines.flow.map
  * One bike, in a widget that adapts to its size (decision 0010): small shows the status block,
  * medium a bar per component, large a thick bar per component with the value inside. Each instance
  * picks its bike ([WidgetConfigActivity]); none picked, or a deleted bike, means the default bike.
+ * It also picks the component its small size names while all is well (decision 0027).
  */
 class BikeWidget : GlanceAppWidget() {
   override val stateDefinition = PreferencesGlanceStateDefinition
@@ -86,12 +90,12 @@ class BikeWidget : GlanceAppWidget() {
     provideContent {
       val bikeId = currentState(BIKE_ID)
       val state by remember(bikeId) { overview(bikeId) }.collectAsState(initial)
-      Content(state)
+      Content(state, componentKindOrNull(currentState(COMPONENT_KIND)))
     }
   }
 
   @Composable
-  private fun Content(state: BikeUiState.Loaded?) {
+  private fun Content(state: BikeUiState.Loaded?, preferred: ComponentKind?) {
     val size = LocalSize.current
     val context = LocalContext.current
     val open = state?.let { openLink(context, DeepLinks.bike(it.bikeId)) } ?: launchApp(context)
@@ -103,7 +107,7 @@ class BikeWidget : GlanceAppWidget() {
     when {
       state == null -> Empty(modifier)
       size.height < MEDIUM.height || size.width < MEDIUM.width ->
-        Small(state, GlanceModifier.fillMaxSize().clickable(open))
+        Small(state, preferred, GlanceModifier.fillMaxSize().clickable(open))
       size.height < LARGE.height -> Medium(state, modifier)
       else -> Large(state, modifier)
     }
@@ -129,9 +133,16 @@ class BikeWidget : GlanceAppWidget() {
     }
   }
 
-  /** The status block: bike, headline, and the weakest component or the count. */
+  /**
+   * The status block: bike, headline, and a component (the one to charge, else the [preferred] one,
+   * else the weakest) or when it was seen.
+   */
   @Composable
-  private fun Small(state: BikeUiState.Loaded, modifier: GlanceModifier) {
+  private fun Small(
+    state: BikeUiState.Loaded,
+    preferred: ComponentKind?,
+    modifier: GlanceModifier,
+  ) {
     val tone = state.status.tone
     val content = WidgetColors.blockContent(tone)
     Column(
@@ -159,9 +170,9 @@ class BikeWidget : GlanceAppWidget() {
         maxLines = 2,
       )
       Spacer(GlanceModifier.defaultWeight())
-      val weakest = state.components.weakest()
+      val featured = state.components.featured(tone, preferred)
       Text(
-        weakest?.let { "${it.code} ${it.value} · ${it.tone.word}" } ?: state.status.meta,
+        featured?.let { "${it.code} ${it.value} · ${it.tone.word}" } ?: state.status.meta,
         style =
           TextStyle(
             fontFamily = Condensed,
@@ -349,6 +360,9 @@ class BikeWidget : GlanceAppWidget() {
 
     /** The instance's bike; absent means the default bike. */
     val BIKE_ID = longPreferencesKey("bike_id")
+
+    /** The `ComponentKind` its small size prefers (decision 0027); absent means the weakest. */
+    val COMPONENT_KIND = stringPreferencesKey("component_kind")
   }
 }
 

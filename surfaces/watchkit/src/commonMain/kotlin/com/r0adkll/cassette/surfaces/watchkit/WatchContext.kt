@@ -30,12 +30,13 @@ object WatchContext {
   }
 
   /**
-   * What the complications show: each bike's status and weakest value. iOS allows about 50
-   * complication pushes a day, so they go only when this changes (or after a quiet spell).
+   * What the complications show: each bike's status and its components' values, since a Battery
+   * complication can show any of them (decision 0027). iOS allows about 50 complication pushes a
+   * day, so they go only when this changes (or after a quiet spell).
    */
   fun complicationKey(snapshot: WidgetSnapshot): List<String> =
     snapshot.bikes.map { bike ->
-      val weakest = bike.current.components.firstOrNull { it.id == bike.current.weakestId }
-      "${bike.id}:${bike.current.tone}:${weakest?.value}"
+      val values = bike.current.components.joinToString(",") { "${it.id}=${it.value}" }
+      "${bike.id}:${bike.current.tone}:$values"
     } + "${snapshot.defaultBikeId}"
 }

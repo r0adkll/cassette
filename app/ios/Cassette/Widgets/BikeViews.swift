@@ -1,11 +1,13 @@
 import SwiftUI
 import WidgetKit
 
-/// Small: the status block (iteration 15, H1): the bike, the headline, the weakest component.
+/// Small: the status block (iteration 15, H1): the bike, the headline, and a component: the one to
+/// charge, else the `preferred` one (decision 0027), else the weakest.
 struct SmallView: View {
   var bike: WidgetBike
   var date: Date
   var look: Look
+  var preferred: String? = nil
 
   var body: some View {
     let status = bike.status(at: date)
@@ -34,7 +36,7 @@ struct SmallView: View {
         .minimumScaleFactor(0.6)
         .foregroundStyle(signal)
       Spacer(minLength: 4)
-      Text(status.weakest.map { "\($0.code) \($0.value) · \($0.word)" } ?? bike.seen(at: date))
+      Text(status.featured(preferred).map { "\($0.code) \($0.value) · \($0.word)" } ?? bike.seen(at: date))
         .font(.condensed(12))
         .tracking(1)
         .lineLimit(1)
