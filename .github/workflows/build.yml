@@ -192,6 +192,9 @@ jobs:
         with:
           server: https://drop.thescavengers.software
           apk: app/android/build/outputs/apk/internal/android-internal.apk
+          # The Build page's Open in App on a phone opens this in the installed app, which offers
+          # that Build (Drop 0.6.0, decision 0008). Wear Build pages don't show it.
+          open-in-app: cassette://drop/{build}
 
       # Same run as the phone's, so Drop keeps them as sibling Builds; the Action reads the watch
       # feature from the APK and uploads it as a Wear Build (Drop 0.4.0, decision 0013).

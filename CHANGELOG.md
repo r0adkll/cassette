@@ -24,6 +24,9 @@ All notable changes to Cassette are documented here. The format follows
 - [iOS] The Apple Watch's "Weakest battery" complication is now "Battery", and the face editor lists
   each bike's components beside the weakest. A picked component always shows itself, in its own
   colour.
+- [Android] Open in App on a phone Build's Drop page opens Cassette's Drop build and offers that
+  build in the update sheet, from whichever channel (Drop 0.6.0). Installing a pull request's build
+  moves the phone to that pull request's builds until it closes.
 
 ### Changed
 

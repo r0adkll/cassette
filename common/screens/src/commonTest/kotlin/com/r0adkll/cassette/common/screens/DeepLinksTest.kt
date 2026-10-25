@@ -27,7 +27,27 @@ class DeepLinksTest {
         "cassette://bike/3/component",
         "cassette://bike/3/settings/1",
         "cassette://settings",
+        "cassette://drop/Ab12Cd34",
       )
       .forEach { assertNull(DeepLinks.parse(it), it) }
+  }
+
+  @Test
+  fun dropLinkCarriesItsBuild() {
+    assertEquals("Ab12Cd34", DeepLinks.dropBuild("cassette://drop/Ab12Cd34"))
+    assertEquals("Ab12Cd34", DeepLinks.dropBuild("cassette://drop/Ab12Cd34/"))
+  }
+
+  @Test
+  fun otherLinksCarryNoBuild() {
+    listOf(
+        "cassette://drop",
+        "cassette://drop/",
+        "cassette://drop/Ab12Cd34/install",
+        "cassette://bike/3",
+        "drop-sample://drop/Ab12Cd34",
+        "https://drop.thescavengers.software/drop/Ab12Cd34",
+      )
+      .forEach { assertNull(DeepLinks.dropBuild(it), it) }
   }
 }

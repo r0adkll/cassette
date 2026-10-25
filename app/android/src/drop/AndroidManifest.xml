@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only the builds with Drop's SDK (debug and internal) get this: build.gradle.kts adds it to
+     their variants. Store builds have drop-noop and nothing to install. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <!-- singleTop: a browser's link reaches the running activity's onNewIntent, as
+             notification and widget links do with their flags. Otherwise Android stacks another
+             activity for a new link, and ignores a repeat of the link that started the task. -->
+        <activity
+            android:name=".MainActivity"
+            android:launchMode="singleTop">
+            <!-- Open in App on a Drop Build page (decision 0008): cassette://drop/{buildId}, from
+                 the upload's open-in-app input. The page opens it in this package only, and
+                 browsers need BROWSABLE. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="cassette" android:host="drop" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

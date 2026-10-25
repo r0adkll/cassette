@@ -51,3 +51,17 @@ in `fastlane/`, are [0019](0019-store-release.md); this was sideload only until 
 - Drop's Gradle plugin gives the debug and internal builds its SDK: Settings → App updates shows what's waiting and opens
   Drop's update sheet, and a red dot on the bike screen's Settings button says one is waiting. Version codes
   count first-parent commits.
+- **Open in App** (Drop 0.6.0, added 2026-10-25): the phone upload passes `open-in-app:
+  cassette://drop/{build}`, so a phone Build's page offers the Build to the installed app, whichever
+  channel it follows. The link is on Cassette's own scheme, beside the notification and widget links
+  (`DeepLinks`), on a host none of them use; the intent filter (`src/drop/AndroidManifest.xml`) is
+  added only to the variants with Drop's SDK, so a store build never answers it, and Drop's page
+  aims it at the debug package anyway. It also makes `MainActivity` `singleTop` there: a browser
+  can't pass the flags notification links use, and without it Android stacks a second activity for
+  a new link and ignores a repeat of the link that opened the app. The app asks Drop about that one
+  Build and opens the update sheet, which offers it ("Install this Build", saying when it moves the
+  app to another channel) or says it's already installed or has expired. Installing it moves the install to that Build's
+  channel: a `pr/<number>` Build gets that pull request's updates until it closes, then `main`'s.
+  While the sheet is up, App updates shows the opened Build; closing it checks the channel again
+  unless a download of it is in hand. A check that fails (no answer, or a Build of another app)
+  opens no sheet: App updates says why. Wear Build pages don't offer it; the watch app ignores it.
