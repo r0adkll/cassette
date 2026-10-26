@@ -88,3 +88,8 @@ fonts or code.
 
 [Privacy policy](https://thescavengers.software/cassette/privacy) ·
 [Terms of service](https://thescavengers.software/cassette/terms)
+
+## Licence
+
+Cassette is released under the [MIT License](LICENSE). The bundled fonts and icons keep their own
+licences, listed above.
