@@ -40,7 +40,7 @@ class BikeComplicationTest {
   fun lowShowsTheComponentToCharge() {
     val low = complication(road)
     assertEquals("FD", low.code)
-    assertEquals("≈11", low.value)
+    assertEquals("≈12", low.value)
     assertEquals("FD LOW", low.status)
   }
 

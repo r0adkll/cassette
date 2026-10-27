@@ -98,7 +98,7 @@ class PresenterTest {
       val components = expectMostRecentItem()
       assertEquals("ROAD BIKE · WHICH ONE?", components.title)
       assertEquals(
-        listOf("Weakest" to "NOW FD ≈11%", "Rear derailleur" to "78% · GOOD"),
+        listOf("Weakest" to "NOW FD ≈12%", "Rear derailleur" to "78% · GOOD"),
         components.choices.take(2).map { it.name to it.label },
       )
       components.eventSink(PickEvent.Component("REAR_DERAILLEUR"))

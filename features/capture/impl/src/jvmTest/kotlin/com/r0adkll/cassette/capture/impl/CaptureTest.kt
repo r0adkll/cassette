@@ -76,6 +76,23 @@ class CaptureTest {
   }
 
   @Test
+  fun aFrameWithoutADeviceTypeDoesNotReplaceTheModel() = runTest {
+    bikeWithHub()
+    // The tester's fork once sent `0d 00 e2 77 a2 44 00 82`: no device type, model 33280.
+    val typeless =
+      rdStatus().copy(frame = FrameType.BEACON, battery = null, classByte = null, modelId = 33_280)
+
+    recorder.record(listOf(typeless))
+    assertEquals(1066L, modelOf(Fixtures.HUB))
+
+    // Drop-bar shifters only ever send a model, so one we don't have yet still fills in.
+    driver.execute(null, "UPDATE component SET model_id = NULL", 0)
+    val later = (now + 1.minutes).toEpochMilliseconds()
+    recorder.record(listOf(typeless.copy(timestampMillis = later)))
+    assertEquals(33_280L, modelOf(Fixtures.HUB))
+  }
+
+  @Test
   fun hubTableBringsInEveryComponentWithBatteryAndFirmware() = runTest {
     bikeWithHub()
     gatt.values =
@@ -429,6 +446,9 @@ class CaptureTest {
     )
 
   private fun stranger() = rdStatus().copy(key = "999", serial = 999, address = "11:22:33:44:55:66")
+
+  private fun modelOf(serial: Long) =
+    db.componentQueries.selectByKey(serial.toString()).executeAsOne().model_id
 
   private fun quarq() =
     AxsReading(

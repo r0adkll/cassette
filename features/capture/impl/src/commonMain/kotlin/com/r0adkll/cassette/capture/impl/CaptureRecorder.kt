@@ -56,7 +56,10 @@ class CaptureRecorder(
           // Not every frame says everything (beacons have no device type); keep what we
           // know.
           kind = reading.kind.takeIf { it != ComponentKind.UNKNOWN }?.name,
-          modelId = reading.modelId?.toLong(),
+          // A frame without a device type can carry a bogus model (a tester's fork sent 33280
+          // for its 1086), so its model only fills one we don't have yet.
+          modelId =
+            reading.modelId?.takeIf { reading.classByte != null || row.model_id == null }?.toLong(),
           deviceType = reading.classByte?.toLong(),
           firmware = reading.firmware,
           actuations = null,

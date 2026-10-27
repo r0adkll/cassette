@@ -19,7 +19,7 @@ class WatchWordsTest {
   fun lowNamesTheComponent() {
     val low = summary(road)
     assertEquals("FD LOW", low.statusLabel)
-    assertEquals("FD ≈11% · 2 min ago", low.detailLine)
+    assertEquals("FD ≈12% · 2 min ago", low.detailLine)
   }
 
   @Test

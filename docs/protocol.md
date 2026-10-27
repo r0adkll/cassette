@@ -151,8 +151,9 @@ shape as ours, quarq code 0x5507 (& 0x3F = 7), model flags 0x000000ff. [HW] (tes
 The tester's own app also logged an 8-byte frame from their fork: `0d 00 e2 77 a2 44 00 82`. By its flags
 that's flags2 `0x00` (no device type, no bridge), serial 1151498210, and a model of 0x8200 = 33280,
 which isn't a model id. It looks more like the fork's type (`0x82`) sitting where the model goes. The
-frame never appeared in the tester's 25 h Cassette capture. Until we know what it is, a model id from a
-frame without a device type shouldn't replace one we already have. [PA] (tester), [?] meaning
+frame never appeared in the tester's 25 h Cassette capture. Until we know what it is, capture lets a
+model id from a frame without a device type fill a missing model but never replace one (drop-bar
+shifters and front derailleurs only ever send a model). [PA] (tester), [?] meaning
 
 ### 3.4 Local names
 
@@ -188,9 +189,9 @@ tester's MTB. Cassette doesn't map 33–44, 127, 142.
 
 - **Types 3 / 4 aren't only Reverb.** SRAM's enum names them `REVERB_SHIFTER_L` / `_R`, but its
   `devices.yml` calls model 1015 "AXS CONTROLLER (R)", and the tester's older AXS controller (1016,
-  on the right) reports type 4. Prior art names 1016 "AXS Controller" too. Cassette's "Reverb
-  controller" label is too narrow for it. The tester's left Reverb controller reported type 3 before
-  they replaced it. [APP] [HW] [PA]
+  on the right) reports type 4. Prior art names 1016 "AXS Controller" too, so Cassette labels types
+  3 and 4 "AXS controller" ("Reverb controller" was too narrow). The tester's left Reverb controller
+  reported type 3 before they replaced it. [APP] [HW] [PA]
 - **Pod edge case** (`isPodEdgeCase` in SRAM's app): every pod is left when the pod's "family" has
   exactly two device types and one is a dropper (`POST`) or a Powertrain display, or exactly three and
   both are there. We didn't trace what the family is. If it's the system's device types, the tester's
@@ -221,7 +222,7 @@ the pod's beacon has one). [APP] [HW]
 | Drop-bar shifter, right | 1004, 1006, 1008, 1010, 1035, 1047, 1083, 1091, 1093, 1095, 1097, 1099, 1113 |
 | Drop-bar shifter, left | 1005, 1007, 1009, 1011, 1034, 1046, 1084, 1090, 1092, 1094, 1096, 1098, 1112 |
 | BlipBox | 1012 |
-| Reverb controller, right / left | 1015, 1016 / 1017, 1044 |
+| AXS controller, right / left | 1015, 1016 / 1017, 1044 |
 | Dropper post | 1018–1029, 1067–1069 |
 | Fork / rear shock / pedal sensor | 1038, 1048, 1049 / 1039 / 1040 |
 | Power meter | 7 (DZero), 70–75 (Quarq DZero variants), 100–110 (PowerTap), 1052 (DUB spindle) |
@@ -434,13 +435,15 @@ mV. Cassette interpolates from advert (mV, %) pairs and shows the result as "≈
 
 | mV | % | Source |
 |---|---|---|
+| 7360 | 0 | the tester's fork |
+| 7370 | 10 | the tester's fork |
 | 7479 | 19 | esphome capture |
 | 7523 | 23 | esphome capture |
 | 7881 | 81 | our RD |
 | 8118 | 100 | esphome capture |
 
-Below 7479 mV it extrapolates the first segment's slope down to 0. Cassette treats anything ≥ 5000 mV as a
-pack. [HW]
+Below 7360 mV it's 0, which Cassette shows as critical (SRAM's 0 % on Battery Level means unknown, but
+ours is an empty pack). Cassette treats anything ≥ 5000 mV as a pack. [HW]
 
 The tester's packs agree with the curve [HW] (tester): fork 7722 mV → 55 % (the curve says 55), dropper
 7579 → 32 (32), rear shock 8098 → 100 (98), RD 8265 → 100.
@@ -451,11 +454,13 @@ percent from its adverts) [PA] (tester):
 | mV | 7830 | 7720 | 7610 | 7520 | 7430 | 7410 | 7370 | 7360 |
 |---|---|---|---|---|---|---|---|---|
 | SRAM % | 73 | 55 | 37 | 23 | 15 | 14 | 10 | **0** |
-| Our curve | 72 | 54 | 37 | 22 | 14 | 12 | 9 | 8 |
+| Old curve | 72 | 54 | 37 | 22 | 14 | 12 | 9 | 8 |
+| Our curve | 72 | 54 | 37 | 22 | 14 | 13 | 10 | 0 |
 
-The curve holds to within 2 points down to 7370 mV. Then SRAM drops from 10 % straight to 0, while the
-curve still says 8 % and reaches 0 only near 7280 mV. 0 % isn't flat: the fork kept working, fell to
-6.47 V within 8 minutes of use, and switched off near 6.30 V.
+The old curve held to within 2 points down to 7370 mV. Then SRAM drops from 10 % straight to 0, where it
+still said 8 % and reached 0 only near 7280 mV, so the curve now ends on the fork's last two points.
+0 % isn't flat: the fork kept working, fell to 6.47 V within 8 minutes of use, and switched off near
+6.30 V.
 
 **Chemistry per type** (SRAM's app labels) [APP]:
 
