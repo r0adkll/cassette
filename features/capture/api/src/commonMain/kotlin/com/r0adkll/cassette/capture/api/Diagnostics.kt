@@ -13,16 +13,25 @@ interface Diagnostics {
   /** Every AXS advert heard, ours or not, with its raw bytes. */
   fun liveAdverts(): Flow<AxsReading>
 
-  /** Reads the bike's hub tables now, records them, and returns the raw bytes; null on failure. */
-  suspend fun readHubTables(bikeId: BikeId): HubDump?
+  /**
+   * Reads each of the bike's hubs' tables now (decision 0028), records them, and returns the raw
+   * bytes, a dump per hub; empty if the bike is gone.
+   */
+  suspend fun readHubTables(bikeId: BikeId): List<HubDump>
 }
 
+/**
+ * One hub's tables; the bytes are null when it didn't answer (or was never heard: no [address]).
+ */
 class HubDump(
   val hubSerial: Long,
-  val address: String,
+  val address: String?,
   val at: Instant,
   val batteryBytes: ByteArray?,
   val versionBytes: ByteArray?,
   val battery: SystemTable<SystemComponent>?,
   val versions: SystemTable<ComponentVersions>?,
-)
+) {
+  val answered: Boolean
+    get() = batteryBytes != null || versionBytes != null
+}

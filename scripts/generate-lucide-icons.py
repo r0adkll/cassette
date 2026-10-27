@@ -15,7 +15,7 @@ ICONS = [
     "circle-help", "cpu", "download", "file-text", "history", "image-plus", "info", "layout-grid", "mountain",
     "panel-top", "pin", "radio", "shield", "bug", "code", "external-link", "globe", "scale", "user",
     "refresh-cw", "route", "scan-line", "settings", "share-2", "signal", "smile", "sun-moon", "trash-2",
-    "x", "triangle-alert", "circle-x", "square", "smartphone", "arrow-down-wide-narrow",
+    "x", "triangle-alert", "circle-x", "square", "smartphone", "arrow-down-wide-narrow", "plus",
 ]
 # Cassette's own combinations of Lucide parts, in Lucide's grid and stroke: name -> (base icon,
 # extra SVG elements). bike-plus is "Add bike": Lucide's bike with a + in its empty top-left.

@@ -2,6 +2,7 @@ package com.r0adkll.cassette.capture.impl
 
 import com.r0adkll.cassette.capture.api.Diagnostics
 import com.r0adkll.cassette.capture.api.HubDump
+import com.r0adkll.cassette.core.Bike
 import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.core.CassetteDispatchers
 import com.r0adkll.cassette.data.ble.AdvertScanner
@@ -31,30 +32,35 @@ class DefaultDiagnostics(
 
   override fun liveAdverts(): Flow<AxsReading> = scanner.live()
 
-  override suspend fun readHubTables(bikeId: BikeId): HubDump? {
-    val (bike, hubAddress) =
+  override suspend fun readHubTables(bikeId: BikeId): List<HubDump> {
+    val (bike, hubs) =
       withContext(dispatchers.io) {
         val bike =
           db.bikeQueries.selectById(bikeId.value).executeAsOneOrNull() ?: return@withContext null
-        val hub =
-          bike.hub_serial?.let {
-            db.componentQueries.selectByKey(it.toString()).executeAsOneOrNull()
+        val hubs =
+          db.hubQueries.selectForBike(bike.id).executeAsList().map { hub ->
+            hub.serial to
+              db.componentQueries.selectByKey(hub.serial.toString()).executeAsOneOrNull()?.address
           }
-        bike.toDomain() to hub?.address
-      } ?: return null
-    val address = hubAddress ?: return null
-    val values =
+        bike.toDomain() to hubs
+      } ?: return emptyList()
+    return hubs.map { (serial, address) -> readHub(bike, serial, address) }
+  }
+
+  private suspend fun readHub(bike: Bike, serial: Long, address: String?): HubDump {
+    val values = address?.let {
       (gatt.read(
-          address,
+          it,
           listOf(SystemBatteryTable.CHARACTERISTIC, SystemBatteryTable.VERSIONS_CHARACTERISTIC),
         ) as? GattResult.Values)
-        ?.values ?: return null
-    val batteryBytes = values[SystemBatteryTable.CHARACTERISTIC]
-    val versionBytes = values[SystemBatteryTable.VERSIONS_CHARACTERISTIC]
+        ?.values
+    }
+    val batteryBytes = values?.get(SystemBatteryTable.CHARACTERISTIC)
+    val versionBytes = values?.get(SystemBatteryTable.VERSIONS_CHARACTERISTIC)
     val battery = batteryBytes?.let(SystemBatteryTable::parse)
     val versions = versionBytes?.let(SystemBatteryTable::parseVersions)
     val now = clock.now()
     if (battery != null) recorder.applyHubTable(bike, battery, versions, now)
-    return HubDump(bike.hubSerial ?: 0, address, now, batteryBytes, versionBytes, battery, versions)
+    return HubDump(serial, address, now, batteryBytes, versionBytes, battery, versions)
   }
 }

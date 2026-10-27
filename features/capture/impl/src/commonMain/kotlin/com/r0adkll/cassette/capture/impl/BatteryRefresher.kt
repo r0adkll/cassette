@@ -33,8 +33,9 @@ data class RefreshOutcome(val hubRead: Boolean, val powerMeterRead: Boolean)
 
 /**
  * Fills in battery that adverts don't carry, over short read-only GATT sessions:
- * - the hub (rear derailleur) is asked for its battery table, which covers the shifters and front
- *   derailleur, so those are never connected to;
+ * - each of the bike's hubs (the rear derailleur on road) is asked for its battery table, which
+ *   covers the rest of its system, so those are never connected to; each hub keeps its own schedule
+ *   (decision 0028);
  * - the power meter is asked for the standard Battery Level.
  */
 @SingleIn(AppScope::class)
@@ -56,16 +57,18 @@ class BatteryRefresher(
     for (item in heard.distinctBy { it.component.id }) {
       val component = item.component
       val address = component.address ?: continue
-      val isHub =
-        item.reading.frame == FrameType.STATUS &&
-          component.serial != null &&
-          component.serial == item.bike.hubSerial
+      val hub =
+        component.serial
+          ?.takeIf { item.reading.frame == FrameType.STATUS }
+          ?.let { db.hubQueries.selectBySerial(it).executeAsOneOrNull() }
+          ?.takeIf { it.bike_id == item.bike.id.value }
+      val isHub = hub != null
       val isPowerMeter = item.reading.frame == FrameType.POWER_METER
       if (!isHub && !isPowerMeter) continue
 
       val now = clock.now()
       val lastRead =
-        if (isHub) item.bike.hubReadAt
+        if (hub != null) hub.read_at?.let { kotlin.time.Instant.fromEpochMilliseconds(it) }
         else
           db.batterySampleQueries
             .latestForComponent(component.id.value)

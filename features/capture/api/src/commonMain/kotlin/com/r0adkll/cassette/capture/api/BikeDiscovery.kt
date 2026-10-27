@@ -13,8 +13,8 @@ import kotlinx.coroutines.flow.Flow
 /** Finding and adding a bike (decision 0010, add bike). */
 interface BikeDiscovery {
   /**
-   * A live scan for hubs (the component that reports for the system) and power meters that aren't
-   * on a bike yet. Emits everything found so far, strongest signal first.
+   * A live scan for hubs (the component that reports for a system) and power meters that aren't on
+   * a bike yet. Emits everything found so far, strongest signal first.
    */
   fun discover(): Flow<Discovered>
 
@@ -23,16 +23,30 @@ interface BikeDiscovery {
    */
   suspend fun readHub(hub: FoundHub): HubDetails?
 
-  /** Saves the bike, its hub and every component in the table, plus [powerMeter]; arms capture. */
+  /**
+   * Saves the bike with one system per hub in [hubs] (the first is the one it's known by) and every
+   * component their tables list, plus [powerMeter]; arms capture.
+   */
   suspend fun addBike(
     name: String,
     type: BikeType,
-    hub: HubDetails,
+    hubs: List<HubDetails>,
     powerMeter: FoundPowerMeter?,
   ): BikeId
+
+  /** Adds a system per hub in [hubs], with the components their tables list, to [bike]. */
+  suspend fun addSystems(bike: BikeId, hubs: List<HubDetails>)
 }
 
-data class Discovered(val hubs: List<FoundHub>, val powerMeters: List<FoundPowerMeter>)
+data class Discovered(
+  val hubs: List<FoundHub>,
+  val powerMeters: List<FoundPowerMeter>,
+  /** Hubs heard that are a bike's systems already, strongest first. */
+  val known: List<KnownHub> = emptyList(),
+)
+
+/** A hub that is one of [bike]'s systems already. */
+data class KnownHub(val hub: FoundHub, val bike: BikeId)
 
 data class FoundHub(
   val serial: Long,

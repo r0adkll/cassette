@@ -35,7 +35,9 @@ import dev.zacsweers.metro.Inject
 
 data class HubTablesUiState(
   val reading: Boolean,
-  val dump: HubDump?,
+  /** One per hub of the bike (decision 0028); empty until the first read. */
+  val dumps: List<HubDump>,
+  /** No hub answered. */
   val failed: Boolean,
   val eventSink: (HubTablesEvent) -> Unit,
 ) : CircuitUiState
@@ -58,18 +60,18 @@ class HubTablesPresenter(
   override fun present(): HubTablesUiState {
     var attempt by remember { mutableIntStateOf(0) }
     var reading by remember { mutableStateOf(true) }
-    var dump by remember { mutableStateOf<HubDump?>(null) }
+    var dumps by remember { mutableStateOf(emptyList<HubDump>()) }
     var failed by remember { mutableStateOf(false) }
 
     LaunchedEffect(attempt) {
       reading = true
       val result = diagnostics.readHubTables(BikeId(screen.bikeId))
-      if (result != null) dump = result
-      failed = result == null
+      if (result.any { it.answered }) dumps = result
+      failed = result.none { it.answered }
       reading = false
     }
 
-    return HubTablesUiState(reading, dump, failed) { event ->
+    return HubTablesUiState(reading, dumps, failed) { event ->
       when (event) {
         HubTablesEvent.Back -> navigator.pop()
         HubTablesEvent.ReadAgain -> if (!reading) attempt++
@@ -84,20 +86,31 @@ fun HubTablesUi(state: HubTablesUiState, modifier: Modifier = Modifier) {
   val colors = CassetteTheme.colors
   DiagnosticsScaffold("Hub tables.", onBack = { state.eventSink(HubTablesEvent.Back) }, modifier) {
     when {
-      state.reading && state.dump == null ->
+      state.reading && state.dumps.isEmpty() ->
         Text(
           "Reading the hub… wake the bike if this takes long.",
           style = CassetteTheme.type.body,
           color = colors.muted,
         )
-      state.failed && state.dump == null ->
+      state.failed && state.dumps.isEmpty() ->
         Text(
           "No answer: the hub may be asleep, or Cassette hasn't heard it yet. Wake the bike and read again.",
           style = CassetteTheme.type.body,
           color = colors.low,
         )
     }
-    state.dump?.let { Dump(it) }
+    state.dumps.forEach { dump ->
+      if (dump.answered) Dump(dump)
+      else
+        Panel {
+          Kicker("hub ${dump.hubSerial}")
+          Text(
+            if (dump.address == null) "Not heard yet." else "No answer.",
+            style = CassetteTheme.type.mono,
+            color = colors.low,
+          )
+        }
+    }
     CassetteButton(
       if (state.reading) "Reading…" else "Read again",
       onClick = { state.eventSink(HubTablesEvent.ReadAgain) },

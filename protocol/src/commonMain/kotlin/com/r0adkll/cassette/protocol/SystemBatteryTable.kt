@@ -1,8 +1,8 @@
 package com.r0adkll.cassette.protocol
 
 /**
- * A hub table: the hub (rear derailleur) serial, which identifies the bike's system, and one row
- * per component.
+ * A hub table: the hub's serial (the rear derailleur on road), which identifies its system, and one
+ * row per component.
  */
 data class SystemTable<T>(val masterSerial: Long, val rows: List<T>)
 
@@ -39,9 +39,9 @@ data class ComponentVersions(
 )
 
 /**
- * The rear derailleur acts as the system hub. Its `d9050003` (battery) and `d9050004` (firmware)
- * characteristics cover every paired component and are readable without pairing or SRAM's encrypted
- * session.
+ * A system's hub (the rear derailleur on road; a dropper or rear shock can head one on a mountain
+ * bike, decision 0028). Its `d9050003` (battery) and `d9050004` (firmware) characteristics cover
+ * every component paired with it and are readable without pairing or SRAM's encrypted session.
  *
  * Both start `[type][count][hub serial u32]`. Battery rows (24 bytes): device type, model u16,
  * serial u32, soc s8, mV u32, update time u32, runtime u32, actuation count u32. Firmware rows (16

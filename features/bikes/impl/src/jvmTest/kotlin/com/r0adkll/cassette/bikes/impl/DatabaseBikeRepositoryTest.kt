@@ -110,7 +110,7 @@ class DatabaseBikeRepositoryTest {
     val bike = db.bikeQueries.lastInsertedId().executeAsOne()
     listOf("POWER_METER", "FRONT_DERAILLEUR", "RIGHT_SHIFTER", "LEFT_SHIFTER", "REAR_DERAILLEUR")
       .forEachIndexed { i, kind ->
-        db.componentQueries.insert(bike, "k$i", null, kind, null, null, null, null, 0, 0)
+        db.componentQueries.insert(bike, "k$i", null, kind, null, null, null, null, 0, 0, null)
       }
 
     DatabaseBikeRepository(db, dispatchers, InMemorySettings()).observeOverview(null).test {
@@ -146,6 +146,7 @@ class DatabaseBikeRepositoryTest {
       null,
       0,
       0,
+      null,
     )
 
     DatabaseDeveloperTools(db, dispatchers, clock).loadSampleBike()
@@ -153,6 +154,57 @@ class DatabaseBikeRepositoryTest {
     val bikes = db.bikeQueries.selectAll().executeAsList().map { it.name }.sorted()
     assertEquals(listOf("Road bike", "Sample bike"), bikes)
     assertEquals(road, db.componentQueries.selectByKey("1405188718").executeAsOne().bike_id)
+  }
+
+  @Test
+  fun removingASystemKeepsTheBikesOtherSystem() = runTest {
+    val dispatcher = StandardTestDispatcher(testScheduler)
+    val dispatchers = CassetteDispatchers(dispatcher, dispatcher, dispatcher)
+    val repository = DatabaseBikeRepository(db, dispatchers, InMemorySettings())
+    // The tester's MTB: the dropper's system (it was added with) and the rear shock's.
+    db.bikeQueries.insert("Mountain bike", "Mtb", null, DROPPER, 0, null)
+    val bike = db.bikeQueries.lastInsertedId().executeAsOne()
+    db.hubQueries.insert(DROPPER, bike, 0)
+    db.hubQueries.insert(SHOCK, bike, 1)
+    listOf(DROPPER to DROPPER, 1151498210L to DROPPER, SHOCK to SHOCK, 1224168767L to SHOCK)
+      .forEach { (serial, hub) ->
+        db.componentQueries.insert(
+          bike,
+          "$serial",
+          serial,
+          "FORK",
+          null,
+          null,
+          null,
+          null,
+          0,
+          0,
+          hub,
+        )
+      }
+    db.componentQueries.insert(
+      bike,
+      "Quarq AGD60899",
+      null,
+      "POWER_METER",
+      7,
+      null,
+      null,
+      null,
+      0,
+      0,
+      null,
+    )
+
+    repository.removeSystem(BikeId(bike), DROPPER)
+
+    assertEquals(
+      listOf("1013571428", "1224168767", "Quarq AGD60899"),
+      db.componentQueries.selectForBike(bike).executeAsList().map { it.key },
+    )
+    assertEquals(listOf(SHOCK), db.hubQueries.selectForBike(bike).executeAsList().map { it.serial })
+    // Known by its other system now, so the dropper is free to start a bike of its own.
+    assertEquals(SHOCK, db.bikeQueries.selectById(bike).executeAsOne().hub_serial)
   }
 
   @Test
@@ -197,5 +249,10 @@ class DatabaseBikeRepositoryTest {
       cancelAndIgnoreRemainingEvents()
     }
     assertNull(settings.pinnedBike.value)
+  }
+
+  private companion object {
+    const val DROPPER = 1121114092L
+    const val SHOCK = 1013571428L
   }
 }

@@ -27,6 +27,13 @@ All notable changes to Cassette are documented here. The format follows
 - [Android] Open in App on a phone Build's Drop page opens Cassette's Drop build and offers that
   build in the update sheet, from whichever channel (Drop 0.6.0). Installing a pull request's build
   moves the phone to that pull request's builds until it closes.
+- A bike can have more than one AXS system, each with its own hub, as on a mountain bike whose
+  dropper post and rear shock each head one. Adding a bike listens a few seconds more after the
+  first hub and lists every system that answers, each with a switch; one heard much more faintly
+  than the first starts off, since it may be another bike nearby. Each hub is read on its own.
+- "Add a system" in a bike's settings finds a system the bike is missing, such as one that didn't
+  wake while the bike was added, without adding the bike again.
+- A bike's settings list its components under their systems, and a bike with two can remove one.
 
 ### Changed
 
@@ -59,6 +66,9 @@ All notable changes to Cassette are documented here. The format follows
 - [iOS] On an open foldable or an iPad held upright, the bike screen's Add bike and Settings buttons
   no longer show over an open component.
 - A battery pack estimated at 0 % shows as Charge now instead of unknown.
+- Adding a bike names the component that's its hub, rather than always calling it the rear
+  derailleur.
+- Diagnostics → Hub tables reads every hub of the bike.
 - A component's model no longer changes to a number that isn't one when it sends a frame without
   its device type.
 

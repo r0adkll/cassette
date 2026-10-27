@@ -1,0 +1,19 @@
+-- v3 -> v4: a bike is one or more systems, each a hub with the components its tables list
+-- (decision 0028). Every bike's hub becomes its first system, holding all its components but the
+-- power meter. The sample bikes' made-up hubs (below zero) stay out of `hub`.
+CREATE TABLE hub (
+    serial INTEGER PRIMARY KEY,
+    bike_id INTEGER NOT NULL REFERENCES bike(id) ON DELETE CASCADE,
+    added_at INTEGER NOT NULL,
+    read_at INTEGER
+);
+
+CREATE INDEX hub_bike ON hub(bike_id);
+
+INSERT INTO hub (serial, bike_id, added_at, read_at)
+SELECT hub_serial, id, created_at, hub_read_at FROM bike WHERE hub_serial > 0;
+
+ALTER TABLE component ADD COLUMN hub_serial INTEGER;
+
+UPDATE component SET hub_serial = (SELECT bike.hub_serial FROM bike WHERE bike.id = component.bike_id)
+WHERE kind != 'POWER_METER';

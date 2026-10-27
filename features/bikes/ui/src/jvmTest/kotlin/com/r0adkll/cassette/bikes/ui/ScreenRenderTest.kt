@@ -19,6 +19,8 @@ import com.r0adkll.cassette.bikes.ui.add.AddBikeStep
 import com.r0adkll.cassette.bikes.ui.add.AddBikeUi
 import com.r0adkll.cassette.bikes.ui.add.AddBikeUiState
 import com.r0adkll.cassette.bikes.ui.add.FoundRow
+import com.r0adkll.cassette.bikes.ui.add.FoundSystem
+import com.r0adkll.cassette.bikes.ui.add.KnownSystem
 import com.r0adkll.cassette.bikes.ui.add.MeterRow
 import com.r0adkll.cassette.bikes.ui.add.WakeAndFound
 import com.r0adkll.cassette.bikes.ui.add.WideAddBike
@@ -54,16 +56,11 @@ class ScreenRenderTest {
         FoundRow("R", "Right shifter", "Reported by the hub", "2.94 V", StatusTone.Good),
         FoundRow("L", "Left shifter", "Reported by the hub", "2.95 V", StatusTone.Good),
       )
+    val rd = FoundSystem(1405188718, "Rear derailleur", rows)
     val steps =
       listOf(
         "1-wake" to AddBikeStep.Wake(12, bluetoothReady = true, showTips = false),
-        "2-found" to
-          AddBikeStep.Found(
-            1405188718,
-            reading = false,
-            components = rows,
-            failed = false,
-          ),
+        "2-found" to AddBikeStep.Found(listOf(rd)),
         "3-name" to AddBikeStep.Name("Road bike", BikeType.Road),
         "4-power" to
           AddBikeStep.PowerMeter(
@@ -75,10 +72,35 @@ class ScreenRenderTest {
           ),
         "5-fresh" to AddBikeStep.KeepFresh(bluetoothReady = true, saving = false),
       )
+    // The tester's MTB (decision 0028): two hubs, each a system; and our road bike, heard faintly.
+    val found =
+      listOf(
+        "2-listening" to AddBikeStep.Found(listOf(dropper), listening = true, listenSeconds = 4),
+        "2-two-systems" to AddBikeStep.Found(listOf(dropper, shock)),
+        "2-one-off" to AddBikeStep.Found(listOf(dropper, shock.copy(on = false))),
+        "2-faint" to AddBikeStep.Found(listOf(dropper, rd.copy(on = false, faint = true))),
+        "2-reading-two" to
+          AddBikeStep.Found(listOf(dropper, shock.copy(components = emptyList(), reading = true))),
+        "2-failed-one" to
+          AddBikeStep.Found(listOf(dropper, shock.copy(components = emptyList(), failed = true))),
+      )
+    // Adding a system to a bike: waking (with the hub it has) and found.
+    val known = listOf(KnownSystem("DP", "Dropper post", 1121114092))
+    val system =
+      listOf(
+        "1-wake" to AddBikeStep.Wake(9, bluetoothReady = true, showTips = false, known = known),
+        "1-wake-tips" to
+          AddBikeStep.Wake(41, bluetoothReady = true, showTips = true, known = known),
+        "2-found" to AddBikeStep.Found(listOf(shock)),
+      )
     for (dark in listOf(true, false)) {
-      for ((name, step) in steps) {
-        render("add-bike-$name-${if (dark) "dark" else "light"}", dark) {
-          AddBikeUi(AddBikeUiState(step) {})
+      val theme = if (dark) "dark" else "light"
+      for ((name, step) in steps + found) {
+        render("add-bike-$name-$theme", dark) { AddBikeUi(AddBikeUiState(step) {}) }
+      }
+      for ((name, step) in system) {
+        render("add-system-$name-$theme", dark) {
+          AddBikeUi(AddBikeUiState(step, toBike = "Mountain bike") {})
         }
       }
       // Unfolded, waking and found share a screen split at the hinge (decision 0014).
@@ -88,17 +110,22 @@ class ScreenRenderTest {
         listOf(
           "1-wake" to AddBikeStep.Wake(38, bluetoothReady = true, showTips = false),
           "1-wake-tips" to AddBikeStep.Wake(38, bluetoothReady = true, showTips = true),
-          "2-reading" to AddBikeStep.Found(1405188718, true, rows.take(2), failed = false),
-          "2-found" to AddBikeStep.Found(1405188718, false, rows, failed = false),
-        )
+          "2-reading" to
+            AddBikeStep.Found(listOf(rd.copy(components = emptyList(), reading = true))),
+          "2-found" to AddBikeStep.Found(listOf(rd)),
+        ) + found.take(3)
       for ((name, step) in wide) {
-        render("add-bike-fold-$name-${if (dark) "dark" else "light"}", dark, fold) {
+        render("add-bike-fold-$name-$theme", dark, fold) {
           WakeAndFound(AddBikeUiState(step) {}, hinge = hinge)
+        }
+      }
+      for ((name, step) in system) {
+        render("add-system-fold-$name-$theme", dark, fold) {
+          WakeAndFound(AddBikeUiState(step, toBike = "Mountain bike") {}, hinge = hinge)
         }
       }
       // The steps after them split alike, at the hinge and down the middle of a tablet.
       for ((name, step) in steps.drop(2)) {
-        val theme = if (dark) "dark" else "light"
         render("add-bike-fold-$name-$theme", dark, fold) {
           WideAddBike(AddBikeUiState(step) {}, hinge = hinge)
         }
@@ -210,7 +237,8 @@ class ScreenRenderTest {
         listOf(
           "1-wake" to AddBikeStep.Wake(12, bluetoothReady = true, showTips = false),
           "1-wake-tips" to AddBikeStep.Wake(12, bluetoothReady = true, showTips = true),
-          "2-found" to AddBikeStep.Found(1405188718, false, rows, failed = false),
+          "2-found" to AddBikeStep.Found(listOf(FoundSystem(1405188718, "Rear derailleur", rows))),
+          "2-two-systems" to AddBikeStep.Found(listOf(dropper, shock)),
           "3-name" to AddBikeStep.Name("Road bike", BikeType.Road),
           "4-power" to
             AddBikeStep.PowerMeter(
@@ -366,7 +394,10 @@ class ScreenRenderTest {
     for (frame in listOf(60L, 150, 450, 900, 1_800, 3_000)) {
       shoot(frame, "${frame.toString().padStart(4, '0')}ms")
     }
-    step = AddBikeStep.Found(1405188718, reading = true, components = emptyList(), failed = false)
+    step =
+      AddBikeStep.Found(
+        listOf(FoundSystem(1405188718, "Rear derailleur", emptyList(), reading = true))
+      )
     shoot(3_600, "found-0600ms")
     shoot(6_500, "found-3500ms")
     scene.close()
@@ -730,5 +761,29 @@ class ScreenRenderTest {
         listOf(62, 58, 55, 51, 48, 44, 41, 37, 98, 97, 95, 93, 91, 89, 88, 86, 84, 83, 81, 80, 78)
           .map { it / 100f },
       chartCaption = "Charged 12 days ago (sample)",
+    )
+
+  /** The tester's MTB, from their diagnostics export (decision 0028): the dropper's system. */
+  private val dropper =
+    FoundSystem(
+      1121114092,
+      "Dropper post",
+      listOf(
+        FoundRow("DP", "Dropper post", "Hub · reported", "31%", StatusTone.Good),
+        FoundRow("FK", "Fork", "Reported by the hub", "≈54%", StatusTone.Good),
+        FoundRow("R", "Right pod", "Reported by the hub", "2.70 V", StatusTone.Good),
+      ),
+    )
+
+  /** And the rear shock's. */
+  private val shock =
+    FoundSystem(
+      1013571428,
+      "Rear shock",
+      listOf(
+        FoundRow("SH", "Rear shock", "Hub · reported", "100%", StatusTone.Good),
+        FoundRow("RD", "Rear derailleur", "Reported by the hub", "≈100%", StatusTone.Good),
+        FoundRow("R", "Right AXS controller", "Reported by the hub", "3.00 V", StatusTone.Good),
+      ),
     )
 }

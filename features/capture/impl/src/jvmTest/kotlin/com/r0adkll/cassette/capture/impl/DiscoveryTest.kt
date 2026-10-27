@@ -1,7 +1,9 @@
 package com.r0adkll.cassette.capture.impl
 
 import app.cash.turbine.test
+import com.r0adkll.cassette.capture.api.FoundHub
 import com.r0adkll.cassette.capture.api.FoundPowerMeter
+import com.r0adkll.cassette.capture.api.HubDetails
 import com.r0adkll.cassette.core.BikeType
 import com.r0adkll.cassette.core.CassetteDispatchers
 import com.r0adkll.cassette.data.db.CassetteDatabase
@@ -106,7 +108,7 @@ class DiscoveryTest {
       discovery.addBike(
         "  Road bike ",
         BikeType.Road,
-        hub,
+        listOf(hub),
         FoundPowerMeter("Quarq AGN12387", PM_ADDRESS, 7, -60),
       )
 
@@ -128,13 +130,99 @@ class DiscoveryTest {
     )
     assertNotNull(scanner.armed)
 
-    // Once added, the bike's hub is no longer offered.
+    // Once added, the bike's hub is no longer offered, only known.
     discovery.discover().test {
       assertEquals(emptyList(), awaitItem().hubs)
       scanner.adverts.emit(hub(serial = Fixtures.HUB, rssi = -50))
-      expectNoEvents()
+      val found = awaitItem()
+      assertEquals(emptyList(), found.hubs)
+      assertEquals(listOf(Fixtures.HUB to bikeId), found.known.map { it.hub.serial to it.bike })
       cancelAndIgnoreRemainingEvents()
     }
+  }
+
+  @Test
+  fun aBikeWithTwoHubsIsTwoSystems() = runTest {
+    val bikeId =
+      discovery.addBike(
+        "Mountain bike",
+        BikeType.Mtb,
+        listOf(
+          details(Fixtures.DROPPER, Fixtures.DROPPER_TABLE),
+          details(Fixtures.SHOCK, Fixtures.SHOCK_TABLE),
+        ),
+        null,
+      )
+
+    // Known by the first hub; both are its systems.
+    assertEquals(
+      Fixtures.DROPPER,
+      db.bikeQueries.selectById(bikeId.value).executeAsOne().hub_serial,
+    )
+    assertEquals(
+      listOf(Fixtures.DROPPER, Fixtures.SHOCK),
+      db.hubQueries.selectForBike(bikeId.value).executeAsList().map { it.serial },
+    )
+    val systems =
+      db.componentQueries.selectForBike(bikeId.value).executeAsList().associate {
+        it.serial to it.hub_serial
+      }
+    assertEquals(
+      mapOf<Long?, Long?>(
+        Fixtures.DROPPER to Fixtures.DROPPER,
+        Fixtures.FORK to Fixtures.DROPPER,
+        Fixtures.POD to Fixtures.DROPPER,
+        Fixtures.SHOCK to Fixtures.SHOCK,
+        Fixtures.MTB_RD to Fixtures.SHOCK,
+        Fixtures.CONTROLLER to Fixtures.SHOCK,
+      ),
+      systems,
+    )
+  }
+
+  @Test
+  fun aSystemJoinsABikeItsMissing() = runTest {
+    // The tester's bike as Cassette first saved it: the dropper's system only.
+    val bikeId =
+      discovery.addBike(
+        "Mountain bike",
+        BikeType.Mtb,
+        listOf(details(Fixtures.DROPPER, Fixtures.DROPPER_TABLE)),
+        null,
+      )
+    assertEquals(3, db.componentQueries.selectForBike(bikeId.value).executeAsList().size)
+
+    discovery.addSystems(bikeId, listOf(details(Fixtures.SHOCK, Fixtures.SHOCK_TABLE)))
+
+    assertEquals(6, db.componentQueries.selectForBike(bikeId.value).executeAsList().size)
+    assertEquals(2, db.hubQueries.selectForBike(bikeId.value).executeAsList().size)
+    assertEquals(
+      Fixtures.SHOCK_ADDRESS,
+      db.componentQueries.selectByKey(Fixtures.SHOCK.toString()).executeAsOne().address,
+    )
+  }
+
+  @Test
+  fun anotherBikesHubDoesNotMove() = runTest {
+    val road =
+      discovery.addBike(
+        "Road bike",
+        BikeType.Road,
+        listOf(details(Fixtures.SHOCK, Fixtures.SHOCK_TABLE)),
+        null,
+      )
+    val mtb =
+      discovery.addBike(
+        "Mountain bike",
+        BikeType.Mtb,
+        listOf(details(Fixtures.DROPPER, Fixtures.DROPPER_TABLE)),
+        null,
+      )
+
+    discovery.addSystems(mtb, listOf(details(Fixtures.SHOCK, Fixtures.SHOCK_TABLE)))
+
+    assertEquals(road.value, db.hubQueries.selectBySerial(Fixtures.SHOCK).executeAsOne().bike_id)
+    assertEquals(3, db.componentQueries.selectForBike(mtb.value).executeAsList().size)
   }
 
   @Test
@@ -143,8 +231,24 @@ class DiscoveryTest {
     assertNull(discovery.readHub(foundHub()))
   }
 
+  private fun details(serial: Long, table: ByteArray) =
+    HubDetails(
+      FoundHub(
+        serial = serial,
+        address =
+          if (serial == Fixtures.SHOCK) Fixtures.SHOCK_ADDRESS else Fixtures.DROPPER_ADDRESS,
+        kind = ComponentKind.UNKNOWN,
+        modelId = null,
+        rssi = -60,
+        battery = null,
+        firmware = null,
+      ),
+      SystemBatteryTable.parse(table)!!,
+      null,
+    )
+
   private fun foundHub() =
-    com.r0adkll.cassette.capture.api.FoundHub(
+    FoundHub(
       serial = Fixtures.HUB,
       address = Fixtures.RD_ADDRESS,
       kind = ComponentKind.REAR_DERAILLEUR,

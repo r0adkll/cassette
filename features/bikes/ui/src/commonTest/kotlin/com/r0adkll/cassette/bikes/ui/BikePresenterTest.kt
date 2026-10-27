@@ -57,6 +57,8 @@ class BikePresenterTest {
       override suspend fun updateBike(id: BikeId, name: String, type: BikeType) = Unit
 
       override suspend fun deleteBike(id: BikeId) = Unit
+
+      override suspend fun removeSystem(id: BikeId, hubSerial: Long) = Unit
     }
 
   private val capture =
