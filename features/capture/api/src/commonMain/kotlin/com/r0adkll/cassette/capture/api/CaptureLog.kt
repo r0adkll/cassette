@@ -6,8 +6,8 @@ import kotlinx.serialization.Serializable
 
 /**
  * What capture did, as a capped JSON-lines log: arms, background wakes with the raw adverts heard,
- * GATT reads, adding bikes and ride-test sessions. Shared in "Share diagnostics" (decisions 0005,
- * 0011).
+ * live scans, GATT reads, adding bikes and ride-test sessions. Shared in "Share diagnostics"
+ * (decisions 0005, 0011).
  */
 interface CaptureLog {
   val events: Flow<List<CaptureEvent>>
@@ -68,6 +68,11 @@ sealed interface CaptureEvent {
     val outcome: GattOutcome,
     /** The table's raw bytes, for hub reads. */
     val hex: String? = null,
+    /**
+     * Why it failed ("timed out after 12s while discovering services"), or the services a device
+     * listed when it answered without what was asked.
+     */
+    val detail: String? = null,
   ) : CaptureEvent
 
   /**
@@ -77,6 +82,20 @@ sealed interface CaptureEvent {
   @Serializable
   @SerialName("add_bike")
   data class AddBike(override val at: Long, val detail: String) : CaptureEvent
+
+  /**
+   * A live scan (adding a bike, a refresh) started, or ended: stopped, with what it heard, or
+   * failed. One that hears nothing isn't [ok]: Android quietly stops returning results to an app
+   * that starts scans too often.
+   */
+  @Serializable
+  @SerialName("scan")
+  data class Scan(
+    override val at: Long,
+    val purpose: String,
+    val detail: String,
+    val ok: Boolean,
+  ) : CaptureEvent
 
   /** A background wake ran out of time before its reads finished. */
   @Serializable

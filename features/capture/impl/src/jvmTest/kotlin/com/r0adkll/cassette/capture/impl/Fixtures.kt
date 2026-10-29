@@ -27,7 +27,7 @@ internal class FakeGatt : GattClient {
     reads++
     addresses += address
     val answer = byAddress[address] ?: values
-    return if (fail) GattResult.Failed
+    return if (fail) GattResult.Failed("timed out after 12s while connecting")
     else GattResult.Values(answer.filterKeys { it in characteristics }, emptyList())
   }
 }

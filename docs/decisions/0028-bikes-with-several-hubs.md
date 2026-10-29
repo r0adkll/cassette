@@ -63,6 +63,11 @@ AXS dropper, both flagged as the bridge and heard by one receiver seconds apart 
 - The 30-day removal rule stays per component (last seen), so a system that sleeps for a while
   doesn't take the other one's components with it.
 - Diagnostics dumps every hub's tables, each with its serial.
+- The export's `info.txt` ends with "Heard nearby": every device in the capture log's background
+  wakes, re-parsed from its raw bytes, and the bike and system it's on, or none. A hub on no bike
+  is a system no bike has, which is what the tester's two exports would have shown on their first
+  line. Each `gatt` event says why a read failed (and how far it got), and the live scans behind
+  Add bike and refresh log when they started and how they ended.
 
 ## Data
 

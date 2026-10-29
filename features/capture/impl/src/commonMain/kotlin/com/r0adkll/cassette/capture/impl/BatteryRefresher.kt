@@ -3,7 +3,6 @@ package com.r0adkll.cassette.capture.impl
 import com.r0adkll.cassette.capture.api.CaptureEvent
 import com.r0adkll.cassette.capture.api.CaptureLog
 import com.r0adkll.cassette.capture.api.GattKind
-import com.r0adkll.cassette.capture.api.GattOutcome
 import com.r0adkll.cassette.data.ble.BATTERY_LEVEL_CHARACTERISTIC
 import com.r0adkll.cassette.data.ble.GattClient
 import com.r0adkll.cassette.data.ble.GattResult
@@ -90,7 +89,8 @@ class BatteryRefresher(
             },
           )
         val started = clock.now()
-        val values = (gatt.read(address, wanted) as? GattResult.Values)?.values
+        val result = gatt.read(address, wanted)
+        val values = (result as? GattResult.Values)?.values
         val raw = values?.get(SystemBatteryTable.CHARACTERISTIC)
         val table = raw?.let(SystemBatteryTable::parse)
         logRead(
@@ -98,7 +98,7 @@ class BatteryRefresher(
           GattKind.HubTable,
           mode,
           started,
-          values,
+          result,
           table != null,
           raw?.toHex(),
         )
@@ -114,13 +114,13 @@ class BatteryRefresher(
         hubRead = true
       } else {
         val started = clock.now()
-        val values =
-          (gatt.read(address, listOf(BATTERY_LEVEL_CHARACTERISTIC)) as? GattResult.Values)?.values
+        val result = gatt.read(address, listOf(BATTERY_LEVEL_CHARACTERISTIC))
+        val values = (result as? GattResult.Values)?.values
         val level =
           values?.get(BATTERY_LEVEL_CHARACTERISTIC)?.firstOrNull()?.toInt()?.and(0xFF)?.takeIf {
             it <= 100
           }
-        logRead(component.key, GattKind.BatteryLevel, mode, started, values, level != null, null)
+        logRead(component.key, GattKind.BatteryLevel, mode, started, result, level != null, null)
         if (values == null) continue
         if (level == null) {
           lock.withLock { unsupported += component.id.value }
@@ -138,16 +138,10 @@ class BatteryRefresher(
     kind: GattKind,
     mode: CaptureMode,
     started: Instant,
-    values: Map<String, ByteArray>?,
+    result: GattResult,
     parsed: Boolean,
     hex: String?,
   ) {
-    val outcome =
-      when {
-        values == null -> GattOutcome.Failed
-        !parsed -> GattOutcome.Unsupported
-        else -> GattOutcome.Ok
-      }
     log.append(
       CaptureEvent.Gatt(
         at = clock.now().toEpochMilliseconds(),
@@ -155,8 +149,9 @@ class BatteryRefresher(
         kind = kind,
         background = mode == CaptureMode.Background,
         durationMillis = (clock.now() - started).inWholeMilliseconds,
-        outcome = outcome,
+        outcome = result.outcome(parsed),
         hex = hex,
+        detail = result.detail(parsed),
       )
     )
   }

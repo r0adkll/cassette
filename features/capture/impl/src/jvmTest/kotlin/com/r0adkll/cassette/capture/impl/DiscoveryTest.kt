@@ -243,10 +243,10 @@ class DiscoveryTest {
   fun aFailedHubReadReturnsNull() = runTest {
     gatt.fail = true
     assertNull(discovery.readHub(foundHub()))
-    assertEquals(
-      GattOutcome.Failed,
-      captureLog.list.value.filterIsInstance<CaptureEvent.Gatt>().single().outcome,
-    )
+    val read = captureLog.list.value.filterIsInstance<CaptureEvent.Gatt>().single()
+    assertEquals(GattOutcome.Failed, read.outcome)
+    // Why, as the GATT client said it.
+    assertEquals("timed out after 12s while connecting", read.detail)
   }
 
   private fun details(serial: Long, table: ByteArray) =

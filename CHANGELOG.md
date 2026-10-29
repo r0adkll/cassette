@@ -35,7 +35,9 @@ All notable changes to Cassette are documented here. The format follows
   wake while the bike was added, without adding the bike again.
 - A bike's settings list its components under their systems, and a bike with two can remove one.
 - Shared diagnostics say what adding a bike or a system heard: each hub with its signal and table,
-  whether its system started on or off, and when the rider continued.
+  whether its system started on or off, and when the rider continued. They also list every device
+  the background scan heard and which bike and system it's on, or that it's on none; say why a
+  Bluetooth read failed; and say when each scan started and how it ended.
 
 ### Changed
 

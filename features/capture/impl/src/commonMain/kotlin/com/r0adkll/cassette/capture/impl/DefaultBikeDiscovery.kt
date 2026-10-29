@@ -8,7 +8,6 @@ import com.r0adkll.cassette.capture.api.Discovered
 import com.r0adkll.cassette.capture.api.FoundHub
 import com.r0adkll.cassette.capture.api.FoundPowerMeter
 import com.r0adkll.cassette.capture.api.GattKind
-import com.r0adkll.cassette.capture.api.GattOutcome
 import com.r0adkll.cassette.capture.api.HubDetails
 import com.r0adkll.cassette.capture.api.KnownHub
 import com.r0adkll.cassette.core.Bike
@@ -51,7 +50,7 @@ class DefaultBikeDiscovery(
 
   override fun discover(): Flow<Discovered> =
     scanner
-      .live()
+      .loggedLive("add bike", log, clock)
       .runningFold(Found()) { found, reading -> found.with(reading) }
       .map { found ->
         val hubs = found.hubs.values.sortedByDescending { it.rssi }
@@ -132,13 +131,9 @@ class DefaultBikeDiscovery(
         kind = GattKind.HubTable,
         background = false,
         durationMillis = (clock.now() - started).inWholeMilliseconds,
-        outcome =
-          when {
-            values == null -> GattOutcome.Failed
-            table == null -> GattOutcome.Unsupported
-            else -> GattOutcome.Ok
-          },
+        outcome = result.outcome(table != null),
         hex = raw?.toHex(),
+        detail = result.detail(table != null),
       )
     )
     if (values == null || table == null) return null

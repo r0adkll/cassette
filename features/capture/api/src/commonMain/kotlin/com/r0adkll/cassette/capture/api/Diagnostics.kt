@@ -18,6 +18,12 @@ interface Diagnostics {
    * bytes, a dump per hub; empty if the bike is gone.
    */
   suspend fun readHubTables(bikeId: BikeId): List<HubDump>
+
+  /**
+   * For the export: every device the capture log's background wakes heard, and which bike and
+   * system it's on, or none (decision 0028).
+   */
+  suspend fun heardNearby(): String
 }
 
 /**
