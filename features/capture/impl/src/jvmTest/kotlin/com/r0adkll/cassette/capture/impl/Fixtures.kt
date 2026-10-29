@@ -12,8 +12,11 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 
 internal class FakeGatt : GattClient {
   var values: Map<String, ByteArray> = emptyMap()
+  /** Per address, for several hubs; [values] answers any other address. */
+  var byAddress: Map<String, Map<String, ByteArray>> = emptyMap()
   var fail = false
   var reads = 0
+  val addresses = mutableListOf<String>()
   override val isReady = true
 
   override suspend fun read(
@@ -22,8 +25,10 @@ internal class FakeGatt : GattClient {
     timeout: Duration,
   ): GattResult {
     reads++
-    return if (fail) GattResult.Failed
-    else GattResult.Values(values.filterKeys { it in characteristics }, emptyList())
+    addresses += address
+    val answer = byAddress[address] ?: values
+    return if (fail) GattResult.Failed("timed out after 12s while connecting")
+    else GattResult.Values(answer.filterKeys { it in characteristics }, emptyList())
   }
 }
 
@@ -66,6 +71,48 @@ internal object Fixtures {
     )
 
   fun bytes(hex: String) = hex.split(" ").map { it.toInt(16).toByte() }.toByteArray()
+
+  /** The tester's MTB (decision 0028): two hubs, each with its own system. */
+  const val DROPPER = 1121114092L
+  const val FORK = 1151498210L
+  const val POD = 1346282619L
+  const val SHOCK = 1013571428L
+  const val MTB_RD = 1224168767L
+  const val CONTROLLER = 1224155901L
+  const val DROPPER_ADDRESS = "E2:E5:15:02:7D:74"
+  const val SHOCK_ADDRESS = "E9:3C:A9:99:5A:51"
+
+  val DROPPER_TABLE =
+    batteryTable(DROPPER, Row(0x84, DROPPER, 7_579), Row(0x82, FORK, 7_718), Row(115, POD, 2_701))
+  val SHOCK_TABLE =
+    batteryTable(
+      SHOCK,
+      Row(0x83, SHOCK, 8_096),
+      Row(0x81, MTB_RD, 8_249),
+      Row(4, CONTROLLER, 2_996),
+    )
+
+  class Row(val deviceType: Int, val serial: Long, val millivolts: Int)
+
+  /** A battery table (`d9050003`) listing [rows], every one reporting ok. */
+  fun batteryTable(hub: Long, vararg rows: Row): ByteArray {
+    val bytes = ByteArray(6 + rows.size * 24)
+    bytes[0] = 1
+    bytes[1] = rows.size.toByte()
+    bytes.putU32(2, hub)
+    rows.forEachIndexed { i, row ->
+      val at = 6 + i * 24
+      bytes[at] = row.deviceType.toByte()
+      bytes.putU32(at + 3, row.serial)
+      bytes[at + 7] = 3
+      bytes.putU32(at + 8, row.millivolts.toLong())
+    }
+    return bytes
+  }
+
+  private fun ByteArray.putU32(at: Int, value: Long) {
+    for (i in 0 until 4) this[at + i] = (value shr (8 * i)).toByte()
+  }
 }
 
 internal class InMemoryCaptureLog : com.r0adkll.cassette.capture.api.CaptureLog {

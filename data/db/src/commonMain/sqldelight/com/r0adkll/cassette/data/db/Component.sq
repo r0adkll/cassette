@@ -14,7 +14,9 @@ CREATE TABLE component (
     last_seen_at INTEGER,
     removed_at INTEGER,
     -- Last BLE address heard; resolves frames without a serial and targets GATT reads.
-    address TEXT
+    address TEXT,
+    -- The hub whose table lists it, which is its system (decision 0028); null for a power meter.
+    hub_serial INTEGER
 );
 
 CREATE INDEX component_bike ON component(bike_id);
@@ -35,16 +37,18 @@ setAddress:
 UPDATE component SET address = :address WHERE id = :id;
 
 insert:
-INSERT INTO component (bike_id, key, serial, kind, model_id, device_type, firmware, actuations, added_at, last_seen_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO component (bike_id, key, serial, kind, model_id, device_type, firmware, actuations, added_at, last_seen_at, hub_serial)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 lastInsertedId:
 SELECT last_insert_rowid();
 
--- A fresh sighting: newer details win, and a removed component comes back.
+-- A fresh sighting: newer details win, and a removed component comes back. It keeps the first
+-- system that listed it.
 markSeen:
 UPDATE component
 SET last_seen_at = max(coalesce(last_seen_at, 0), :at),
+    hub_serial = coalesce(hub_serial, :hubSerial),
     kind = coalesce(:kind, kind),
     model_id = coalesce(:modelId, model_id),
     device_type = coalesce(:deviceType, device_type),
@@ -52,6 +56,10 @@ SET last_seen_at = max(coalesce(last_seen_at, 0), :at),
     actuations = coalesce(:actuations, actuations),
     removed_at = NULL
 WHERE id = :id;
+
+-- Removing a system takes its components and their history with it (decision 0028).
+deleteForHub:
+DELETE FROM component WHERE bike_id = :bikeId AND hub_serial = :hubSerial;
 
 -- Components the hub hasn't listed since :cutoff (30 days) are removed; history stays (decision 0010).
 markMissingRemoved:

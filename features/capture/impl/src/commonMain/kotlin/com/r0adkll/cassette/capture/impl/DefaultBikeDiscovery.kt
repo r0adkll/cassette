@@ -2,10 +2,15 @@ package com.r0adkll.cassette.capture.impl
 
 import com.r0adkll.cassette.capture.api.BikeDiscovery
 import com.r0adkll.cassette.capture.api.CaptureController
+import com.r0adkll.cassette.capture.api.CaptureEvent
+import com.r0adkll.cassette.capture.api.CaptureLog
 import com.r0adkll.cassette.capture.api.Discovered
 import com.r0adkll.cassette.capture.api.FoundHub
 import com.r0adkll.cassette.capture.api.FoundPowerMeter
+import com.r0adkll.cassette.capture.api.GattKind
 import com.r0adkll.cassette.capture.api.HubDetails
+import com.r0adkll.cassette.capture.api.KnownHub
+import com.r0adkll.cassette.core.Bike
 import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.core.BikeType
 import com.r0adkll.cassette.core.CassetteDispatchers
@@ -18,10 +23,12 @@ import com.r0adkll.cassette.protocol.AxsReading
 import com.r0adkll.cassette.protocol.ComponentKind
 import com.r0adkll.cassette.protocol.FrameType
 import com.r0adkll.cassette.protocol.SystemBatteryTable
+import com.r0adkll.cassette.protocol.toHex
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
 import kotlin.time.Clock
+import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
@@ -36,22 +43,27 @@ class DefaultBikeDiscovery(
   private val recorder: CaptureRecorder,
   private val capture: CaptureController,
   private val db: CassetteDatabase,
+  private val log: CaptureLog,
   private val dispatchers: CassetteDispatchers,
   private val clock: Clock,
 ) : BikeDiscovery {
 
   override fun discover(): Flow<Discovered> =
     scanner
-      .live()
+      .loggedLive("add bike", log, clock)
       .runningFold(Found()) { found, reading -> found.with(reading) }
       .map { found ->
+        val hubs = found.hubs.values.sortedByDescending { it.rssi }
         Discovered(
-          hubs =
-            found.hubs.values
-              .filterNot { isKnown(it.serial.toString()) }
-              .sortedByDescending { it.rssi },
+          hubs = hubs.filterNot { isKnown(it.serial.toString()) },
           powerMeters =
             found.powerMeters.values.filterNot { isKnown(it.name) }.sortedByDescending { it.rssi },
+          known =
+            hubs.mapNotNull { hub ->
+              db.hubQueries.selectBySerial(hub.serial).executeAsOneOrNull()?.let {
+                KnownHub(hub, BikeId(it.bike_id))
+              }
+            },
         )
       }
       .distinctUntilChanged()
@@ -100,6 +112,7 @@ class DefaultBikeDiscovery(
   }
 
   override suspend fun readHub(hub: FoundHub): HubDetails? {
+    val started = clock.now()
     val result =
       gatt.read(
         hub.address,
@@ -108,9 +121,22 @@ class DefaultBikeDiscovery(
           SystemBatteryTable.VERSIONS_CHARACTERISTIC,
         ),
       )
-    val values = (result as? GattResult.Values)?.values ?: return null
-    val table =
-      values[SystemBatteryTable.CHARACTERISTIC]?.let(SystemBatteryTable::parse) ?: return null
+    val values = (result as? GattResult.Values)?.values
+    val raw = values?.get(SystemBatteryTable.CHARACTERISTIC)
+    val table = raw?.let(SystemBatteryTable::parse)
+    log.append(
+      CaptureEvent.Gatt(
+        at = clock.now().toEpochMilliseconds(),
+        key = hub.serial.toString(),
+        kind = GattKind.HubTable,
+        background = false,
+        durationMillis = (clock.now() - started).inWholeMilliseconds,
+        outcome = result.outcome(table != null),
+        hex = raw?.toHex(),
+        detail = result.detail(table != null),
+      )
+    )
+    if (values == null || table == null) return null
     val versions =
       values[SystemBatteryTable.VERSIONS_CHARACTERISTIC]?.let(SystemBatteryTable::parseVersions)
     return HubDetails(hub, table, versions)
@@ -119,9 +145,10 @@ class DefaultBikeDiscovery(
   override suspend fun addBike(
     name: String,
     type: BikeType,
-    hub: HubDetails,
+    hubs: List<HubDetails>,
     powerMeter: FoundPowerMeter?,
   ): BikeId {
+    require(hubs.isNotEmpty()) { "A bike needs a system" }
     val now = clock.now()
     val nowMillis = now.toEpochMilliseconds()
     val bike =
@@ -131,7 +158,7 @@ class DefaultBikeDiscovery(
             name.trim(),
             type.name,
             null,
-            hub.hub.serial,
+            hubs.first().hub.serial,
             nowMillis,
             nowMillis,
           )
@@ -148,6 +175,7 @@ class DefaultBikeDiscovery(
               null,
               nowMillis,
               nowMillis,
+              null,
             )
             db.componentQueries.setAddress(
               powerMeter.address,
@@ -157,15 +185,50 @@ class DefaultBikeDiscovery(
           db.bikeQueries.selectById(bikeId).executeAsOne().toDomain()
         }
       }
-    // Adds the hub and every component it lists, with their batteries.
-    recorder.applyHubTable(bike, hub.table, hub.versions, now)
-    withContext(dispatchers.io) {
-      db.componentQueries.selectByKey(hub.hub.serial.toString()).executeAsOneOrNull()?.let {
-        db.componentQueries.setAddress(hub.hub.address, it.id)
-      }
-    }
-    hub.hub.battery?.let { recorder.applyAdvertBattery(hub.hub.serial.toString(), it, now) }
+    applySystems(bike, hubs, now)
     capture.ensureBackgroundCapture("bike added")
     return bike.id
   }
+
+  override suspend fun addSystems(bike: BikeId, hubs: List<HubDetails>) {
+    val row =
+      withContext(dispatchers.io) { db.bikeQueries.selectById(bike.value).executeAsOneOrNull() }
+        ?: return
+    applySystems(row.toDomain(), hubs, clock.now())
+  }
+
+  /** Each hub's system: its row, then every component it lists, with their batteries. */
+  private suspend fun applySystems(bike: Bike, hubs: List<HubDetails>, now: Instant) {
+    hubs.forEachIndexed { index, hub ->
+      val owner =
+        withContext(dispatchers.io) {
+          db.transactionWithResult {
+            db.hubQueries.selectBySerial(hub.hub.serial).executeAsOneOrNull()?.bike_id
+              ?: bike.id.value.also {
+                // A millisecond apart, so the systems list in the order they were found.
+                db.hubQueries.insert(hub.hub.serial, it, now.toEpochMilliseconds() + index)
+              }
+          }
+        }
+      // Another bike's system already; it stays where the user put it.
+      if (owner != bike.id.value) {
+        note("Hub ${hub.hub.serial} is bike $owner's already: not added to bike ${bike.id.value}")
+        return@forEachIndexed
+      }
+      recorder.applyHubTable(bike, hub.table, hub.versions, now)
+      note(
+        "Hub ${hub.hub.serial}'s system added to bike ${bike.id.value}: " +
+          hub.table.rows.joinToString { "${it.kind.label} ${it.serial}" }
+      )
+      withContext(dispatchers.io) {
+        db.componentQueries.selectByKey(hub.hub.serial.toString()).executeAsOneOrNull()?.let {
+          db.componentQueries.setAddress(hub.hub.address, it.id)
+        }
+      }
+      hub.hub.battery?.let { recorder.applyAdvertBattery(hub.hub.serial.toString(), it, now) }
+    }
+  }
+
+  private suspend fun note(detail: String) =
+    log.append(CaptureEvent.AddBike(clock.now().toEpochMilliseconds(), detail))
 }

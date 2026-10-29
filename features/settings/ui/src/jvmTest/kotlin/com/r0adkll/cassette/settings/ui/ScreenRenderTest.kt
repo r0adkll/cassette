@@ -218,26 +218,70 @@ class ScreenRenderTest {
         name = "Road bike",
         type = BikeType.Road,
         opensFirst = false,
-        components =
+        systems =
           listOf(
-            ComponentLine("RD", "Rear derailleur", "1405188718"),
-            ComponentLine("FD", "Front derailleur", "1405117203"),
-            ComponentLine("L", "Left shifter", "1405260941"),
-            ComponentLine("R", "Right shifter", "1405260958"),
-            ComponentLine("PM", "Power meter", "Quarq AGN12387"),
+            SystemLines(
+              1405188718,
+              "Rear derailleur system",
+              listOf(
+                ComponentLine("RD", "Rear derailleur", "1405188718"),
+                ComponentLine("FD", "Front derailleur", "1405117203"),
+                ComponentLine("L", "Left shifter", "1405260941"),
+                ComponentLine("R", "Right shifter", "1405260958"),
+              ),
+            )
           ),
+        others = listOf(ComponentLine("PM", "Power meter", "Quarq AGN12387")),
+      )
+    // The tester's MTB (decision 0028): two systems, each with its remove.
+    val mtb =
+      BikeSettingsModel(
+        name = "Mountain bike",
+        type = BikeType.Mtb,
+        opensFirst = false,
+        systems =
+          listOf(
+            SystemLines(
+              1121114092,
+              "Dropper post system",
+              listOf(
+                ComponentLine("DP", "Dropper post", "1121114092"),
+                ComponentLine("FK", "Fork", "1151498210"),
+                ComponentLine("R", "Right pod", "1346282619"),
+              ),
+            ),
+            SystemLines(
+              1013571428,
+              "Rear shock system",
+              listOf(
+                ComponentLine("SH", "Rear shock", "1013571428"),
+                ComponentLine("RD", "Rear derailleur", "1224168767"),
+                ComponentLine("R", "Right AXS controller", "1224155901"),
+              ),
+            ),
+          ),
+        others = listOf(ComponentLine("PM", "Power meter", "Quarq AGD60899")),
       )
     for (dark in listOf(true, false)) {
+      val theme = if (dark) "dark" else "light"
       for (size in RenderSize.entries) {
         val shot = Shot("bike", size, state, UpdateStatus.UpToDate)
         val prefix = if (size == RenderSize.Phone) "" else "${size.name.lowercase()}-"
-        render("settings-${prefix}bike-page-${if (dark) "dark" else "light"}", dark, shot) {
+        render("settings-${prefix}bike-page-$theme", dark, shot) {
           BikeSettingsUi(BikeSettingsUiState(model, confirmRemove = false) {})
+        }
+        render("settings-${prefix}bike-page-systems-$theme", dark, shot) {
+          BikeSettingsUi(BikeSettingsUiState(mtb, confirmRemove = false) {})
         }
       }
       val armed = Shot("bike", RenderSize.Phone, state, UpdateStatus.UpToDate)
-      render("settings-bike-page-remove-${if (dark) "dark" else "light"}", dark, armed) {
+      // Remove bike sits below Add a system, past a phone's first screen.
+      val armedWide = Shot("bike", RenderSize.Fold, state, UpdateStatus.UpToDate)
+      render("settings-fold-bike-page-remove-$theme", dark, armedWide) {
         BikeSettingsUi(BikeSettingsUiState(model, confirmRemove = true) {})
+      }
+      render("settings-bike-page-remove-system-$theme", dark, armed) {
+        BikeSettingsUi(BikeSettingsUiState(mtb, confirmRemove = false, 1121114092) {})
       }
     }
   }

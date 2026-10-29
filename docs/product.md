@@ -39,12 +39,14 @@ The watches read the phone's data; they don't scan for components themselves.
 
 Bike-centric ([0002](decisions/0002-bike-centric-model.md)):
 
-- A **bike** is an AXS system, identified by its hub's serial (the rear derailleur, `masterSerial` in the hub
-  tables). Bikes have user-given names.
+- A **bike** is one or more AXS systems, each identified by its hub's serial (the rear derailleur on road,
+  `masterSerial` in the hub tables; a mountain bike's dropper and rear shock can each head one,
+  [0028](decisions/0028-bikes-with-several-hubs.md)). Bikes have user-given names.
 - **Components** belong to a bike. Their identity is the AXS serial; type, side, model and firmware come
   from the protocol.
 - A **power meter** isn't in the AXS tables, so the user attaches it to a bike.
-- You **add a bike** by waking it near the phone, confirming the detected system and naming it.
+- You **add a bike** by waking it near the phone, confirming the detected systems and naming it. A system
+  missed then is added from the bike's settings.
 - Components from bikes you haven't added are ignored (they still appear in diagnostics).
 
 ## Battery presentation

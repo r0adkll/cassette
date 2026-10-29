@@ -47,7 +47,7 @@ class OnboardingPresenterTest {
       awaitItem().eventSink(PermissionsEvent.Continue)
 
       assertEquals(BikeScreen(), navigator.awaitResetRoot().newRoot)
-      assertEquals(AddBikeScreen, navigator.awaitNextScreen())
+      assertEquals(AddBikeScreen(), navigator.awaitNextScreen())
       cancelAndIgnoreRemainingEvents()
     }
     assertTrue(settings.onboarded.value)

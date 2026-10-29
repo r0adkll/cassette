@@ -58,9 +58,14 @@ class DatabaseDeveloperTools(
       }
     }
 
-  /** The new bike's components, each with a month of daily reads up to [seen]. */
+  /**
+   * The new bike's components, each with a month of daily reads up to [seen]. They're the rear
+   * derailleur's system, but the bike gets no hub: its serials are only shown, and a real bike may
+   * have them.
+   */
   private fun insertComponents(samples: List<Sample>, keyPrefix: String, seen: Long) {
     val bike = db.bikeQueries.lastInsertedId().executeAsOne()
+    val hub = samples.firstOrNull { it.kind == ComponentKind.REAR_DERAILLEUR }?.key?.toLongOrNull()
     samples.forEach { c ->
       // Sample keys never match a real component, so capture can't attach to them, and loading
       // the sample never touches a bike the user added.
@@ -76,6 +81,7 @@ class DatabaseDeveloperTools(
         null,
         seen,
         seen,
+        hub.takeIf { c.kind != ComponentKind.POWER_METER },
       )
       val component = db.componentQueries.lastInsertedId().executeAsOne()
       // A month of daily reads before this one, so the charts and estimates have a history.

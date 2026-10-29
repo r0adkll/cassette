@@ -67,7 +67,7 @@ class AndroidAdvertScanner(private val application: Application) : AdvertScanner
         }
 
         override fun onScanFailed(errorCode: Int) {
-          close(IllegalStateException("Scan failed with error $errorCode"))
+          close(IllegalStateException("Scan failed with error ${scanError(errorCode)}"))
         }
       }
     scanner.startScan(emptyList(), LIVE_SETTINGS, callback)
@@ -147,3 +147,15 @@ internal fun ScanResult.toReading(): AxsReading? {
 }
 
 internal const val TAG = "CassetteScan"
+
+/** [ScanCallback]'s failure codes, by name, for the capture log. */
+private fun scanError(code: Int): String =
+  when (code) {
+    ScanCallback.SCAN_FAILED_ALREADY_STARTED -> "$code (already started)"
+    ScanCallback.SCAN_FAILED_APPLICATION_REGISTRATION_FAILED -> "$code (app registration failed)"
+    ScanCallback.SCAN_FAILED_INTERNAL_ERROR -> "$code (internal error)"
+    ScanCallback.SCAN_FAILED_FEATURE_UNSUPPORTED -> "$code (unsupported)"
+    ScanCallback.SCAN_FAILED_OUT_OF_HARDWARE_RESOURCES -> "$code (out of hardware resources)"
+    ScanCallback.SCAN_FAILED_SCANNING_TOO_FREQUENTLY -> "$code (scanning too frequently)"
+    else -> "$code"
+  }

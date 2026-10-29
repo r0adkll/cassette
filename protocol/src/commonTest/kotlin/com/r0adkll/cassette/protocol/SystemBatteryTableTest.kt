@@ -76,5 +76,16 @@ class SystemBatteryTableTest {
     assertEquals(95, estimatePackPercent(8_060))
   }
 
+  @Test
+  fun followsSramToZeroAtTheBottom() {
+    // A tester's fork running flat: SRAM said 14, 10 and 0 % at these voltages.
+    assertEquals(13, estimatePackPercent(7_410))
+    assertEquals(10, estimatePackPercent(7_370))
+    assertEquals(0, estimatePackPercent(7_360))
+    assertEquals(0, estimatePackPercent(6_470))
+    assertEquals(BatteryStatus.CRITICAL, batteryStatus(millivolts = 7_360, percent = null))
+    assertEquals(BatteryStatus.LOW, batteryStatus(millivolts = 7_370, percent = null))
+  }
+
   private fun bytes(hex: String) = hex.trim().split(" ").map { it.toInt(16).toByte() }.toByteArray()
 }

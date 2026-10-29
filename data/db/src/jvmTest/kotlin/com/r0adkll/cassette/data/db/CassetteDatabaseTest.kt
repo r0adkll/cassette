@@ -61,6 +61,7 @@ class CassetteDatabaseTest {
 
     db.componentQueries.markSeen(
       at = 11_000,
+      hubSerial = null,
       kind = null,
       modelId = null,
       deviceType = null,
@@ -111,7 +112,7 @@ class CassetteDatabaseTest {
   @Test
   fun unknownEnumNamesFromANewerBuildDegradeSafely() {
     val bike = insertBike(hubSerial = 1)
-    db.componentQueries.insert(bike, "x", null, "HOVERBOARD", null, null, null, null, 0, null)
+    db.componentQueries.insert(bike, "x", null, "HOVERBOARD", null, null, null, null, 0, null, null)
     db.bikeQueries.updateDetails(
       name = "Road bike",
       type = "Unicycle",
@@ -148,6 +149,7 @@ class CassetteDatabaseTest {
       null,
       0,
       seenAt,
+      null,
     )
     return db.componentQueries.lastInsertedId().executeAsOne()
   }

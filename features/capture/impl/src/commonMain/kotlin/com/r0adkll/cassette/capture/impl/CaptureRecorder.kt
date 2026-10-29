@@ -53,10 +53,14 @@ class CaptureRecorder(
       db.transaction {
         db.componentQueries.markSeen(
           at = at,
+          hubSerial = null,
           // Not every frame says everything (beacons have no device type); keep what we
           // know.
           kind = reading.kind.takeIf { it != ComponentKind.UNKNOWN }?.name,
-          modelId = reading.modelId?.toLong(),
+          // A frame without a device type can carry a bogus model (a tester's fork sent 33280
+          // for its 1086), so its model only fills one we don't have yet.
+          modelId =
+            reading.modelId?.takeIf { reading.classByte != null || row.model_id == null }?.toLong(),
           deviceType = reading.classByte?.toLong(),
           firmware = reading.firmware,
           actuations = null,
@@ -97,9 +101,10 @@ class CaptureRecorder(
         }
 
   /**
-   * Applies the hub's tables (decision 0010): every listed component is seen, new ones join the
-   * bike, and components the hub hasn't listed for 30 days are marked removed. The hub's own row
-   * skips battery, since its adverts carry voltage, percent and status.
+   * Applies a hub's tables (decision 0010): every listed component is seen, new ones join the bike
+   * in that hub's system (decision 0028), and components the bike hasn't seen for 30 days are
+   * marked removed. The hub's own row skips battery, since its adverts carry voltage, percent and
+   * status.
    */
   suspend fun applyHubTable(
     bike: Bike,
@@ -128,6 +133,7 @@ class CaptureRecorder(
                   row.actuations,
                   now,
                   now,
+                  table.masterSerial,
                 )
                 db.componentQueries.lastInsertedId().executeAsOne()
               } else if (existing.bike_id != bike.id.value) {
@@ -136,6 +142,7 @@ class CaptureRecorder(
               } else {
                 db.componentQueries.markSeen(
                   at = now,
+                  hubSerial = table.masterSerial,
                   kind = row.kind.takeIf { it != ComponentKind.UNKNOWN }?.name,
                   modelId = row.modelId.toLong(),
                   deviceType = row.deviceType.toLong(),
@@ -156,6 +163,7 @@ class CaptureRecorder(
               )
             }
           }
+          db.hubQueries.markRead(now, table.masterSerial)
           db.bikeQueries.markHubRead(now, bike.id.value)
           db.bikeQueries.markSeen(now, bike.id.value)
           db.componentQueries.markMissingRemoved(

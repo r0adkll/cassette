@@ -27,6 +27,17 @@ All notable changes to Cassette are documented here. The format follows
 - [Android] Open in App on a phone Build's Drop page opens Cassette's Drop build and offers that
   build in the update sheet, from whichever channel (Drop 0.6.0). Installing a pull request's build
   moves the phone to that pull request's builds until it closes.
+- A bike can have more than one AXS system, each with its own hub, as on a mountain bike whose
+  dropper post and rear shock each head one. Adding a bike listens a few seconds more after the
+  first hub and lists every system that answers, each with a switch to leave out one that's another
+  bike's. Each hub is read on its own.
+- "Add a system" in a bike's settings finds a system the bike is missing, such as one that didn't
+  wake while the bike was added, without adding the bike again.
+- A bike's settings list its components under their systems, and a bike with two can remove one.
+- Shared diagnostics say what adding a bike or a system heard: each hub with its signal and table,
+  whether its system started on or off, and when the rider continued. They also list every device
+  the background scan heard and which bike and system it's on, or that it's on none; say why a
+  Bluetooth read failed; and say when each scan started and how it ended.
 
 ### Changed
 
@@ -48,6 +59,9 @@ All notable changes to Cassette are documented here. The format follows
 - [iOS] Every iPad held sideways lists the bikes on the left, not only the 13-inch.
 - On an open foldable or a tablet, every Add bike step splits in two as waking the bike does, instead
   of a phone's column for naming it, the power meter and keeping it fresh.
+- An AXS controller is called that, not a Reverb controller: it can run more than the dropper post.
+- A battery pack's estimated percentage follows SRAM's down to empty: 10 % at 7.37 V and 0 % at
+  7.36 V, where it said about 8 %.
 
 ### Fixed
 
@@ -55,6 +69,12 @@ All notable changes to Cassette are documented here. The format follows
 
 - [iOS] On an open foldable or an iPad held upright, the bike screen's Add bike and Settings buttons
   no longer show over an open component.
+- A battery pack estimated at 0 % shows as Charge now instead of unknown.
+- Adding a bike names the component that's its hub, rather than always calling it the rear
+  derailleur.
+- Diagnostics → Hub tables reads every hub of the bike.
+- A component's model no longer changes to a number that isn't one when it sends a frame without
+  its device type.
 
 ## [1.0.0] - 2026-10-21
 

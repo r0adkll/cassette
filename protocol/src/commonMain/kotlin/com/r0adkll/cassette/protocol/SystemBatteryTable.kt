@@ -1,8 +1,8 @@
 package com.r0adkll.cassette.protocol
 
 /**
- * A hub table: the hub (rear derailleur) serial, which identifies the bike's system, and one row
- * per component.
+ * A hub table: the hub's serial (the rear derailleur on road), which identifies its system, and one
+ * row per component.
  */
 data class SystemTable<T>(val masterSerial: Long, val rows: List<T>)
 
@@ -39,9 +39,9 @@ data class ComponentVersions(
 )
 
 /**
- * The rear derailleur acts as the system hub. Its `d9050003` (battery) and `d9050004` (firmware)
- * characteristics cover every paired component and are readable without pairing or SRAM's encrypted
- * session.
+ * A system's hub (the rear derailleur on road; a dropper or rear shock can head one on a mountain
+ * bike, decision 0028). Its `d9050003` (battery) and `d9050004` (firmware) characteristics cover
+ * every component paired with it and are readable without pairing or SRAM's encrypted session.
  *
  * Both start `[type][count][hub serial u32]`. Battery rows (24 bytes): device type, model u16,
  * serial u32, soc s8, mV u32, update time u32, runtime u32, actuation count u32. Firmware rows (16
@@ -98,18 +98,15 @@ object SystemBatteryTable {
 }
 
 /**
- * Rough state of charge for an AXS battery pack, interpolated from (mV, %) pairs reported in rear
- * derailleur adverts: 7881/81 from a Red AXS bike, and 7479/19, 7523/23, 8118/100 from
- * esphome-sram-axs captures. SRAM's app has no such curve; it only shows the component's reported
- * status.
+ * Rough state of charge for an AXS battery pack, interpolated from (mV, %) pairs reported in
+ * component adverts: 7881/81 from a Red AXS bike, 7479/19, 7523/23, 8118/100 from esphome-sram-axs
+ * captures, and 7370/10, 7360/0 from a tester's fork running flat, where SRAM's percent drops from
+ * 10 straight to 0 (the pack works on to about 6.3 V). SRAM's app has no such curve; it only shows
+ * the component's reported status.
  */
 fun estimatePackPercent(millivolts: Int): Int {
-  val points = listOf(7_479 to 19, 7_523 to 23, 7_881 to 81, 8_118 to 100)
-  val (lowMv, lowPct) = points.first()
-  if (millivolts <= lowMv) {
-    val slope = (points[1].second - lowPct).toDouble() / (points[1].first - lowMv)
-    return (lowPct - (lowMv - millivolts) * slope).toInt().coerceAtLeast(0)
-  }
+  val points = listOf(7_360 to 0, 7_370 to 10, 7_479 to 19, 7_523 to 23, 7_881 to 81, 8_118 to 100)
+  if (millivolts <= points.first().first) return 0
   val upper = points.indexOfFirst { it.first >= millivolts }
   if (upper == -1) return 100
   val (aMv, aPct) = points[upper - 1]

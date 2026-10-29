@@ -159,7 +159,7 @@ class DefaultCaptureController(
       get() = scanner.isReady
 
     override fun ProducerScope<RefreshProgress>.start() {
-      launch { scanner.live().collect { batches.send(it) } }
+      launch { scanner.loggedLive("refresh", log, clock).collect { batches.send(it) } }
     }
 
     override suspend fun step(started: Instant): Boolean {

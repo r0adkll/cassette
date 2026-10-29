@@ -124,6 +124,20 @@ class AxsAdvertParserTest {
   }
 
   @Test
+  fun keepsTheModelOfAFrameWithoutADeviceType() {
+    // A tester's fork, 8 bytes: flags2 0x00 (no device type), model 0x8200. 33280 is no model
+    // id (the fork's is 1086); it reads like its type byte 0x82 in the model's slot. Capture
+    // won't let it replace a known model.
+    val reading = parse(adStructure(0x16, bytes("51 fe 0d 00 e2 77 a2 44 00 82")))!!
+
+    assertEquals(FrameType.BEACON, reading.frame)
+    assertEquals(1151498210L, reading.serial)
+    assertNull(reading.classByte)
+    assertEquals(33_280, reading.modelId)
+    assertEquals(ComponentKind.UNKNOWN, reading.kind)
+  }
+
+  @Test
   fun zeroPercentIsUnknownNotCritical() {
     assertEquals(BatteryStatus.UNKNOWN, batteryStatus(millivolts = null, percent = 0))
     assertEquals(BatteryStatus.CRITICAL, batteryStatus(millivolts = null, percent = 5))
