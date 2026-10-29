@@ -89,10 +89,10 @@ data class FoundSystem(
   val components: List<FoundRow>,
   val reading: Boolean = false,
   val failed: Boolean = false,
-  /** Switched on, it joins the bike; off, its components stay someone else's. */
+  /**
+   * Switched on, it joins the bike; off, its components stay someone else's. Every one starts on.
+   */
   val on: Boolean = true,
-  /** Heard much more weakly than the first hub, so it started off. */
-  val faint: Boolean = false,
 )
 
 /** A hub that is one of the bike's systems already. */

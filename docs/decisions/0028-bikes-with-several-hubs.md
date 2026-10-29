@@ -2,7 +2,7 @@
 
 Date: 2026-10-27 · Status: accepted. Mockups ([0006](0006-design-process.md)), with the tester's
 readings: https://claude.ai/artifact/ABGtCdE6tbtFhZFDTC8F2w (private; the "chosen" and B boards are
-the approved ones)
+the approved ones, except the faint hub, rejected below)
 
 [0002](0002-bike-centric-model.md) made a bike one AXS system, named by its hub's serial. A tester's
 mountain bike (diagnostics export of 2026-10-26) is two: the dropper heads one system (fork, pod,
@@ -32,15 +32,23 @@ AXS dropper, both flagged as the bridge and heard by one receiver seconds apart 
   Continue works throughout, so a one-hub bike doesn't wait the window out. Found lists each system
   as its own group, named after its hub ("Dropper post system", with the hub's serial); the text
   names the hub too, rather than assuming a rear derailleur.
-- With two systems or more, each group has a switch. Every system starts **on**, except one heard
-  much more weakly than the first, which starts **off** ("Heard faintly"): two bikes woken in one
-  garage would otherwise merge without anyone noticing. A switched-off system folds to one line
-  and its components stay someone else's. The threshold needs signal data; the tester's seven
-  components ranged from −56 to −68 dBm.
+- With two systems or more, each group has a switch, and every system starts **on**. A
+  switched-off system folds to one line and its components stay someone else's.
+- Rejected: starting a much fainter hub **off** (20 dB below the first; the mockups' "Heard
+  faintly"), to keep two bikes woken in one garage from merging. Signal strength can't tell a
+  bike's hubs apart. In the tester's second export (2026-10-28) each of their two hubs ranged from
+  −27 to −77 dBm, depending on which one the phone was near. Replayed, the rule started one of
+  them off in 4 of 51 cases, and averaged over the 10 s window they were still up to 25 dB apart.
+  Another bike is only heard if it was moved in the last few minutes, and a system that isn't the
+  bike's comes off with "Remove this system"; one wrongly left off halves the bike without a word.
 - An existing bike gets **"Add a system"** in its settings: two steps, wake and found, offering
   only hubs that aren't on a bike yet. While it listens it lists the hubs it hears that are on the
   bike already, so the rider knows the phone hears the bike. That's how the tester fixes their bike
   without starting over.
+- Add bike and Add a system write to the capture log: each hub heard, its signal, how its system
+  started, hubs heard after the window, the rider's switches, when they continued, and each hub
+  read with its table's bytes. The tester's second export (2026-10-28) saved one system again and
+  couldn't say why: the flow logged nothing.
 - Bike settings group the components under their system (hub kind and serial), then the power
   meter on its own. Each group of a bike with two or more ends in "Remove this system", which asks
   for a second tap as Remove bike does and removes its components and their history. A one-system

@@ -182,8 +182,6 @@ private fun foundBody(state: AddBikeUiState, step: AddBikeStep.Found): String {
   return when {
     step.failed -> "The hub stopped answering. Wake the bike again and retry."
     hub == null -> ""
-    step.choosing && step.systems.any { it.faint && !it.on } ->
-      "${count(step.systems.size)} hubs answered. One was faint, so it starts off: it may be another bike nearby."
     step.choosing ->
       "${count(step.systems.size)} hubs answered, each with its own components. Switch off a system that isn't this bike's."
     hub.reading -> "${hub.theHub} is the hub. Reading its list of components…"
@@ -439,16 +437,6 @@ private fun ColumnScope.SystemContent(
   }
   val count = system.components.size
   when {
-    !system.on && system.faint -> {
-      Kicker(if (count > 0) "Heard faintly · $count components" else "Heard faintly")
-      Text(
-        if (count > 0)
-          "${sentence(system.components.map { it.name })}. Switch it on if they're on this bike."
-        else "Switch it on if it's this bike's.",
-        style = CassetteTheme.type.bodySmall,
-        color = colors.muted,
-      )
-    }
     !system.on ->
       Text(
         if (count > 0) "Not on this bike. Its $count components stay someone else's."
@@ -467,12 +455,6 @@ private fun ColumnScope.SystemContent(
     else -> rows()
   }
 }
-
-/** "Rear derailleur, front derailleur, right shifter": names run on in a sentence. */
-private fun sentence(names: List<String>) =
-  names
-    .mapIndexed { i, name -> if (i == 0) name else name.replaceFirstChar { it.lowercase() } }
-    .joinToString()
 
 /** The components a hub listed, as rows of a panel. */
 @Composable

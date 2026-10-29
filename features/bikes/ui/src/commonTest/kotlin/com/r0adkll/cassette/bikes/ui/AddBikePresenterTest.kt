@@ -10,6 +10,8 @@ import com.r0adkll.cassette.bikes.ui.add.AddBikeStep
 import com.r0adkll.cassette.bikes.ui.add.AddBikeUiState
 import com.r0adkll.cassette.capture.api.BikeDiscovery
 import com.r0adkll.cassette.capture.api.CaptureController
+import com.r0adkll.cassette.capture.api.CaptureEvent
+import com.r0adkll.cassette.capture.api.CaptureLog
 import com.r0adkll.cassette.capture.api.Discovered
 import com.r0adkll.cassette.capture.api.FoundHub
 import com.r0adkll.cassette.capture.api.FoundPowerMeter
@@ -32,11 +34,13 @@ import com.slack.circuit.test.test
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 
@@ -146,15 +150,34 @@ class AddBikePresenterTest {
 
       override suspend fun ensureBackgroundCapture(reason: String) = Unit
     }
+  private val log =
+    object : CaptureLog {
+      val list = MutableStateFlow(emptyList<CaptureEvent>())
+      override val events = list
+
+      override suspend fun append(event: CaptureEvent) {
+        list.value += event
+      }
+
+      override suspend fun clear() {
+        list.value = emptyList()
+      }
+
+      override suspend fun export() = ""
+    }
+  private val lines
+    get() = log.list.value.filterIsInstance<CaptureEvent.AddBike>().map { it.detail }
+
+  private var now = Instant.fromEpochMilliseconds(0)
   private val clock =
     object : Clock {
-      override fun now() = Instant.fromEpochMilliseconds(0)
+      override fun now() = this@AddBikePresenterTest.now
     }
 
   @Test
   fun wakeFindNamePickFinish() = runTest {
     val navigator = FakeNavigator(AddBikeScreen())
-    AddBikePresenter(AddBikeScreen(), navigator, discovery, capture, bikes, clock).test {
+    AddBikePresenter(AddBikeScreen(), navigator, discovery, capture, bikes, log, clock).test {
       assertIs<AddBikeStep.Wake>(awaitItem().step)
 
       found.value =
@@ -189,9 +212,9 @@ class AddBikePresenterTest {
   }
 
   @Test
-  fun everyHubThatAnswersIsASystemAndAFaintOneStartsOff() = runTest {
+  fun everyHubThatAnswersIsASystemAndStartsOn() = runTest {
     val navigator = FakeNavigator(AddBikeScreen())
-    AddBikePresenter(AddBikeScreen(), navigator, discovery, capture, bikes, clock).test {
+    AddBikePresenter(AddBikeScreen(), navigator, discovery, capture, bikes, log, clock).test {
       found.value = Discovered(listOf(dropper), emptyList())
       awaitStep<AddBikeStep.Found> { it.listening }
       // The shock, and a road bike's hub far off in the same garage.
@@ -202,13 +225,13 @@ class AddBikePresenterTest {
         listOf("Dropper post", "Rear shock", "Rear derailleur"),
         systems.map { it.hubName },
       )
-      assertEquals(listOf(true, true, false), systems.map { it.on })
-      assertEquals(listOf(false, false, true), systems.map { it.faint })
+      // However faint: signal strength can't tell a bike's second hub from another bike's.
+      assertEquals(listOf(true, true, true), systems.map { it.on })
       assertEquals(listOf("SH", "RD", "R"), systems[1].components.map { it.code })
 
-      // Not this bike's after all: only the dropper's system is saved.
-      all.eventSink(AddBikeEvent.ToggleSystem(SHOCK))
-      awaitStep<AddBikeStep.Found> { f -> f.systems.none { it.hubSerial == SHOCK && it.on } }
+      // The road bike isn't this one: only the MTB's two systems are saved.
+      all.eventSink(AddBikeEvent.ToggleSystem(ROAD))
+      awaitStep<AddBikeStep.Found> { f -> f.systems.none { it.hubSerial == ROAD && it.on } }
         .eventSink(AddBikeEvent.Continue)
       awaitStep<AddBikeStep.Name>().eventSink(AddBikeEvent.Continue)
       awaitStep<AddBikeStep.PowerMeter>().eventSink(AddBikeEvent.Skip)
@@ -216,13 +239,48 @@ class AddBikePresenterTest {
       navigator.awaitResetRoot()
       cancelAndIgnoreRemainingEvents()
     }
-    assertEquals(listOf(DROPPER), addedHubs)
+    assertEquals(listOf(DROPPER, SHOCK), addedHubs)
+    // The export says what each hub was heard at and what the rider did.
+    assertEquals(
+      listOf(
+        "Add bike opened",
+        "Hub $DROPPER (Dropper post) at -56 dBm heard after 0 s of waking: the first system",
+        "Hub $SHOCK (Rear shock) at -58 dBm heard 0 s after the first (-56 dBm): starts on",
+        "Hub $ROAD (Rear derailleur) at -90 dBm heard 0 s after the first (-56 dBm): starts on",
+        "Hub $ROAD switched off",
+        "Continue after 0 s, still listening: $DROPPER on, $SHOCK on, $ROAD off",
+      ),
+      lines,
+    )
+  }
+
+  @Test
+  fun aHubHeardOnceListeningStoppedIsLoggedNotOffered() = runTest {
+    val navigator = FakeNavigator(AddBikeScreen(7))
+    AddBikePresenter(AddBikeScreen(7), navigator, discovery, capture, bikes, log, clock).test {
+      found.value = Discovered(listOf(shock), emptyList())
+      awaitStep<AddBikeStep.Found> { it.listening }
+      now = Instant.fromEpochMilliseconds(11_000)
+      val done = awaitStep<AddBikeStep.Found> { !it.listening && !it.reading }
+
+      found.value = Discovered(listOf(shock, hub), emptyList())
+      log.list.first { events ->
+        events.any { it is CaptureEvent.AddBike && "not offered" in it.detail }
+      }
+      done.eventSink(AddBikeEvent.Continue)
+      navigator.awaitPop()
+      cancelAndIgnoreRemainingEvents()
+    }
+    assertEquals(listOf(SHOCK), addedHubs)
+    assertTrue(
+      "Hub $ROAD (Rear derailleur) at -55 dBm heard after listening stopped: not offered" in lines
+    )
   }
 
   @Test
   fun aSystemIsAddedToABike() = runTest {
     val navigator = FakeNavigator(AddBikeScreen(7))
-    AddBikePresenter(AddBikeScreen(7), navigator, discovery, capture, bikes, clock).test {
+    AddBikePresenter(AddBikeScreen(7), navigator, discovery, capture, bikes, log, clock).test {
       // The dropper is the bike's already: heard, but not offered.
       found.value =
         Discovered(emptyList(), emptyList(), known = listOf(KnownHub(dropper, BikeId(7))))
@@ -259,5 +317,6 @@ class AddBikePresenterTest {
   private companion object {
     const val DROPPER = 1121114092L
     const val SHOCK = 1013571428L
+    const val ROAD = 1405188718L
   }
 }

@@ -2,9 +2,13 @@ package com.r0adkll.cassette.capture.impl
 
 import com.r0adkll.cassette.capture.api.BikeDiscovery
 import com.r0adkll.cassette.capture.api.CaptureController
+import com.r0adkll.cassette.capture.api.CaptureEvent
+import com.r0adkll.cassette.capture.api.CaptureLog
 import com.r0adkll.cassette.capture.api.Discovered
 import com.r0adkll.cassette.capture.api.FoundHub
 import com.r0adkll.cassette.capture.api.FoundPowerMeter
+import com.r0adkll.cassette.capture.api.GattKind
+import com.r0adkll.cassette.capture.api.GattOutcome
 import com.r0adkll.cassette.capture.api.HubDetails
 import com.r0adkll.cassette.capture.api.KnownHub
 import com.r0adkll.cassette.core.Bike
@@ -20,6 +24,7 @@ import com.r0adkll.cassette.protocol.AxsReading
 import com.r0adkll.cassette.protocol.ComponentKind
 import com.r0adkll.cassette.protocol.FrameType
 import com.r0adkll.cassette.protocol.SystemBatteryTable
+import com.r0adkll.cassette.protocol.toHex
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
@@ -39,6 +44,7 @@ class DefaultBikeDiscovery(
   private val recorder: CaptureRecorder,
   private val capture: CaptureController,
   private val db: CassetteDatabase,
+  private val log: CaptureLog,
   private val dispatchers: CassetteDispatchers,
   private val clock: Clock,
 ) : BikeDiscovery {
@@ -107,6 +113,7 @@ class DefaultBikeDiscovery(
   }
 
   override suspend fun readHub(hub: FoundHub): HubDetails? {
+    val started = clock.now()
     val result =
       gatt.read(
         hub.address,
@@ -115,9 +122,26 @@ class DefaultBikeDiscovery(
           SystemBatteryTable.VERSIONS_CHARACTERISTIC,
         ),
       )
-    val values = (result as? GattResult.Values)?.values ?: return null
-    val table =
-      values[SystemBatteryTable.CHARACTERISTIC]?.let(SystemBatteryTable::parse) ?: return null
+    val values = (result as? GattResult.Values)?.values
+    val raw = values?.get(SystemBatteryTable.CHARACTERISTIC)
+    val table = raw?.let(SystemBatteryTable::parse)
+    log.append(
+      CaptureEvent.Gatt(
+        at = clock.now().toEpochMilliseconds(),
+        key = hub.serial.toString(),
+        kind = GattKind.HubTable,
+        background = false,
+        durationMillis = (clock.now() - started).inWholeMilliseconds,
+        outcome =
+          when {
+            values == null -> GattOutcome.Failed
+            table == null -> GattOutcome.Unsupported
+            else -> GattOutcome.Ok
+          },
+        hex = raw?.toHex(),
+      )
+    )
+    if (values == null || table == null) return null
     val versions =
       values[SystemBatteryTable.VERSIONS_CHARACTERISTIC]?.let(SystemBatteryTable::parseVersions)
     return HubDetails(hub, table, versions)
@@ -192,8 +216,15 @@ class DefaultBikeDiscovery(
           }
         }
       // Another bike's system already; it stays where the user put it.
-      if (owner != bike.id.value) return@forEachIndexed
+      if (owner != bike.id.value) {
+        note("Hub ${hub.hub.serial} is bike $owner's already: not added to bike ${bike.id.value}")
+        return@forEachIndexed
+      }
       recorder.applyHubTable(bike, hub.table, hub.versions, now)
+      note(
+        "Hub ${hub.hub.serial}'s system added to bike ${bike.id.value}: " +
+          hub.table.rows.joinToString { "${it.kind.label} ${it.serial}" }
+      )
       withContext(dispatchers.io) {
         db.componentQueries.selectByKey(hub.hub.serial.toString()).executeAsOneOrNull()?.let {
           db.componentQueries.setAddress(hub.hub.address, it.id)
@@ -202,4 +233,7 @@ class DefaultBikeDiscovery(
       hub.hub.battery?.let { recorder.applyAdvertBattery(hub.hub.serial.toString(), it, now) }
     }
   }
+
+  private suspend fun note(detail: String) =
+    log.append(CaptureEvent.AddBike(clock.now().toEpochMilliseconds(), detail))
 }

@@ -6,7 +6,8 @@ import kotlinx.serialization.Serializable
 
 /**
  * What capture did, as a capped JSON-lines log: arms, background wakes with the raw adverts heard,
- * GATT reads and ride-test sessions. Shared in "Share diagnostics" (decisions 0005, 0011).
+ * GATT reads, adding bikes and ride-test sessions. Shared in "Share diagnostics" (decisions 0005,
+ * 0011).
  */
 interface CaptureLog {
   val events: Flow<List<CaptureEvent>>
@@ -68,6 +69,14 @@ sealed interface CaptureEvent {
     /** The table's raw bytes, for hub reads. */
     val hex: String? = null,
   ) : CaptureEvent
+
+  /**
+   * Add bike and Add a system (decision 0028): each hub Found heard and how its system started, the
+   * rider's switches, when they continued and what was saved. The hub reads are `gatt` events.
+   */
+  @Serializable
+  @SerialName("add_bike")
+  data class AddBike(override val at: Long, val detail: String) : CaptureEvent
 
   /** A background wake ran out of time before its reads finished. */
   @Serializable

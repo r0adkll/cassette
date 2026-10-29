@@ -72,13 +72,12 @@ class ScreenRenderTest {
           ),
         "5-fresh" to AddBikeStep.KeepFresh(bluetoothReady = true, saving = false),
       )
-    // The tester's MTB (decision 0028): two hubs, each a system; and our road bike, heard faintly.
+    // The tester's MTB (decision 0028): two hubs, each a system.
     val found =
       listOf(
         "2-listening" to AddBikeStep.Found(listOf(dropper), listening = true, listenSeconds = 4),
         "2-two-systems" to AddBikeStep.Found(listOf(dropper, shock)),
         "2-one-off" to AddBikeStep.Found(listOf(dropper, shock.copy(on = false))),
-        "2-faint" to AddBikeStep.Found(listOf(dropper, rd.copy(on = false, faint = true))),
         "2-reading-two" to
           AddBikeStep.Found(listOf(dropper, shock.copy(components = emptyList(), reading = true))),
         "2-failed-one" to

@@ -13,6 +13,8 @@ import com.r0adkll.cassette.bikes.summary.code
 import com.r0adkll.cassette.bikes.summary.tone
 import com.r0adkll.cassette.capture.api.BikeDiscovery
 import com.r0adkll.cassette.capture.api.CaptureController
+import com.r0adkll.cassette.capture.api.CaptureEvent
+import com.r0adkll.cassette.capture.api.CaptureLog
 import com.r0adkll.cassette.capture.api.Discovered
 import com.r0adkll.cassette.capture.api.FoundHub
 import com.r0adkll.cassette.capture.api.HubDetails
@@ -36,6 +38,7 @@ import dev.zacsweers.metro.Inject
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.Instant
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
@@ -49,6 +52,7 @@ class AddBikePresenter(
   private val discovery: BikeDiscovery,
   private val capture: CaptureController,
   private val bikes: BikeRepository,
+  private val log: CaptureLog,
   private val clock: Clock,
 ) : Presenter<AddBikeUiState> {
 
@@ -58,7 +62,6 @@ class AddBikePresenter(
     val details: HubDetails? = null,
     val failed: Boolean = false,
     val on: Boolean = true,
-    val faint: Boolean = false,
   )
 
   @Composable
@@ -84,6 +87,18 @@ class AddBikePresenter(
     var type by rememberRetained { mutableStateOf(BikeType.Road) }
     var meter by rememberRetained { mutableStateOf<String?>(null) }
     var saving by remember { mutableStateOf(false) }
+    // Hubs logged as heard too late to be offered, so each is logged once.
+    var late by rememberRetained { mutableStateOf(emptySet<Long>()) }
+    var opened by rememberRetained { mutableStateOf(false) }
+
+    // What Found heard and decided goes to the capture log (CLAUDE.md, diagnostics stay).
+    LaunchedEffect(Unit) {
+      if (opened) return@LaunchedEffect
+      opened = true
+      scope.note(
+        if (toBike == null) "Add bike opened" else "Add a system opened for bike ${toBike.value}"
+      )
+    }
 
     // Counted from when waking started, so turning the phone doesn't restart the count.
     val wakeStart = rememberRetained(step) { clock.now() }
@@ -115,21 +130,34 @@ class AddBikePresenter(
           firstHeard = clock.now()
           listenSeconds = 0
           step = 2
+          scope.note("${it.describe()} heard after $seconds s of waking: the first system")
         }
     }
 
-    // Every other hub heard while listening is a system too; a much fainter one starts off.
+    // Every other hub heard while listening is a system too, and starts on: signal strength can't
+    // tell a bike's second hub from another bike's (decision 0028).
     LaunchedEffect(step, discovered.hubs, listening) {
       if (step != 2 || !listening) return@LaunchedEffect
       val first = systems.firstOrNull()?.hub ?: return@LaunchedEffect
       val new = discovered.hubs.filter { hub -> systems.none { it.hub.serial == hub.serial } }
       if (new.isEmpty()) return@LaunchedEffect
-      systems =
-        systems +
-          new.map {
-            val faint = it.rssi < first.rssi - FAINT_BY_DB
-            System(it, on = !faint, faint = faint)
-          }
+      systems = systems + new.map { System(it) }
+      val after = firstHeard?.let { (clock.now() - it).inWholeSeconds } ?: 0
+      new.forEach {
+        scope.note("${it.describe()} heard $after s after the first (${first.rssi} dBm): starts on")
+      }
+    }
+
+    // A hub heard once listening has stopped isn't offered.
+    LaunchedEffect(step, discovered.hubs, listening) {
+      if (step < 2 || listening) return@LaunchedEffect
+      val missed =
+        discovered.hubs.filter { hub ->
+          hub.serial !in late && systems.none { it.hub.serial == hub.serial }
+        }
+      if (missed.isEmpty()) return@LaunchedEffect
+      late = late + missed.map { it.serial }
+      missed.forEach { scope.note("${it.describe()} heard after listening stopped: not offered") }
     }
 
     // Reads each hub's tables in turn, as they arrive (and on retry).
@@ -148,10 +176,17 @@ class AddBikePresenter(
       when (event) {
         AddBikeEvent.Close -> navigator.pop()
         AddBikeEvent.ToggleTips -> showTips = !showTips
-        AddBikeEvent.Retry -> systems = systems.map { it.copy(failed = false) }
-        is AddBikeEvent.ToggleSystem -> systems = systems.map {
+        AddBikeEvent.Retry -> {
+          scope.note("Try again: ${systems.filter { it.failed }.describe()}")
+          systems = systems.map { it.copy(failed = false) }
+        }
+        is AddBikeEvent.ToggleSystem -> {
+          systems = systems.map {
             if (it.hub.serial == event.hubSerial) it.copy(on = !it.on) else it
           }
+          val on = systems.firstOrNull { it.hub.serial == event.hubSerial }?.on
+          scope.note("Hub ${event.hubSerial} switched ${if (on == true) "on" else "off"}")
+        }
         is AddBikeEvent.NameChanged -> name = event.name
         is AddBikeEvent.TypeSelected -> {
           // Keep a typed name; replace only the default for the old type.
@@ -169,6 +204,8 @@ class AddBikePresenter(
           when (step) {
             2 ->
               if (ready.isNotEmpty() && !busy) {
+                val still = if (listening) ", still listening" else ""
+                scope.note("Continue after $listenSeconds s$still: ${systems.describe()}")
                 if (toBike == null) step = 3
                 else if (!saving) {
                   saving = true
@@ -257,8 +294,28 @@ class AddBikePresenter(
       reading = details == null && !failed,
       failed = failed,
       on = on,
-      faint = faint,
     )
+  }
+
+  /**
+   * Logs on the presenter's scope, not in the effect that decided: those restart with every advert.
+   */
+  private fun CoroutineScope.note(detail: String) {
+    val at = clock.now().toEpochMilliseconds()
+    launch { log.append(CaptureEvent.AddBike(at, detail)) }
+  }
+
+  private fun FoundHub.describe() = "Hub $serial (${kind.hubName}) at $rssi dBm"
+
+  private fun List<System>.describe() = joinToString { s ->
+    val state =
+      when {
+        s.failed -> "couldn't be read"
+        s.details == null -> "still reading"
+        !s.on -> "off"
+        else -> "on"
+      }
+    "${s.hub.serial} $state"
   }
 
   private fun bars(rssi: Int) =
@@ -272,12 +329,6 @@ class AddBikePresenter(
   private companion object {
     /** How long Found keeps listening after the first hub (decision 0028). */
     val LISTEN_FOR = 10.seconds
-
-    /**
-     * A second hub this much weaker than the first starts off: likely another bike nearby (decision
-     * 0028). A guess until we have signal data; the tester's seven components ranged over 12 dB.
-     */
-    const val FAINT_BY_DB = 20
   }
 }
 

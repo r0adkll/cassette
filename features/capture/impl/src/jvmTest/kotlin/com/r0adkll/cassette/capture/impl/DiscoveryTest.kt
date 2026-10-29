@@ -1,8 +1,11 @@
 package com.r0adkll.cassette.capture.impl
 
 import app.cash.turbine.test
+import com.r0adkll.cassette.capture.api.CaptureEvent
 import com.r0adkll.cassette.capture.api.FoundHub
 import com.r0adkll.cassette.capture.api.FoundPowerMeter
+import com.r0adkll.cassette.capture.api.GattKind
+import com.r0adkll.cassette.capture.api.GattOutcome
 import com.r0adkll.cassette.capture.api.HubDetails
 import com.r0adkll.cassette.core.BikeType
 import com.r0adkll.cassette.core.CassetteDispatchers
@@ -15,6 +18,7 @@ import com.r0adkll.cassette.protocol.BatteryStatus
 import com.r0adkll.cassette.protocol.ComponentKind
 import com.r0adkll.cassette.protocol.FrameType
 import com.r0adkll.cassette.protocol.SystemBatteryTable
+import com.r0adkll.cassette.protocol.toHex
 import com.r0adkll.cassette.settings.test.InMemorySettings
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -53,7 +57,7 @@ class DiscoveryTest {
       clock,
     )
   private val discovery =
-    DefaultBikeDiscovery(scanner, gatt, recorder, controller, db, dispatchers, clock)
+    DefaultBikeDiscovery(scanner, gatt, recorder, controller, db, captureLog, dispatchers, clock)
 
   @AfterTest fun close() = driver.close()
 
@@ -103,6 +107,12 @@ class DiscoveryTest {
       hub.components.map { it.kind },
     )
     assertEquals(78, hub.components.first().percent)
+    // Logged with its bytes, as background reads are.
+    val read = captureLog.list.value.filterIsInstance<CaptureEvent.Gatt>().single()
+    assertEquals(Fixtures.HUB.toString(), read.key)
+    assertEquals(GattKind.HubTable, read.kind)
+    assertEquals(GattOutcome.Ok, read.outcome)
+    assertEquals(Fixtures.RED_TABLE.toHex(), read.hex)
 
     val bikeId =
       discovery.addBike(
@@ -223,12 +233,20 @@ class DiscoveryTest {
 
     assertEquals(road.value, db.hubQueries.selectBySerial(Fixtures.SHOCK).executeAsOne().bike_id)
     assertEquals(3, db.componentQueries.selectForBike(mtb.value).executeAsList().size)
+    assertEquals(
+      "Hub ${Fixtures.SHOCK} is bike ${road.value}'s already: not added to bike ${mtb.value}",
+      captureLog.list.value.filterIsInstance<CaptureEvent.AddBike>().last().detail,
+    )
   }
 
   @Test
   fun aFailedHubReadReturnsNull() = runTest {
     gatt.fail = true
     assertNull(discovery.readHub(foundHub()))
+    assertEquals(
+      GattOutcome.Failed,
+      captureLog.list.value.filterIsInstance<CaptureEvent.Gatt>().single().outcome,
+    )
   }
 
   private fun details(serial: Long, table: ByteArray) =

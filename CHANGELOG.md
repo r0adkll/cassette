@@ -29,11 +29,13 @@ All notable changes to Cassette are documented here. The format follows
   moves the phone to that pull request's builds until it closes.
 - A bike can have more than one AXS system, each with its own hub, as on a mountain bike whose
   dropper post and rear shock each head one. Adding a bike listens a few seconds more after the
-  first hub and lists every system that answers, each with a switch; one heard much more faintly
-  than the first starts off, since it may be another bike nearby. Each hub is read on its own.
+  first hub and lists every system that answers, each with a switch to leave out one that's another
+  bike's. Each hub is read on its own.
 - "Add a system" in a bike's settings finds a system the bike is missing, such as one that didn't
   wake while the bike was added, without adding the bike again.
 - A bike's settings list its components under their systems, and a bike with two can remove one.
+- Shared diagnostics say what adding a bike or a system heard: each hub with its signal and table,
+  whether its system started on or off, and when the rider continued.
 
 ### Changed
 
