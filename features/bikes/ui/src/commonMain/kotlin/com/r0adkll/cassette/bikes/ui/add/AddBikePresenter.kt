@@ -245,7 +245,16 @@ class AddBikePresenter(
           )
         2 ->
           AddBikeStep.Found(
-            systems = systems.map { it.row() },
+            systems =
+              systems.map { system ->
+                // Another hub this bike will have lists in its own system, with its own reading.
+                val elsewhere =
+                  systems
+                    .filter { it !== system && it.on && it.details != null }
+                    .map { it.hub.serial }
+                    .toSet() + discovered.known.filter { it.bike == toBike }.map { it.hub.serial }
+                system.row(elsewhere)
+              },
             listening = listening,
             listenSeconds = listenSeconds,
           )
@@ -267,30 +276,35 @@ class AddBikePresenter(
     return AddBikeUiState(state, toBike = if (toBike != null) bikeName ?: "" else null, eventSink)
   }
 
-  private fun System.row(): FoundSystem {
+  /** Its components, less the hubs in [elsewhere]: those show in their own systems. */
+  private fun System.row(elsewhere: Set<Long>): FoundSystem {
     val now = clock.now()
     return FoundSystem(
       hubSerial = hub.serial,
       hubName = hub.kind.hubName,
       components =
-        details?.components.orEmpty().map { c ->
-          val reading =
-            BatteryReading(
-              ComponentId(0),
-              now,
-              c.millivolts,
-              c.percent,
-              c.status,
-              ReadMethod.Hub,
+        details
+          ?.components
+          .orEmpty()
+          .filter { it.serial == hub.serial || it.serial !in elsewhere }
+          .map { c ->
+            val reading =
+              BatteryReading(
+                ComponentId(0),
+                now,
+                c.millivolts,
+                c.percent,
+                c.status,
+                ReadMethod.Hub,
+              )
+            FoundRow(
+              code = c.kind.code,
+              name = c.kind.label,
+              source = if (c.serial == hub.serial) "Hub · reported" else "Reported by the hub",
+              value = reading.valueText(),
+              tone = reading.status.tone,
             )
-          FoundRow(
-            code = c.kind.code,
-            name = c.kind.label,
-            source = if (c.serial == hub.serial) "Hub · reported" else "Reported by the hub",
-            value = reading.valueText(),
-            tone = reading.status.tone,
-          )
-        },
+          },
       reading = details == null && !failed,
       failed = failed,
       on = on,

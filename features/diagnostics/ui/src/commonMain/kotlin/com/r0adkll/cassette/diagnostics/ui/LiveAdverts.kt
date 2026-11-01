@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import com.r0adkll.cassette.bikes.summary.code
 import com.r0adkll.cassette.capture.api.Diagnostics
 import com.r0adkll.cassette.common.compose.components.ChoiceChips
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
@@ -120,7 +121,7 @@ class LiveAdvertsPresenter(
     return AdvertRow(
       id = id,
       seconds = "+${elapsed / 1000}.${(elapsed % 1000 / 100)} s",
-      code = kind.short,
+      code = kind.code,
       frame = frame,
       rssi = rssi,
       lines =

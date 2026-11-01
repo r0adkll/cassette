@@ -24,6 +24,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.r0adkll.cassette.bikes.api.BikeRepository
+import com.r0adkll.cassette.bikes.summary.code
 import com.r0adkll.cassette.capture.api.CaptureLog
 import com.r0adkll.cassette.capture.api.RideSummary
 import com.r0adkll.cassette.capture.api.RideVerdict
@@ -32,6 +33,7 @@ import com.r0adkll.cassette.capture.api.summarizeSessions
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.compose.theme.StatusTone
+import com.r0adkll.cassette.core.Component
 import com.r0adkll.cassette.data.ble.ScanProfile
 import com.slack.circuit.retained.collectAsRetainedState
 import kotlin.time.Clock
@@ -63,16 +65,24 @@ internal fun rememberRideTests(log: CaptureLog, clock: Clock, tick: Boolean = fa
 /** A component as results name it: its badge code and name. */
 data class ComponentName(val code: String, val name: String)
 
-/** Every bike's components by capture key, so results say "Rear derailleur", not a serial. */
+/** Every bike's components by capture key and by address (see [componentNames]). */
 @Composable
 internal fun rememberComponentNames(bikes: BikeRepository): Map<String, ComponentName> {
   val overviews by remember { bikes.observeOverviews() }.collectAsRetainedState(emptyList())
-  return overviews
-    .flatMap { it.components }
-    .associate {
-      it.component.key to ComponentName(it.component.kind.short, it.component.kind.label)
-    }
+  return componentNames(overviews.flatMap { it.components }.map { it.component })
 }
+
+/**
+ * Components by capture key and by address, so results say "Rear derailleur", not a serial. Frames
+ * without a serial are keyed by address: a tester's fork, shock, dropper and RD all send some.
+ */
+internal fun componentNames(components: List<Component>): Map<String, ComponentName> =
+  components
+    .flatMap {
+      val name = ComponentName(it.kind.code, it.kind.label)
+      listOfNotNull(it.key to name, it.address?.let { address -> address to name })
+    }
+    .toMap()
 
 /** A scan profile's name in ride tests, including ones no longer offered (old sessions). */
 internal fun profileLabel(name: String): String =

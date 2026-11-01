@@ -26,6 +26,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
@@ -187,6 +188,83 @@ class DiscoveryTest {
         Fixtures.CONTROLLER to Fixtures.SHOCK,
       ),
       systems,
+    )
+  }
+
+  @Test
+  fun aHubAnotherHubListsStaysInItsOwnSystem() = runTest {
+    // The tester's save: the shock's system first, and its table lists the dropper.
+    val bikeId =
+      discovery.addBike(
+        "Mountain bike",
+        BikeType.Mtb,
+        listOf(
+          details(Fixtures.SHOCK, Fixtures.SHOCK_TABLE_LISTING_DROPPER),
+          details(Fixtures.DROPPER, Fixtures.DROPPER_TABLE),
+        ),
+        null,
+      )
+
+    val dropper = db.componentQueries.selectByKey(Fixtures.DROPPER.toString()).executeAsOne()
+    assertEquals(Fixtures.DROPPER, dropper.hub_serial)
+    // The shock's older copy of the dropper's voltage isn't saved as a reading.
+    assertEquals(
+      emptyList(),
+      db.batterySampleQueries.historyForComponent(dropper.id, 0).executeAsList().map {
+        it.millivolts
+      },
+    )
+    assertEquals(
+      listOf(
+        "Hub ${Fixtures.SHOCK}'s system added to bike ${bikeId.value}: " +
+          "Right AXS controller ${Fixtures.CONTROLLER}, Rear derailleur ${Fixtures.MTB_RD}, " +
+          "Left AXS controller ${Fixtures.OLD_POD}, Rear shock ${Fixtures.SHOCK}",
+        "Hub ${Fixtures.DROPPER}'s system added to bike ${bikeId.value}: " +
+          "Dropper post ${Fixtures.DROPPER}, Fork ${Fixtures.FORK}, Right pod ${Fixtures.POD}",
+      ),
+      captureLog.list.value.filterIsInstance<CaptureEvent.AddBike>().map { it.detail },
+    )
+  }
+
+  @Test
+  fun aHubSavedInAnotherSystemMovesBackOnTheNextRead() = runTest {
+    val bikeId =
+      discovery.addBike(
+        "Mountain bike",
+        BikeType.Mtb,
+        listOf(
+          details(Fixtures.DROPPER, Fixtures.DROPPER_TABLE),
+          details(Fixtures.SHOCK, Fixtures.SHOCK_TABLE),
+        ),
+        null,
+      )
+    // As the tester's earlier build saved it: the dropper in the shock's system.
+    val dropper = db.componentQueries.selectByKey(Fixtures.DROPPER.toString()).executeAsOne()
+    db.componentQueries.setHub(Fixtures.SHOCK, dropper.id)
+    val bike = db.bikeQueries.selectById(bikeId.value).executeAsOne().toDomain()
+
+    recorder.applyHubTable(
+      bike,
+      SystemBatteryTable.parse(Fixtures.SHOCK_TABLE_LISTING_DROPPER)!!,
+      null,
+      now + 1.hours,
+    )
+
+    assertEquals(
+      Fixtures.DROPPER,
+      db.componentQueries.selectById(dropper.id).executeAsOne().hub_serial,
+    )
+    assertEquals(
+      emptyList(),
+      db.batterySampleQueries.historyForComponent(dropper.id, 0).executeAsList().map {
+        it.millivolts
+      },
+    )
+    // The shock's own members still take its readings.
+    val rd = db.componentQueries.selectByKey(Fixtures.MTB_RD.toString()).executeAsOne()
+    assertEquals(
+      8_161L,
+      db.batterySampleQueries.latestForComponent(rd.id).executeAsOne().millivolts,
     )
   }
 

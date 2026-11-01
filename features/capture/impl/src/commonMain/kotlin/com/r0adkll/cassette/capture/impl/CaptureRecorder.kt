@@ -105,6 +105,10 @@ class CaptureRecorder(
    * in that hub's system (decision 0028), and components the bike hasn't seen for 30 days are
    * marked removed. The hub's own row skips battery, since its adverts carry voltage, percent and
    * status.
+   *
+   * Hubs list each other: a tester's rear shock lists their dropper, which is a hub too, with a
+   * voltage older than the dropper's own. So a hub of this bike is always its own system's, and a
+   * component of another system is left to that system's hub, whose copy is current.
    */
   suspend fun applyHubTable(
     bike: Bike,
@@ -117,9 +121,16 @@ class CaptureRecorder(
         val now = at.toEpochMilliseconds()
         val firmware = versions?.rows?.associate { it.serial to it.firmware }.orEmpty()
         db.transaction {
+          val hubs = db.hubQueries.selectForBike(bike.id.value).executeAsList().map { it.serial }
           for (row in table.rows) {
             val key = row.serial.toString()
             val existing = db.componentQueries.selectByKey(key).executeAsOneOrNull()
+            val ownHub = row.serial.takeIf { it in hubs }
+            val system = ownHub ?: existing?.hub_serial ?: table.masterSerial
+            if (
+              existing != null && existing.bike_id == bike.id.value && existing.hub_serial != system
+            )
+              db.componentQueries.setHub(system, existing.id)
             val id =
               if (existing == null) {
                 db.componentQueries.insert(
@@ -133,11 +144,14 @@ class CaptureRecorder(
                   row.actuations,
                   now,
                   now,
-                  table.masterSerial,
+                  system,
                 )
                 db.componentQueries.lastInsertedId().executeAsOne()
               } else if (existing.bike_id != bike.id.value) {
                 // Listed by another bike's hub; leave it where the user put it.
+                continue
+              } else if (system != table.masterSerial) {
+                // Another of this bike's systems: its own hub reads it.
                 continue
               } else {
                 db.componentQueries.markSeen(
@@ -152,7 +166,7 @@ class CaptureRecorder(
                 )
                 existing.id
               }
-            if (row.serial != table.masterSerial) {
+            if (row.serial != table.masterSerial && system == table.masterSerial) {
               insertSample(
                 id,
                 now,

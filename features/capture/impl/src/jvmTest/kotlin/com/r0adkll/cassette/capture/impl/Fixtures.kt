@@ -92,6 +92,23 @@ internal object Fixtures {
       Row(4, CONTROLLER, 2_996),
     )
 
+  /** The pod the tester replaced; the shock's hub still lists it. */
+  const val OLD_POD = 1020156614L
+
+  /**
+   * The shock's table as the tester's hub sent it: it lists the dropper too, with an older voltage
+   * (7606 mV) than the dropper's own advert (7525 mV, 24 %), and the replaced pod.
+   */
+  val SHOCK_TABLE_LISTING_DROPPER =
+    batteryTable(
+      SHOCK,
+      Row(0x84, DROPPER, 7_606),
+      Row(4, CONTROLLER, 2_987),
+      Row(0x81, MTB_RD, 8_161),
+      Row(3, OLD_POD, 2_957),
+      Row(0x83, SHOCK, 7_991),
+    )
+
   class Row(val deviceType: Int, val serial: Long, val millivolts: Int)
 
   /** A battery table (`d9050003`) listing [rows], every one reporting ok. */

@@ -74,6 +74,14 @@ AXS dropper, both flagged as the bridge and heard by one receiver seconds apart 
 - Each system is a row of a new `hub` table: hub serial, bike, when it was added and when its
   table was last read. A component's `hub_serial` says which system listed it (none for a power
   meter); it keeps the first one, should two tables ever list it.
+- Two tables do: the tester's rear shock lists their dropper post, which heads its own system, with
+  an older voltage (7606 mV, "≈36 %") than the dropper's own advert (7525 mV, 24 %). Their third
+  export had the dropper filed under the shock's system, because Add bike saved that system first,
+  so removing the shock's system would have taken the dropper and its history with it. So **a hub
+  of the bike is always its own system's**, whichever table lists it first: Add bike saves every
+  hub before any table, and a table read moves a misfiled hub back. A table only updates its own
+  system's components, since another system's hub has the current copy; Found lists such a hub
+  once, under its own system, unless that system is switched off.
 - The migration (v3 → v4) turns each bike's `hub_serial` and `hub_read_at` into its first `hub`
   row and puts all its components but the power meter in that system. The sample bikes' made-up
   hubs get no row: their serials are only shown, and a real bike may have them.

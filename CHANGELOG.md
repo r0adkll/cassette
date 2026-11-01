@@ -30,7 +30,8 @@ All notable changes to Cassette are documented here. The format follows
 - A bike can have more than one AXS system, each with its own hub, as on a mountain bike whose
   dropper post and rear shock each head one. Adding a bike listens a few seconds more after the
   first hub and lists every system that answers, each with a switch to leave out one that's another
-  bike's. Each hub is read on its own.
+  bike's. Each hub is read on its own. When one hub lists the other, as a rear shock can list the
+  dropper post, that hub stays in its own system and keeps its own reading.
 - "Add a system" in a bike's settings finds a system the bike is missing, such as one that didn't
   wake while the bike was added, without adding the bike again.
 - A bike's settings list its components under their systems, and a bike with two can remove one.
@@ -61,7 +62,8 @@ All notable changes to Cassette are documented here. The format follows
   of a phone's column for naming it, the power meter and keeping it fresh.
 - An AXS controller is called that, not a Reverb controller: it can run more than the dropper post.
 - A battery pack's estimated percentage follows SRAM's down to empty: 10 % at 7.37 V and 0 % at
-  7.36 V, where it said about 8 %.
+  7.36 V, where it said about 8 %. Near full it follows SRAM's too: 98 % at 7.99 V, where it said
+  about 90 %.
 
 ### Fixed
 
@@ -75,6 +77,11 @@ All notable changes to Cassette are documented here. The format follows
 - Diagnostics → Hub tables reads every hub of the bike.
 - A component's model no longer changes to a number that isn't one when it sends a frame without
   its device type.
+- A component that counts nothing, such as an AXS controller, a pod or a fork, shows its shifts as
+  "—" instead of 0.
+- Diagnostics badges show a fork, rear shock or dropper post as FK, SH and DP, as the bike screen
+  does, instead of squeezing in their names. A ride test names a component that sent frames without
+  its serial instead of listing its Bluetooth address with a "?".
 
 ## [1.0.0] - 2026-10-21
 

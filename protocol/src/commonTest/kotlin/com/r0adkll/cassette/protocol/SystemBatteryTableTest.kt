@@ -73,7 +73,16 @@ class SystemBatteryTableTest {
     assertEquals(100, estimatePackPercent(8_200))
     assertEquals(19, estimatePackPercent(7_479))
     assertEquals(0, estimatePackPercent(6_000))
-    assertEquals(95, estimatePackPercent(8_060))
+    assertEquals(99, estimatePackPercent(8_060))
+  }
+
+  @Test
+  fun packEstimateMatchesWhatATestersPacksReported() {
+    // (mV, the percent each component sent) from a tester's MTB.
+    assertEquals(98, estimatePackPercent(7_991)) // rear shock
+    assertEquals(48, estimatePackPercent(7_679)) // fork
+    assertEquals(23, estimatePackPercent(7_525)) // dropper, which said 24
+    assertEquals(100, estimatePackPercent(8_137)) // rear derailleur
   }
 
   @Test

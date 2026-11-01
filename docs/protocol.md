@@ -53,7 +53,7 @@ All multi-byte integers are **little-endian** unless stated otherwise. Custom 12
 | Official app connected | Components stop advertising (or stop sending scan responses and service data) while SRAM's app is connected. One capture showed pack devices going quiet in ~50 s gaps, and a coin controller still sending bare manufacturer data | [PA] |
 | Hub / system bridge | The hub flags itself as its system's bridge in its service frame and holds battery and firmware tables for every component paired to it. On our bike it's the RD | [HW] [APP] |
 | Who can be the hub | Any component with an AXS pack. Seen: RD (ours, ShannoG's), dropper (the tester's, ShannoG's), rear shock (the tester's) | [APP] [HW] [PA] |
-| Two hubs on one bike | The tester's MTB is two systems: the dropper and the rear shock both flag the bridge, and the dropper's table lists only fork, pod and dropper. The RD and the older controller are in no table we read, so most likely the shock's. ShannoG's RD and dropper both flag it too, heard by one receiver 5 s apart | [HW] (tester), [PA]; the shock's table [?] |
+| Two hubs on one bike | The tester's MTB is two systems: the dropper and the rear shock both flag the bridge. The dropper's table lists fork, pod and dropper; the shock's lists shock, RD, right controller, the left controller (an old pod, replaced but still paired) and **the dropper too**, with a voltage older than the dropper's own (7606 mV against 7525 in its advert, the same minute). So a hub can list another hub; its copy of that hub's battery lags. ShannoG's RD and dropper both flag the bridge too, heard by one receiver 5 s apart | [HW] (tester), [PA] |
 | Pairing | Receiving adverts needs no pairing, bonding or app | [HW] |
 
 ## 3. Advertisements
@@ -227,7 +227,7 @@ the pod's beacon has one). [APP] [HW]
 | Fork / rear shock / pedal sensor | 1038, 1048, 1049 / 1039 / 1040 |
 | Power meter | 7 (DZero), 70–75 (Quarq DZero variants), 100–110 (PowerTap), 1052 (DUB spindle) |
 | Not mapped by Cassette | 8, 9 (ShockWiz), 1030, 1031, 1119, 1125 (TyreWiz family); pods 1072, 1073, 1077, 1078 (identified by type byte only) |
-| Seen, not in SRAM's table | 1085 rear shock and 1086 fork (the tester's, by type byte) [HW]; 1060 Transmission RD (ShannoG's, by type byte) [PA] |
+| Seen, not in SRAM's table | 1085 rear shock (SIDLUXE) and 1086 fork (Flight Attendant), the tester's, by type byte; Cassette maps both [HW]; 1060 Transmission RD (ShannoG's, by type byte) [PA] |
 | Named in SRAM's `SramModelId` enum, not in its table | 1058–1060, 1132, 1133 (Eagle Transmission RDs), 1138, 1139 (Force / Rival 1x RDs); also `APOLLO_HMI` 1076, three `SPACEFORCE_*_DISPLAY` ids (1185, 1194, 1204) and two `TOPGUN_*` kits (1198, 1199) [APP] |
 
 Model **names** (e.g. "RED AXS E1 RD") aren't in the app. They come from SRAM's cloud. [APP] Cassette has no
@@ -266,7 +266,7 @@ Common header (6 bytes):
 | +8 | millivolts u32 | | [HW] |
 | +12 | update time u32 | 0 on every row we've seen | [APP] name, [?] meaning |
 | +16 | "runtime" u32 | SRAM calls it runtime/operating time. Seconds awake on the tester's dropper and on prior art's GX RD (below). Our RD's value (0xf3ed42d2) changes between reads but is implausible as a duration | [APP] name, [PA] [INF] meaning |
-| +20 | actuation count u32 | RD 12324. Counts shifts: +22 over 22 shifts on prior art's GX RD (below). The FD shows exactly **2000** (`d0 07 00 00`), which may be a placeholder | [APP] name, [PA] |
+| +20 | actuation count u32 | RD 12324. Counts shifts: +22 over 22 shifts on prior art's GX RD (below). The FD shows exactly **2000** (`d0 07 00 00`) and the tester's RD 1013 exactly **6000**, which may be placeholders; their shock (6132) and dropper (5560, up from 5455 in five days) look real. Controllers, pods and forks send 0 | [APP] name, [PA] |
 
 Real read (4 rows: FD, right shifter, left shifter, RD):
 
@@ -440,13 +440,17 @@ mV. Cassette interpolates from advert (mV, %) pairs and shows the result as "≈
 | 7479 | 19 | esphome capture |
 | 7523 | 23 | esphome capture |
 | 7881 | 81 | our RD |
+| 7991 | 98 | the tester's rear shock |
 | 8118 | 100 | esphome capture |
 
 Below 7360 mV it's 0, which Cassette shows as critical (SRAM's 0 % on Battery Level means unknown, but
 ours is an empty pack). Cassette treats anything ≥ 5000 mV as a pack. [HW]
 
 The tester's packs agree with the curve [HW] (tester): fork 7722 mV → 55 % (the curve says 55), dropper
-7579 → 32 (32), rear shock 8098 → 100 (98), RD 8265 → 100.
+7579 → 32 (32), rear shock 8098 → 100 (98), RD 8265 → 100. Their later readings, and pairs from
+their own app (2026-10-31): dropper 7520 → 23 and 7525 → 24 (the curve says 22 and 23), fork 7679
+→ 48 (48), RD 8137 → 100 (100). Their shock's 7991 → 98 sat well above the line from 7881 to 8118
+(about 90), so it's a point of its own.
 
 **The bottom of the curve.** The tester logged their fork draining from 73 % to empty over 12 days (the
 percent from its adverts) [PA] (tester):
@@ -483,7 +487,7 @@ SRAM's app also gives remaining-time hints when low: months for coin-cell contro
 | Bridge flag | `flags2` bit0 in the hub's service frame | [HW] [APP] |
 | Quarq serial | Shown as 3 letters + 5 digits. In our capture the advert's raw serial `0x00cd3063` has low 16 bits 0x3063 = **12387**, matching `Quarq AGN12387`; the tester's `0x00c3ede3` gives 60899, matching `Quarq AGD60899`. How the letters are encoded is unknown. SRAM swaps the 16-bit halves for models 7/8/9 | [HW] digits, [APP] swap, [?] letters |
 | Quarq key in Cassette | The name, since Quarq ids aren't SRAM decimal serials | [HW] |
-| BLE address | Stable for the RD within and across sessions so far, which lets serial-less RD frames be matched by address. On the tester's MTB every component kept one address through a 25 h capture. Unverified across battery swaps and firmware updates | [HW] so far, [?] long-term |
+| BLE address | Stable for the RD within and across sessions so far, which lets serial-less RD frames be matched by address. On the tester's MTB every component kept one address through a 25 h capture, and again five days later: their fork, RD, dropper, shock and right controller each sent serial-less frames from the address Cassette had saved for it. Unverified across battery swaps and firmware updates | [HW] so far, [?] long-term |
 
 ## 8. Open questions
 

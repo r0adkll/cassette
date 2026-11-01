@@ -197,12 +197,16 @@ class DefaultBikeDiscovery(
     applySystems(row.toDomain(), hubs, clock.now())
   }
 
-  /** Each hub's system: its row, then every component it lists, with their batteries. */
+  /**
+   * Each hub's system: its row, then every component it lists, with their batteries. Every hub's
+   * row goes in first, so a hub the first table lists (the rear shock lists the dropper) stays in
+   * its own system.
+   */
   private suspend fun applySystems(bike: Bike, hubs: List<HubDetails>, now: Instant) {
-    hubs.forEachIndexed { index, hub ->
-      val owner =
-        withContext(dispatchers.io) {
-          db.transactionWithResult {
+    val owners =
+      withContext(dispatchers.io) {
+        db.transactionWithResult {
+          hubs.mapIndexed { index, hub ->
             db.hubQueries.selectBySerial(hub.hub.serial).executeAsOneOrNull()?.bike_id
               ?: bike.id.value.also {
                 // A millisecond apart, so the systems list in the order they were found.
@@ -210,21 +214,27 @@ class DefaultBikeDiscovery(
               }
           }
         }
+      }
+    hubs.zip(owners).forEach { (hub, owner) ->
       // Another bike's system already; it stays where the user put it.
       if (owner != bike.id.value) {
         note("Hub ${hub.hub.serial} is bike $owner's already: not added to bike ${bike.id.value}")
-        return@forEachIndexed
+        return@forEach
       }
       recorder.applyHubTable(bike, hub.table, hub.versions, now)
+      val members =
+        withContext(dispatchers.io) {
+          db.componentQueries.selectByKey(hub.hub.serial.toString()).executeAsOneOrNull()?.let {
+            db.componentQueries.setAddress(hub.hub.address, it.id)
+          }
+          db.componentQueries.selectForBike(bike.id.value).executeAsList().filter {
+            it.hub_serial == hub.hub.serial
+          }
+        }
       note(
         "Hub ${hub.hub.serial}'s system added to bike ${bike.id.value}: " +
-          hub.table.rows.joinToString { "${it.kind.label} ${it.serial}" }
+          members.joinToString { "${labelOf(it.kind)} ${it.key}" }
       )
-      withContext(dispatchers.io) {
-        db.componentQueries.selectByKey(hub.hub.serial.toString()).executeAsOneOrNull()?.let {
-          db.componentQueries.setAddress(hub.hub.address, it.id)
-        }
-      }
       hub.hub.battery?.let { recorder.applyAdvertBattery(hub.hub.serial.toString(), it, now) }
     }
   }

@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.r0adkll.cassette.bikes.summary.code
 import com.r0adkll.cassette.capture.api.Diagnostics
 import com.r0adkll.cassette.capture.api.HubDump
 import com.r0adkll.cassette.common.compose.components.CassetteButton
@@ -154,7 +155,7 @@ private fun Dump(dump: HubDump) {
       Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(
             "0x" + row.deviceType.toString(16).padStart(2, '0') to 40,
-            row.kind.short to 24,
+            row.kind.code to 24,
             row.modelId.toString() to 40,
             row.serial.toString() to 88,
             (row.reportedStatus?.name?.take(4) ?: "?") to 30,
@@ -179,7 +180,7 @@ private fun Dump(dump: HubDump) {
   Panel {
     Kicker("Firmware · ${SystemBatteryTable.VERSIONS_CHARACTERISTIC.take(8)}")
     dump.versions?.rows?.forEach {
-      MonoLine(ComponentKind.fromDeviceType(it.deviceType).short + " " + it.serial, it.firmware)
+      MonoLine(ComponentKind.fromDeviceType(it.deviceType).code + " " + it.serial, it.firmware)
     } ?: Text("Not read.", style = CassetteTheme.type.mono, color = colors.muted)
     Text(dump.versionBytes?.toHex() ?: "", style = CassetteTheme.type.mono, color = colors.muted)
   }

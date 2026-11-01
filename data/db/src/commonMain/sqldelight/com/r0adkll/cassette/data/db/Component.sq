@@ -57,6 +57,10 @@ SET last_seen_at = max(coalesce(last_seen_at, 0), :at),
     removed_at = NULL
 WHERE id = :id;
 
+-- A hub belongs to its own system, even when another hub's table listed it first (decision 0028).
+setHub:
+UPDATE component SET hub_serial = :hubSerial WHERE id = :id;
+
 -- Removing a system takes its components and their history with it (decision 0028).
 deleteForHub:
 DELETE FROM component WHERE bike_id = :bikeId AND hub_serial = :hubSerial;

@@ -110,6 +110,8 @@ class AddBikePresenterTest {
           SHOCK,
           listOf(
             SystemComponent(0x83, 1085, SHOCK, BatteryStatus.OK, 8_096, 0, 0, 0),
+            // The tester's shock lists the dropper too, with an older voltage than its own.
+            SystemComponent(0x84, 1019, DROPPER, BatteryStatus.OK, 7_606, 0, 0, 0),
             SystemComponent(0x81, 1013, 1224168767, BatteryStatus.OK, 8_249, 0, 0, 0),
             SystemComponent(4, 1016, 1224155901, BatteryStatus.OK, 2_996, 0, 0, 0),
           ),
@@ -186,7 +188,7 @@ class AddBikePresenterTest {
       val system = (ready.step as AddBikeStep.Found).systems.single()
       assertEquals("Rear derailleur", system.hubName)
       assertEquals(listOf("RD", "FD"), system.components.map { it.code })
-      assertEquals(listOf("78%", "≈97%"), system.components.map { it.value })
+      assertEquals(listOf("78%", "≈99%"), system.components.map { it.value })
 
       ready.eventSink(AddBikeEvent.Continue)
       val name = awaitStep<AddBikeStep.Name>()
@@ -227,10 +229,22 @@ class AddBikePresenterTest {
       )
       // However faint: signal strength can't tell a bike's second hub from another bike's.
       assertEquals(listOf(true, true, true), systems.map { it.on })
+      // The dropper shows once, in its own system with its own reading.
       assertEquals(listOf("SH", "RD", "R"), systems[1].components.map { it.code })
 
+      // With its system off, the shock's system is where it joins the bike.
+      all.eventSink(AddBikeEvent.ToggleSystem(DROPPER))
+      val dropperOff =
+        awaitStep<AddBikeStep.Found> { f -> f.systems.none { it.on && it.hubSerial == DROPPER } }
+      assertEquals(
+        listOf("SH", "DP", "RD", "R"),
+        (dropperOff.step as AddBikeStep.Found).systems[1].components.map { it.code },
+      )
+      dropperOff.eventSink(AddBikeEvent.ToggleSystem(DROPPER))
+      val back = awaitStep<AddBikeStep.Found> { f -> f.systems.first().on }
+
       // The road bike isn't this one: only the MTB's two systems are saved.
-      all.eventSink(AddBikeEvent.ToggleSystem(ROAD))
+      back.eventSink(AddBikeEvent.ToggleSystem(ROAD))
       awaitStep<AddBikeStep.Found> { f -> f.systems.none { it.hubSerial == ROAD && it.on } }
         .eventSink(AddBikeEvent.Continue)
       awaitStep<AddBikeStep.Name>().eventSink(AddBikeEvent.Continue)
@@ -247,6 +261,8 @@ class AddBikePresenterTest {
         "Hub $DROPPER (Dropper post) at -56 dBm heard after 0 s of waking: the first system",
         "Hub $SHOCK (Rear shock) at -58 dBm heard 0 s after the first (-56 dBm): starts on",
         "Hub $ROAD (Rear derailleur) at -90 dBm heard 0 s after the first (-56 dBm): starts on",
+        "Hub $DROPPER switched off",
+        "Hub $DROPPER switched on",
         "Hub $ROAD switched off",
         "Continue after 0 s, still listening: $DROPPER on, $SHOCK on, $ROAD off",
       ),
@@ -292,6 +308,11 @@ class AddBikePresenterTest {
         Discovered(listOf(shock), emptyList(), known = listOf(KnownHub(dropper, BikeId(7))))
       val ready = awaitStep<AddBikeStep.Found> { !it.reading }
       assertEquals("Mountain bike", ready.toBike)
+      // The shock lists the dropper, which is the bike's own system already.
+      assertEquals(
+        listOf("SH", "RD", "R"),
+        (ready.step as AddBikeStep.Found).systems.single().components.map { it.code },
+      )
       ready.eventSink(AddBikeEvent.Continue)
       navigator.awaitPop()
       cancelAndIgnoreRemainingEvents()

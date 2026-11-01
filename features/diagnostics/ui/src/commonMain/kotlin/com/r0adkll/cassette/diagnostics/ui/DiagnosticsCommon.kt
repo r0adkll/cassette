@@ -29,7 +29,6 @@ import com.r0adkll.cassette.common.compose.components.TopBarNavigation
 import com.r0adkll.cassette.common.compose.components.TopBarSpacer
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
-import com.r0adkll.cassette.protocol.ComponentKind
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 
@@ -104,14 +103,3 @@ internal fun agoShort(elapsed: Duration): String =
     elapsed.inWholeHours < 24 -> "${elapsed.inWholeHours} h ago"
     else -> "${elapsed.inWholeDays} d ago"
   }
-
-internal val ComponentKind.short: String
-  get() =
-    when (this) {
-      ComponentKind.REAR_DERAILLEUR -> "RD"
-      ComponentKind.FRONT_DERAILLEUR -> "FD"
-      ComponentKind.LEFT_SHIFTER -> "L"
-      ComponentKind.RIGHT_SHIFTER -> "R"
-      ComponentKind.POWER_METER -> "PM"
-      else -> label
-    }

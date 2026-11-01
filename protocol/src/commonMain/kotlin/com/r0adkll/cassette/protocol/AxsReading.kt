@@ -105,8 +105,9 @@ enum class ComponentKind(val label: String) {
       }
 
     /**
-     * Model id → kind, from SRAM's `DeviceUtils::guess_device_type`. Used when a frame has no
-     * device type byte.
+     * Model id → kind, from SRAM's `DeviceUtils::guess_device_type`, plus a tester's Flight
+     * Attendant fork (1086) and SIDLUXE shock (1085), which their status frames typed. Used when a
+     * frame has no device type byte.
      */
     fun fromModelId(value: Int?): ComponentKind =
       when (value) {
@@ -169,8 +170,10 @@ enum class ComponentKind(val label: String) {
         in 1067..1069 -> DROPPER_POST
         1038,
         1048,
-        1049 -> FORK
-        1039 -> REAR_SHOCK
+        1049,
+        1086 -> FORK
+        1039,
+        1085 -> REAR_SHOCK
         1040 -> PEDAL_SENSOR
         else -> UNKNOWN
       }

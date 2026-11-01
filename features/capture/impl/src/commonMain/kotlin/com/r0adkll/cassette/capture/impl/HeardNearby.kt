@@ -121,7 +121,8 @@ private class HeardDevice(val key: String) {
   }
 }
 
-private fun labelOf(kind: String) =
+/** A saved kind's label, or the saved name for a kind we no longer have. */
+internal fun labelOf(kind: String) =
   ComponentKind.entries.firstOrNull { it.name == kind }?.label ?: kind
 
 private fun String.hexBytes(): ByteArray =

@@ -164,6 +164,12 @@ class AxsAdvertParserTest {
   }
 
   @Test
+  fun modelIdsKnowATestersMtbSuspension() {
+    assertEquals(ComponentKind.FORK, ComponentKind.fromModelId(1086))
+    assertEquals(ComponentKind.REAR_SHOCK, ComponentKind.fromModelId(1085))
+  }
+
+  @Test
   fun decodesCoreBluetoothParts() {
     // An iPhone's callback for our RD (decision 0017): Core Bluetooth merges both 0x0933
     // structures into one blob; the identifier stands in for the address.
