@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.r0adkll.cassette.bikes.summary.code
 import com.r0adkll.cassette.capture.api.Diagnostics
 import com.r0adkll.cassette.capture.api.HubDump
 import com.r0adkll.cassette.common.compose.components.CassetteButton
@@ -35,7 +36,9 @@ import dev.zacsweers.metro.Inject
 
 data class HubTablesUiState(
   val reading: Boolean,
-  val dump: HubDump?,
+  /** One per hub of the bike (decision 0028); empty until the first read. */
+  val dumps: List<HubDump>,
+  /** No hub answered. */
   val failed: Boolean,
   val eventSink: (HubTablesEvent) -> Unit,
 ) : CircuitUiState
@@ -58,18 +61,18 @@ class HubTablesPresenter(
   override fun present(): HubTablesUiState {
     var attempt by remember { mutableIntStateOf(0) }
     var reading by remember { mutableStateOf(true) }
-    var dump by remember { mutableStateOf<HubDump?>(null) }
+    var dumps by remember { mutableStateOf(emptyList<HubDump>()) }
     var failed by remember { mutableStateOf(false) }
 
     LaunchedEffect(attempt) {
       reading = true
       val result = diagnostics.readHubTables(BikeId(screen.bikeId))
-      if (result != null) dump = result
-      failed = result == null
+      if (result.any { it.answered }) dumps = result
+      failed = result.none { it.answered }
       reading = false
     }
 
-    return HubTablesUiState(reading, dump, failed) { event ->
+    return HubTablesUiState(reading, dumps, failed) { event ->
       when (event) {
         HubTablesEvent.Back -> navigator.pop()
         HubTablesEvent.ReadAgain -> if (!reading) attempt++
@@ -84,20 +87,31 @@ fun HubTablesUi(state: HubTablesUiState, modifier: Modifier = Modifier) {
   val colors = CassetteTheme.colors
   DiagnosticsScaffold("Hub tables.", onBack = { state.eventSink(HubTablesEvent.Back) }, modifier) {
     when {
-      state.reading && state.dump == null ->
+      state.reading && state.dumps.isEmpty() ->
         Text(
           "Reading the hub… wake the bike if this takes long.",
           style = CassetteTheme.type.body,
           color = colors.muted,
         )
-      state.failed && state.dump == null ->
+      state.failed && state.dumps.isEmpty() ->
         Text(
           "No answer: the hub may be asleep, or Cassette hasn't heard it yet. Wake the bike and read again.",
           style = CassetteTheme.type.body,
           color = colors.low,
         )
     }
-    state.dump?.let { Dump(it) }
+    state.dumps.forEach { dump ->
+      if (dump.answered) Dump(dump)
+      else
+        Panel {
+          Kicker("hub ${dump.hubSerial}")
+          Text(
+            if (dump.address == null) "Not heard yet." else "No answer.",
+            style = CassetteTheme.type.mono,
+            color = colors.low,
+          )
+        }
+    }
     CassetteButton(
       if (state.reading) "Reading…" else "Read again",
       onClick = { state.eventSink(HubTablesEvent.ReadAgain) },
@@ -141,7 +155,7 @@ private fun Dump(dump: HubDump) {
       Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(
             "0x" + row.deviceType.toString(16).padStart(2, '0') to 40,
-            row.kind.short to 24,
+            row.kind.code to 24,
             row.modelId.toString() to 40,
             row.serial.toString() to 88,
             (row.reportedStatus?.name?.take(4) ?: "?") to 30,
@@ -166,7 +180,7 @@ private fun Dump(dump: HubDump) {
   Panel {
     Kicker("Firmware · ${SystemBatteryTable.VERSIONS_CHARACTERISTIC.take(8)}")
     dump.versions?.rows?.forEach {
-      MonoLine(ComponentKind.fromDeviceType(it.deviceType).short + " " + it.serial, it.firmware)
+      MonoLine(ComponentKind.fromDeviceType(it.deviceType).code + " " + it.serial, it.firmware)
     } ?: Text("Not read.", style = CassetteTheme.type.mono, color = colors.muted)
     Text(dump.versionBytes?.toHex() ?: "", style = CassetteTheme.type.mono, color = colors.muted)
   }

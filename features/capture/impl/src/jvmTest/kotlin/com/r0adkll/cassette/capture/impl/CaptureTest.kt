@@ -76,6 +76,60 @@ class CaptureTest {
   }
 
   @Test
+  fun aFrameWithoutADeviceTypeDoesNotReplaceTheModel() = runTest {
+    bikeWithHub()
+    // The tester's fork once sent `0d 00 e2 77 a2 44 00 82`: no device type, model 33280.
+    val typeless =
+      rdStatus().copy(frame = FrameType.BEACON, battery = null, classByte = null, modelId = 33_280)
+
+    recorder.record(listOf(typeless))
+    assertEquals(1066L, modelOf(Fixtures.HUB))
+
+    // Drop-bar shifters only ever send a model, so one we don't have yet still fills in.
+    driver.execute(null, "UPDATE component SET model_id = NULL", 0)
+    val later = (now + 1.minutes).toEpochMilliseconds()
+    recorder.record(listOf(typeless.copy(timestampMillis = later)))
+    assertEquals(33_280L, modelOf(Fixtures.HUB))
+  }
+
+  @Test
+  fun eachOfABikesHubsIsReadOnItsOwnSchedule() = runTest {
+    val bike = mountainBike()
+    gatt.byAddress =
+      mapOf(
+        Fixtures.DROPPER_ADDRESS to
+          mapOf(SystemBatteryTable.CHARACTERISTIC to Fixtures.DROPPER_TABLE),
+        Fixtures.SHOCK_ADDRESS to mapOf(SystemBatteryTable.CHARACTERISTIC to Fixtures.SHOCK_TABLE),
+      )
+    val dropper = hubStatus(Fixtures.DROPPER, Fixtures.DROPPER_ADDRESS, 0x84)
+    val shock = hubStatus(Fixtures.SHOCK, Fixtures.SHOCK_ADDRESS, 0x83)
+
+    val outcome = refresher.refresh(recorder.record(listOf(dropper, shock)), CaptureMode.Live)
+
+    assertTrue(outcome.hubRead)
+    assertEquals(listOf(Fixtures.DROPPER_ADDRESS, Fixtures.SHOCK_ADDRESS), gatt.addresses)
+    val systems =
+      db.componentQueries.selectForBike(bike).executeAsList().associate {
+        it.serial to it.hub_serial
+      }
+    assertEquals(Fixtures.SHOCK, systems[Fixtures.MTB_RD])
+    assertEquals(Fixtures.DROPPER, systems[Fixtures.POD])
+    assertEquals(
+      now.toEpochMilliseconds(),
+      db.hubQueries.selectBySerial(Fixtures.SHOCK).executeAsOne().read_at,
+    )
+
+    // Two minutes on, only the dropper wakes: it alone is read.
+    now += 2.minutes
+    refresher.refresh(
+      recorder.record(listOf(dropper.copy(timestampMillis = now.toEpochMilliseconds()))),
+      CaptureMode.Live,
+    )
+    assertEquals(Fixtures.DROPPER_ADDRESS, gatt.addresses.last())
+    assertEquals(3, gatt.reads)
+  }
+
+  @Test
   fun hubTableBringsInEveryComponentWithBatteryAndFirmware() = runTest {
     bikeWithHub()
     gatt.values =
@@ -145,6 +199,7 @@ class CaptureTest {
       null,
       null,
       0,
+      null,
       null,
     )
     gatt.values = mapOf(BATTERY_LEVEL_CHARACTERISTIC to byteArrayOf(85))
@@ -308,6 +363,7 @@ class CaptureTest {
           null,
           earlier,
           earlier,
+          null,
         )
         val component = db.componentQueries.lastInsertedId().executeAsOne()
         db.batterySampleQueries.insert(component, earlier, null, 78, "OK", ReadMethod.Hub.name)
@@ -394,6 +450,7 @@ class CaptureTest {
   private fun bikeWithHub(): Long {
     db.bikeQueries.insert("Road bike", BikeType.Road.name, null, Fixtures.HUB, 0, null)
     val bike = db.bikeQueries.lastInsertedId().executeAsOne()
+    db.hubQueries.insert(Fixtures.HUB, bike, 0)
     db.componentQueries.insert(
       bike,
       Fixtures.HUB.toString(),
@@ -405,9 +462,47 @@ class CaptureTest {
       null,
       0,
       null,
+      Fixtures.HUB,
     )
     return bike
   }
+
+  /** The tester's MTB with both of its hubs as systems (decision 0028), each heard once. */
+  private fun mountainBike(): Long {
+    db.bikeQueries.insert("Mountain bike", BikeType.Mtb.name, null, Fixtures.DROPPER, 0, null)
+    val bike = db.bikeQueries.lastInsertedId().executeAsOne()
+    listOf(
+        Triple(Fixtures.DROPPER, ComponentKind.DROPPER_POST, Fixtures.DROPPER_ADDRESS),
+        Triple(Fixtures.SHOCK, ComponentKind.REAR_SHOCK, Fixtures.SHOCK_ADDRESS),
+      )
+      .forEach { (serial, kind, address) ->
+        db.hubQueries.insert(serial, bike, 0)
+        db.componentQueries.insert(
+          bike,
+          serial.toString(),
+          serial,
+          kind.name,
+          null,
+          null,
+          null,
+          null,
+          0,
+          null,
+          serial,
+        )
+        db.componentQueries.setAddress(address, db.componentQueries.lastInsertedId().executeAsOne())
+      }
+    return bike
+  }
+
+  private fun hubStatus(serial: Long, address: String, deviceType: Int) =
+    rdStatus(serial)
+      .copy(
+        address = address,
+        kind = ComponentKind.fromDeviceType(deviceType),
+        classByte = deviceType,
+        modelId = null,
+      )
 
   private fun rdStatus(serial: Long? = Fixtures.HUB, at: Instant = now) =
     AxsReading(
@@ -429,6 +524,9 @@ class CaptureTest {
     )
 
   private fun stranger() = rdStatus().copy(key = "999", serial = 999, address = "11:22:33:44:55:66")
+
+  private fun modelOf(serial: Long) =
+    db.componentQueries.selectByKey(serial.toString()).executeAsOne().model_id
 
   private fun quarq() =
     AxsReading(

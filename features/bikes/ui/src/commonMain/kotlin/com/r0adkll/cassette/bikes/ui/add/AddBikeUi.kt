@@ -6,6 +6,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,12 +17,14 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -30,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +46,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import com.r0adkll.cassette.common.compose.LocalAppPlatform
 import com.r0adkll.cassette.common.compose.LocalScreenLayout
@@ -54,6 +59,7 @@ import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.ScrollColumn
 import com.r0adkll.cassette.common.compose.components.SplitPanes
 import com.r0adkll.cassette.common.compose.components.StatusLabel
+import com.r0adkll.cassette.common.compose.components.Toggle
 import com.r0adkll.cassette.common.compose.components.TopBarNavigation
 import com.r0adkll.cassette.common.compose.components.pulses
 import com.r0adkll.cassette.common.compose.components.rememberPulses
@@ -82,14 +88,14 @@ fun AddBikeUi(state: AddBikeUiState, modifier: Modifier = Modifier) {
   }
   Box(modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
     FooterColumn(
-      footer = { Footer(state.step, sink) },
+      footer = { Footer(state, sink) },
       modifier = Modifier.widthIn(max = 480.dp).fillMaxSize(),
       padding = Modifier.safeDrawingPadding().padding(horizontal = 20.dp, vertical = 24.dp),
       verticalArrangement = Arrangement.spacedBy(16.dp),
-      top = { Header(state.step.number, onClose = { sink(AddBikeEvent.Close) }) },
+      top = { Header(state, onClose = { sink(AddBikeEvent.Close) }) },
     ) {
-      Intro(state.step)
-      StepContent(state.step, sink)
+      Intro(state)
+      StepContent(state, sink)
     }
   }
 }
@@ -110,11 +116,11 @@ private fun LandscapeAddBike(state: AddBikeUiState, modifier: Modifier = Modifie
         padding = padding,
         verticalArrangement = Arrangement.spacedBy(16.dp),
       ) {
-        Header(step.number, onClose = { sink(AddBikeEvent.Close) })
-        Intro(step)
+        Header(state, onClose = { sink(AddBikeEvent.Close) })
+        Intro(state)
         // The buttons sit at the foot when everything fits.
         Spacer(Modifier.weight(1f))
-        Footer(step, sink)
+        Footer(state, sink)
       }
     },
     end = {
@@ -126,7 +132,7 @@ private fun LandscapeAddBike(state: AddBikeUiState, modifier: Modifier = Modifie
           if (step is AddBikeStep.Wake) Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
           else Arrangement.spacedBy(16.dp),
       ) {
-        StepContent(step, sink)
+        StepContent(state, sink)
       }
     },
     modifier = modifier.fillMaxSize(),
@@ -136,20 +142,17 @@ private fun LandscapeAddBike(state: AddBikeUiState, modifier: Modifier = Modifie
 
 /** The step's title and what to do, above its content (or beside it, on a phone on its side). */
 @Composable
-private fun Intro(step: AddBikeStep) {
+private fun Intro(state: AddBikeUiState) {
   val (title, body) =
-    when (step) {
+    when (val step = state.step) {
       is AddBikeStep.Wake ->
-        "Wake your bike." to
-          "Shake the bike or press the AXS button on a shifter. Cassette listens for the rear derailleur, which reports for the whole bike."
-      is AddBikeStep.Found ->
-        (if (step.failed) "Couldn't read it." else "Found a bike.") to
-          when {
-            step.failed -> "The hub stopped answering. Wake the bike again and retry."
-            step.reading -> "Reading the hub's list of components…"
-            else ->
-              "The rear derailleur is the hub. It listed ${step.components.size} components; more can join later."
-          }
+        if (state.toBike != null)
+          "Wake the other system." to
+            "Shake the bike or press an AXS button. Cassette listens for a hub that isn't on ${state.toBike} yet."
+        else
+          "Wake your bike." to
+            "Shake the bike or press the AXS button on a shifter or controller. Cassette listens for its hub (the rear derailleur on most bikes), which reports for the rest."
+      is AddBikeStep.Found -> foundTitle(state, step) to foundBody(state, step)
       is AddBikeStep.Name -> "Name it." to null
       is AddBikeStep.PowerMeter ->
         "Power meter?" to
@@ -162,11 +165,54 @@ private fun Intro(step: AddBikeStep) {
   body?.let { Body(it) }
 }
 
+private fun foundTitle(state: AddBikeUiState, step: AddBikeStep.Found): String =
+  when {
+    step.failed -> "Couldn't read it."
+    state.toBike == null -> "Found a bike."
+    step.choosing -> "Found ${count(step.systems.size).lowercase()} systems."
+    else -> "Found a system."
+  }
+
+/**
+ * What the hubs said (decision 0028): the one hub and how many components it listed, or how many
+ * hubs answered and what to do about a system that isn't this bike's.
+ */
+private fun foundBody(state: AddBikeUiState, step: AddBikeStep.Found): String {
+  val hub = step.systems.firstOrNull()
+  return when {
+    step.failed -> "The hub stopped answering. Wake the bike again and retry."
+    hub == null -> ""
+    step.choosing ->
+      "${count(step.systems.size)} hubs answered, each with its own components. Switch off a system that isn't this bike's."
+    hub.reading -> "${hub.theHub} is the hub. Reading its list of components…"
+    state.toBike != null ->
+      "${hub.theHub} is its hub. It listed ${hub.components.size} components, which join ${state.toBike}."
+    step.listening ->
+      "${hub.theHub} is a hub. It listed ${hub.components.size} components; listening a few seconds more for another hub."
+    else ->
+      "${hub.theHub} is the hub. It listed ${hub.components.size} components; more can join later."
+  }
+}
+
+/** "The dropper post", to start a sentence about the system's hub. */
+private val FoundSystem.theHub: String
+  get() =
+    if (hubName == "AXS") "An AXS component"
+    else "The ${hubName.replaceFirstChar { it.lowercase() }}"
+
+private fun count(n: Int) =
+  when (n) {
+    2 -> "Two"
+    3 -> "Three"
+    4 -> "Four"
+    else -> n.toString()
+  }
+
 @Composable
-private fun ColumnScope.StepContent(step: AddBikeStep, sink: (AddBikeEvent) -> Unit) {
-  when (step) {
+private fun ColumnScope.StepContent(state: AddBikeUiState, sink: (AddBikeEvent) -> Unit) {
+  when (val step = state.step) {
     is AddBikeStep.Wake -> Wake(step)
-    is AddBikeStep.Found -> Found(step)
+    is AddBikeStep.Found -> Found(step, sink)
     is AddBikeStep.Name -> Name(step, sink)
     is AddBikeStep.PowerMeter -> PowerMeter(step, sink)
     is AddBikeStep.KeepFresh -> KeepFresh(step)
@@ -174,16 +220,17 @@ private fun ColumnScope.StepContent(step: AddBikeStep, sink: (AddBikeEvent) -> U
 }
 
 @Composable
-private fun Header(step: Int, onClose: () -> Unit) {
+private fun Header(state: AddBikeUiState, onClose: () -> Unit) {
   val colors = CassetteTheme.colors
+  val step = state.step.number
   Row(verticalAlignment = Alignment.CenterVertically) {
     // Already outside the scrolling steps; glass on iOS (iteration 14).
     TopBarNavigation(LucideIcons.X, "Close", onClick = onClose)
     Spacer(Modifier.weight(1f))
-    Kicker("Step $step of $ADD_BIKE_STEPS")
+    Kicker("Step $step of ${state.steps}")
   }
   Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-    repeat(ADD_BIKE_STEPS) { i ->
+    repeat(state.steps) { i ->
       Box(
         Modifier.weight(1f)
           .height(4.dp)
@@ -226,7 +273,39 @@ private fun Note(text: String, icon: ImageVector = LucideIcons.Info) {
 private fun ColumnScope.Wake(step: AddBikeStep.Wake) {
   ListeningPulse(listening = true, Modifier.fillMaxWidth())
   ListeningLabel(step, Modifier.align(Alignment.CenterHorizontally))
-  if (step.showTips) Tips()
+  Known(step.known)
+  if (step.showTips) Tips(adding = step.known.isNotEmpty())
+}
+
+/**
+ * Hubs heard that are the bike's systems already (adding a system), so the rider knows the phone
+ * hears the bike.
+ */
+@Composable
+private fun Known(known: List<KnownSystem>) {
+  if (known.isEmpty()) return
+  val colors = CassetteTheme.colors
+  Kicker("Heard, already on this bike")
+  Panel {
+    known.forEach { hub ->
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+      ) {
+        CodeBadge(hub.code)
+        Column(Modifier.weight(1f)) {
+          Text("${hub.hubName} system", style = CassetteTheme.type.itemTitle, color = colors.text)
+          Text("SRAM ${hub.hubSerial}", style = CassetteTheme.type.mono, color = colors.muted)
+        }
+        Icon(
+          LucideIcons.Check,
+          "On this bike",
+          tint = colors.muted,
+          modifier = Modifier.size(20.dp),
+        )
+      }
+    }
+  }
 }
 
 /**
@@ -289,7 +368,7 @@ private fun ListeningLabel(step: AddBikeStep.Wake, modifier: Modifier = Modifier
 }
 
 @Composable
-private fun Tips() {
+private fun Tips(adding: Boolean = false) {
   Panel {
     Text(
       "Not finding it?",
@@ -297,43 +376,130 @@ private fun Tips() {
       color = CassetteTheme.colors.text,
     )
     Body(
-      "Wake it again: AXS components sleep after a minute or so. Keep the phone near the rear derailleur. " +
-        "If the official app is connected to the bike, close it; a connected bike may stop advertising."
+      if (adding)
+        "Wake it again: AXS components sleep after a minute or so. Press the button on the other system's controller. " +
+          "If the official app is connected to the bike, close it; a connected bike may stop advertising."
+      else
+        "Wake it again: AXS components sleep after a minute or so. Keep the phone near the bike. " +
+          "If the official app is connected to the bike, close it; a connected bike may stop advertising."
     )
+    if (adding) Body("Most bikes have one hub, and this one has it already.")
   }
 }
 
 @Composable
-private fun Found(step: AddBikeStep.Found) {
+private fun Found(step: AddBikeStep.Found, sink: (AddBikeEvent) -> Unit) {
+  step.systems.forEach { system ->
+    Panel { SystemContent(system, step.choosing, sink, rows = { FoundRows(system.components) }) }
+  }
+  if (step.listening) ListeningForHub(step.listenSeconds)
+}
+
+/**
+ * A system's group: its name and hub serial, with a switch when there's a choice (decision 0028),
+ * then its components, or why there are none to show.
+ */
+@Composable
+private fun ColumnScope.SystemContent(
+  system: FoundSystem,
+  choosing: Boolean,
+  sink: (AddBikeEvent) -> Unit,
+  rows: @Composable ColumnScope.() -> Unit,
+) {
   val colors = CassetteTheme.colors
-  Panel {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-      Kicker("Hub", Modifier.weight(1f))
-      Text("SRAM ${step.hubSerial}", style = CassetteTheme.type.mono, color = colors.muted)
-    }
-    step.components.forEach { row ->
-      Row(
-        Modifier.padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-      ) {
-        CodeBadge(row.code)
-        Column(Modifier.weight(1f)) {
-          Text(row.name, style = CassetteTheme.type.itemTitle, color = colors.text)
-          Text(row.source, style = CassetteTheme.type.bodySmall, color = colors.muted)
-        }
-        Column(horizontalAlignment = Alignment.End) {
-          Text(
-            row.value,
-            style =
-              CassetteTheme.type.numeral.copy(
-                fontSize = CassetteTheme.type.numeral.fontSize * 0.85f
-              ),
-            color = colors.text,
-          )
-          StatusLabel(row.tone)
-        }
+  if (choosing) {
+    // The whole heading is the switch, as a settings row is.
+    val interactions = remember { MutableInteractionSource() }
+    Row(
+      Modifier.fillMaxWidth()
+        .heightIn(min = 44.dp)
+        .toggleable(
+          system.on,
+          interactions,
+          indication = null,
+          role = Role.Switch,
+          onValueChange = { sink(AddBikeEvent.ToggleSystem(system.hubSerial)) },
+        ),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+      Column(Modifier.weight(1f)) {
+        Kicker("${system.hubName} system")
+        Text("SRAM ${system.hubSerial}", style = CassetteTheme.type.mono, color = colors.muted)
       }
+      Toggle(system.on, onCheckedChange = null, interactionSource = interactions)
+    }
+  } else {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Kicker("${system.hubName} system", Modifier.weight(1f))
+      Text("SRAM ${system.hubSerial}", style = CassetteTheme.type.mono, color = colors.muted)
+    }
+  }
+  val count = system.components.size
+  when {
+    !system.on ->
+      Text(
+        if (count > 0) "Not on this bike. Its $count components stay someone else's."
+        else "Not on this bike.",
+        style = CassetteTheme.type.bodySmall,
+        color = colors.muted,
+      )
+    system.failed ->
+      Text(
+        "The hub stopped answering. Wake the bike and try again.",
+        style = CassetteTheme.type.bodySmall,
+        color = colors.low,
+      )
+    system.reading ->
+      Text("Reading the hub…", style = CassetteTheme.type.bodySmall, color = colors.muted)
+    else -> rows()
+  }
+}
+
+/** The components a hub listed, as rows of a panel. */
+@Composable
+private fun FoundRows(rows: List<FoundRow>) {
+  val colors = CassetteTheme.colors
+  rows.forEach { row ->
+    Row(
+      Modifier.padding(vertical = 4.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+      CodeBadge(row.code)
+      Column(Modifier.weight(1f)) {
+        Text(row.name, style = CassetteTheme.type.itemTitle, color = colors.text)
+        Text(row.source, style = CassetteTheme.type.bodySmall, color = colors.muted)
+      }
+      Column(horizontalAlignment = Alignment.End) {
+        Text(
+          row.value,
+          style =
+            CassetteTheme.type.numeral.copy(fontSize = CassetteTheme.type.numeral.fontSize * 0.85f),
+          color = colors.text,
+        )
+        StatusLabel(row.tone)
+      }
+    }
+  }
+}
+
+/** After the first hub, while another can still join (decision 0028). */
+@Composable
+private fun ListeningForHub(seconds: Int) {
+  val colors = CassetteTheme.colors
+  DashedBox {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(8.dp).clip(CircleShape).background(colors.brand))
+        Spacer(Modifier.width(8.dp))
+        Kicker("Listening for another hub · 0:${seconds.toString().padStart(2, '0')}")
+      }
+      Text(
+        "Most bikes have one. On a mountain bike, the rear shock or the dropper can head a second system.",
+        style = CassetteTheme.type.bodySmall,
+        color = colors.muted,
+      )
     }
   }
 }
@@ -488,29 +654,39 @@ private fun KeepFresh(step: AddBikeStep.KeepFresh) {
 
 @Composable
 private fun Footer(
-  step: AddBikeStep,
+  state: AddBikeUiState,
   sink: (AddBikeEvent) -> Unit,
   /** The found step's way on; the wide screen says "This is my bike", as in iteration 10. */
   foundLabel: String = "Continue",
 ) {
-  when (step) {
+  when (val step = state.step) {
     is AddBikeStep.Wake ->
       CassetteButton(
         "Not finding it?",
         onClick = { sink(AddBikeEvent.ToggleTips) },
         primary = false,
       )
-    is AddBikeStep.Found ->
+    is AddBikeStep.Found -> {
+      val retry = { sink(AddBikeEvent.Retry) }
+      val onward = state.toBike?.let { "Add to $it" } ?: foundLabel
       when {
-        step.failed ->
-          CassetteButton(
-            "Try again",
-            onClick = { sink(AddBikeEvent.Retry) },
-            icon = LucideIcons.RefreshCw,
-          )
+        step.failed -> CassetteButton("Try again", onClick = retry, icon = LucideIcons.RefreshCw)
         step.reading -> CassetteButton("Reading…", onClick = {}, primary = false)
-        else -> CassetteButton(foundLabel, onClick = { sink(AddBikeEvent.Continue) })
+        step.saving.isEmpty() ->
+          CassetteButton("Switch a system on", onClick = {}, primary = false, enabled = false)
+        step.partlyFailed ->
+          Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            CassetteButton(onward, onClick = { sink(AddBikeEvent.Continue) })
+            CassetteButton(
+              "Try again",
+              onClick = retry,
+              primary = false,
+              icon = LucideIcons.RefreshCw,
+            )
+          }
+        else -> CassetteButton(onward, onClick = { sink(AddBikeEvent.Continue) })
       }
+    }
     is AddBikeStep.Name -> CassetteButton("Continue", onClick = { sink(AddBikeEvent.Continue) })
     is AddBikeStep.PowerMeter ->
       Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -571,8 +747,8 @@ private val BikeType.icon: ImageVector
 
 /**
  * Waking and found as one screen on wide windows (decision 0014, iteration 10), split at the hinge:
- * the listening pulse and timer on the left, the hub's components arriving on the right, with the
- * button that moves on beneath them.
+ * the listening pulse and timer on the left, each system's components arriving on the right
+ * (decision 0028), with the button that moves on beneath them.
  */
 @Composable
 internal fun WakeAndFound(
@@ -584,6 +760,7 @@ internal fun WakeAndFound(
   val sink = state.eventSink
   val step = state.step
   val found = step as? AddBikeStep.Found
+  val adding = state.toBike != null
   SplitPanes(
     start = {
       Column(
@@ -592,21 +769,20 @@ internal fun WakeAndFound(
           .padding(start = 28.dp, end = 28.dp, top = 24.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
       ) {
-        Header(step.number, onClose = { sink(AddBikeEvent.Close) })
+        Header(state, onClose = { sink(AddBikeEvent.Close) })
         Title(
           when {
-            found == null -> "Wake your bike."
-            found.failed -> "Couldn't read it."
-            else -> "Found a bike."
+            found != null -> foundTitle(state, found)
+            adding -> "Wake the other system."
+            else -> "Wake your bike."
           }
         )
         Body(
           when {
-            found == null ->
-              "Shake the bike or press the AXS button on a shifter. Keep the phone close."
-            found.failed -> "The hub stopped answering. Wake the bike again and retry."
-            found.reading -> "The rear derailleur is the hub. Reading its list of components…"
-            else -> "The rear derailleur is the hub. More components can join later."
+            found != null -> foundBody(state, found)
+            adding ->
+              "Shake the bike or press an AXS button. Cassette listens for a hub that isn't on ${state.toBike} yet."
+            else -> "Shake the bike or press the AXS button on a shifter. Keep the phone close."
           }
         )
         Spacer(Modifier.weight(1f))
@@ -624,7 +800,12 @@ internal fun WakeAndFound(
                 .padding(horizontal = 10.dp, vertical = 6.dp),
           )
         } else if (found != null) {
-          Kicker("Hub · SRAM ${found.hubSerial}", Modifier.align(Alignment.CenterHorizontally))
+          val hubs = found.systems
+          Kicker(
+            if (hubs.size == 1) "Hub · SRAM ${hubs.single().hubSerial}"
+            else "${hubs.size} hubs · ${found.saving.sumOf { it.components.size }} components",
+            Modifier.align(Alignment.CenterHorizontally),
+          )
         }
       }
     },
@@ -636,27 +817,38 @@ internal fun WakeAndFound(
           .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
       ) {
+        val shown = found?.saving?.sumOf { it.components.size } ?: 0
         Box(Modifier.height(44.dp), contentAlignment = Alignment.CenterStart) {
-          Kicker(
-            if (found == null || found.components.isEmpty()) "Found"
-            else "Found · ${found.components.size}"
-          )
+          Kicker(if (shown == 0) "Found" else "Found · $shown")
         }
         Column(
           Modifier.weight(1f).verticalScroll(rememberScrollState()),
           verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-          found?.components?.forEach { FoundCard(it) }
-          when {
-            step is AddBikeStep.Wake && step.showTips -> Tips()
-            found == null -> WaitingCard("The bike's components appear here as the hub answers.")
-            found.reading -> WaitingCard("Reading the hub…")
+          found?.systems?.forEach { system ->
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+              SystemContent(
+                system,
+                found.choosing,
+                sink,
+                rows = { system.components.forEach { FoundCard(it) } },
+              )
+            }
           }
-          Note("Power meters aren't in the hub's tables; you pick one on the next step.")
+          when {
+            step is AddBikeStep.Wake && step.showTips -> Tips(adding = step.known.isNotEmpty())
+            step is AddBikeStep.Wake -> {
+              Known(step.known)
+              WaitingCard("The bike's components appear here as the hub answers.")
+            }
+            found != null && found.listening -> ListeningForHub(found.listenSeconds)
+          }
+          if (!adding)
+            Note("Power meters aren't in the hubs' tables; you pick one on the next step.")
         }
         when {
           found == null -> CassetteButton("Waiting for the bike…", onClick = {}, primary = false)
-          else -> Footer(found, sink, foundLabel = "This is my bike")
+          else -> Footer(state, sink, foundLabel = "This is my bike")
         }
       }
     },
@@ -688,8 +880,8 @@ internal fun WideAddBike(
           .padding(start = 28.dp, end = 28.dp, top = 24.dp, bottom = 32.dp),
         verticalArrangement = Arrangement.spacedBy(18.dp),
       ) {
-        Header(step.number, onClose = { sink(AddBikeEvent.Close) })
-        Intro(step)
+        Header(state, onClose = { sink(AddBikeEvent.Close) })
+        Intro(state)
       }
     },
     end = {
@@ -718,9 +910,9 @@ internal fun WideAddBike(
           verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
           if (step is AddBikeStep.Name) Name(step, sink, labelled = false)
-          else StepContent(step, sink)
+          else StepContent(state, sink)
         }
-        Footer(step, sink)
+        Footer(state, sink)
       }
     },
     modifier = modifier.fillMaxSize(),
@@ -761,6 +953,14 @@ private fun FoundCard(row: FoundRow) {
 /** A dashed placeholder for what hasn't answered yet. */
 @Composable
 private fun WaitingCard(text: String) {
+  DashedBox {
+    Text(text, style = CassetteTheme.type.bodySmall, color = CassetteTheme.colors.muted)
+  }
+}
+
+/** A dashed outline around what's still to come. */
+@Composable
+private fun DashedBox(content: @Composable () -> Unit) {
   val colors = CassetteTheme.colors
   Box(
     Modifier.fillMaxWidth()
@@ -778,6 +978,6 @@ private fun WaitingCard(text: String) {
       }
       .padding(horizontal = 16.dp, vertical = 18.dp)
   ) {
-    Text(text, style = CassetteTheme.type.bodySmall, color = colors.muted)
+    content()
   }
 }

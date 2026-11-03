@@ -55,8 +55,10 @@ enum class ComponentKind(val label: String) {
   LEFT_SHIFTER("Left shifter"),
   RIGHT_SHIFTER("Right shifter"),
   BLIPBOX("BlipBox"),
-  LEFT_REVERB_CONTROLLER("Left Reverb controller"),
-  RIGHT_REVERB_CONTROLLER("Right Reverb controller"),
+  // Types 3 and 4 run more than the dropper: SRAM calls 1015 "AXS CONTROLLER (R)" and prior art
+  // 1016 "AXS Controller". The names stay, since they're saved.
+  LEFT_REVERB_CONTROLLER("Left AXS controller"),
+  RIGHT_REVERB_CONTROLLER("Right AXS controller"),
   LEFT_FLATBAR_CONTROLLER("Left controller"),
   RIGHT_FLATBAR_CONTROLLER("Right controller"),
   WIRELESS_BLIPS("Wireless Blips"),
@@ -103,8 +105,9 @@ enum class ComponentKind(val label: String) {
       }
 
     /**
-     * Model id → kind, from SRAM's `DeviceUtils::guess_device_type`. Used when a frame has no
-     * device type byte.
+     * Model id → kind, from SRAM's `DeviceUtils::guess_device_type`, plus a tester's Flight
+     * Attendant fork (1086) and SIDLUXE shock (1085), which their status frames typed. Used when a
+     * frame has no device type byte.
      */
     fun fromModelId(value: Int?): ComponentKind =
       when (value) {
@@ -167,8 +170,10 @@ enum class ComponentKind(val label: String) {
         in 1067..1069 -> DROPPER_POST
         1038,
         1048,
-        1049 -> FORK
-        1039 -> REAR_SHOCK
+        1049,
+        1086 -> FORK
+        1039,
+        1085 -> REAR_SHOCK
         1040 -> PEDAL_SENSOR
         else -> UNKNOWN
       }
@@ -207,8 +212,9 @@ fun batteryStatus(millivolts: Int?, percent: Int?): BatteryStatus =
         percent <= 20 -> BatteryStatus.LOW
         else -> BatteryStatus.OK
       }
+    // Our estimate's 0 % is an empty pack, not SRAM's unknown.
     millivolts != null && millivolts >= PACK_MIN_MILLIVOLTS ->
-      batteryStatus(null, estimatePackPercent(millivolts))
+      batteryStatus(null, estimatePackPercent(millivolts).coerceAtLeast(1))
     millivolts != null ->
       when {
         millivolts <= 2_200 -> BatteryStatus.CRITICAL

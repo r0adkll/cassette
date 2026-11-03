@@ -48,7 +48,7 @@ class BikeSummaryTest {
     assertEquals("All good.", state.status.headline)
     assertEquals("Lowest: rear derailleur, 78%.", state.status.summary)
     assertEquals("Seen 2 min ago", state.status.meta)
-    assertEquals(listOf("78%", "≈97%", "2.91 V", "85%"), state.components.map { it.value })
+    assertEquals(listOf("78%", "≈99%", "2.91 V", "85%"), state.components.map { it.value })
     assertEquals(
       listOf(
         "Reported · fw 2.55.8",

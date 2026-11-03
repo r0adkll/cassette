@@ -17,8 +17,8 @@ enum class BikeType {
 }
 
 /**
- * A bike: one AXS system, identified by its hub (the rear derailleur on road), plus anything
- * attached to it by hand, such as a power meter (decision 0002).
+ * A bike: one or more AXS systems, each known by its [Hub] (the rear derailleur on road), plus
+ * anything attached to it by hand, such as a power meter (decisions 0002 and 0028).
  */
 data class Bike(
   val id: BikeId,
@@ -26,12 +26,24 @@ data class Bike(
   val type: BikeType,
   /** Local file of the optional bike photo; never uploaded (decision 0010). */
   val photoPath: String?,
-  /** The hub's serial, which identifies the system; null until the hub has been read. */
+  /** The hub it was added with; null until a hub has been read. Every system is a [Hub]. */
   val hubSerial: Long?,
   val createdAt: Instant,
   val lastSeenAt: Instant?,
-  /** When the hub's battery table was last read. */
+  /** When one of its hubs' battery tables was last read. */
   val hubReadAt: Instant? = null,
+)
+
+/**
+ * One of a bike's systems (decision 0028): its hub, the component whose battery and firmware tables
+ * list the system's components.
+ */
+data class Hub(
+  val serial: Long,
+  val bikeId: BikeId,
+  val addedAt: Instant,
+  /** When its battery table was last read. */
+  val readAt: Instant?,
 )
 
 /** A component on a bike. Components absent from the hub table for 30 days get [removedAt]. */
@@ -54,6 +66,8 @@ data class Component(
   val removedAt: Instant?,
   /** Last BLE address heard. */
   val address: String? = null,
+  /** The [Hub] whose table lists it, which is its system; null for a power meter. */
+  val hubSerial: Long? = null,
 )
 
 /** How a battery reading reached us. */

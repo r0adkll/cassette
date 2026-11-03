@@ -161,7 +161,7 @@ class SettingsPresenter(
             )
           }
         is SettingsEvent.OpenBike -> navigator.goTo(BikeSettingsScreen(event.id))
-        SettingsEvent.AddBike -> navigator.goTo(AddBikeScreen)
+        SettingsEvent.AddBike -> navigator.goTo(AddBikeScreen())
         is SettingsEvent.SetBackgroundCapture ->
           scope.launch {
             settings.setBackgroundCapture(event.enabled)

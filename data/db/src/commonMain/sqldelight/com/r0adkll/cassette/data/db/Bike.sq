@@ -4,11 +4,12 @@ CREATE TABLE bike (
     -- BikeType name
     type TEXT NOT NULL,
     photo_path TEXT,
+    -- The hub it was added with; every system's hub, this one included, is in `hub` (decision 0028).
     hub_serial INTEGER UNIQUE,
     -- epoch milliseconds
     created_at INTEGER NOT NULL,
     last_seen_at INTEGER,
-    -- When the hub's battery table was last read; throttles reads across process restarts.
+    -- When one of its hubs' battery tables was last read (each hub's own time is in `hub`).
     hub_read_at INTEGER
 );
 
@@ -37,6 +38,10 @@ UPDATE bike SET last_seen_at = max(coalesce(last_seen_at, 0), :at) WHERE id = :i
 
 markHubRead:
 UPDATE bike SET hub_read_at = :at WHERE id = :id;
+
+-- After its first system is removed, the bike is known by another.
+setHubSerial:
+UPDATE bike SET hub_serial = :hubSerial WHERE id = :id;
 
 delete:
 DELETE FROM bike WHERE id = ?;

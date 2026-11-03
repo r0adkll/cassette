@@ -3,6 +3,7 @@ package com.r0adkll.cassette.app.ios
 import app.cash.sqldelight.db.SqlDriver
 import com.r0adkll.cassette.bikes.api.HomeSurfaces
 import com.r0adkll.cassette.capture.api.CaptureLog
+import com.r0adkll.cassette.capture.api.Diagnostics
 import com.r0adkll.cassette.capture.api.DiagnosticsSharer
 import com.r0adkll.cassette.capture.api.PhoneBattery
 import com.r0adkll.cassette.data.ble.IosCentral
@@ -69,6 +70,7 @@ class IosPhoneBattery : PhoneBattery {
 class IosDiagnosticsSharer(
   private val driver: SqlDriver,
   private val log: CaptureLog,
+  private val diagnostics: Diagnostics,
   private val settings: CassetteSettings,
   private val central: IosCentral,
   private val clock: Clock,
@@ -125,6 +127,9 @@ class IosDiagnosticsSharer(
       appendLine("Pinned bike ${settings.pinnedBike.first()?.value ?: "none"}")
       appendLine("Arm: ${health.armResult} at ${health.armedAt}")
       appendLine("Background wakes ${health.deliveries}, last ${health.lastDeliveryAt}")
+      appendLine()
+      // A slip here shouldn't cost the rest of the export.
+      append(runCatching { diagnostics.heardNearby() }.getOrElse { "Heard nearby: failed, $it" })
     }
   }
 

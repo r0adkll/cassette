@@ -120,6 +120,24 @@ class DatabaseBikeRepository(
     withContext(dispatchers.io) { db.bikeQueries.delete(id.value) }
     if (settings.pinnedBike.first() == id) settings.setPinnedBike(null)
   }
+
+  override suspend fun removeSystem(id: BikeId, hubSerial: Long) {
+    withContext(dispatchers.io) {
+      db.transaction {
+        val hub = db.hubQueries.selectBySerial(hubSerial).executeAsOneOrNull()
+        if (hub == null || hub.bike_id != id.value) return@transaction
+        db.componentQueries.deleteForHub(bikeId = id.value, hubSerial = hubSerial)
+        db.hubQueries.delete(hubSerial)
+        // Known by another of its systems now, so the removed hub can start a bike of its own.
+        val bike = db.bikeQueries.selectById(id.value).executeAsOneOrNull()
+        if (bike?.hub_serial == hubSerial)
+          db.bikeQueries.setHubSerial(
+            db.hubQueries.selectForBike(id.value).executeAsList().firstOrNull()?.serial,
+            id.value,
+          )
+      }
+    }
+  }
 }
 
 /**

@@ -39,6 +39,12 @@ interface BikeRepository {
 
   /** Deletes the bike with its components and history. */
   suspend fun deleteBike(id: BikeId)
+
+  /**
+   * Takes the system whose hub is [hubSerial] off the bike (decision 0028), with its components and
+   * their history. The bike keeps its other systems.
+   */
+  suspend fun removeSystem(id: BikeId, hubSerial: Long)
 }
 
 data class ComponentDetail(

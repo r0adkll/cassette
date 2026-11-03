@@ -14,7 +14,11 @@ import com.slack.circuit.runtime.screen.StaticScreen
 @Parcelize
 data class ComponentScreen(val componentId: Long, val inSheet: Boolean = false) : ParcelableScreen
 
-@Parcelize data object AddBikeScreen : ParcelableScreen
+/**
+ * Adding a bike: waking, the systems found, its name, power meter and background capture. With a
+ * [bikeId], adds a system to that bike instead (decision 0028): waking and found only.
+ */
+@Parcelize data class AddBikeScreen(val bikeId: Long? = null) : ParcelableScreen
 
 /** First run (decision 0011): the welcome, then [OnboardingPermissionsScreen], then add-bike. */
 @Parcelize data object OnboardingScreen : ParcelableScreen

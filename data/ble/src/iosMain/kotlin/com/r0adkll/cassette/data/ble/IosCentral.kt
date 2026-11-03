@@ -259,21 +259,26 @@ class IosCentral(private val deliveries: Lazy<BackgroundDeliveryHandler>) {
     timeout: Duration,
   ): GattResult =
     withContext(Dispatchers.Main) {
-      if (!awaitOn() || address in sessions) return@withContext GattResult.Failed
-      val manager = manager ?: return@withContext GattResult.Failed
+      if (!awaitOn()) return@withContext GattResult.Failed("Bluetooth is off or not allowed")
+      if (address in sessions) return@withContext GattResult.Failed("already reading this device")
+      val manager = manager ?: return@withContext GattResult.Failed("no central manager")
       // Addresses are identifier UUIDs on iOS; anything else came from another platform.
-      if (!IDENTIFIER.matches(address)) return@withContext GattResult.Failed
+      if (!IDENTIFIER.matches(address))
+        return@withContext GattResult.Failed("not a peripheral identifier: $address")
       val peripheral =
         manager
           .retrievePeripheralsWithIdentifiers(listOf(NSUUID(uUIDString = address)))
-          .firstOrNull() as? CBPeripheral ?: return@withContext GattResult.Failed
+          .firstOrNull() as? CBPeripheral
+          ?: return@withContext GattResult.Failed("iOS doesn't know this peripheral")
       val session = GattSession(peripheral, characteristics)
       sessions[address] = session
       peripheral.delegate = peripheralDelegate
       manager.connectPeripheral(peripheral, null)
       try {
         withTimeoutOrNull(timeout) { session.result.await() }
-          ?: GattResult.Failed.also { println("$TAG GATT $address timed out") }
+          ?: GattResult.Failed("timed out after $timeout while ${session.stage}").also {
+            println("$TAG GATT $address timed out ${session.stage}")
+          }
       } finally {
         sessions.remove(address)
         manager.cancelPeripheralConnection(peripheral)
@@ -288,6 +293,8 @@ class IosCentral(private val deliveries: Lazy<BackgroundDeliveryHandler>) {
     val values = mutableMapOf<String, ByteArray>()
     var services = emptyList<String>()
     var pending = 0
+    /** How far it got, so a timeout says where it stalled. */
+    var stage = "connecting"
     val result = CompletableDeferred<GattResult>()
 
     fun finishIfDone() {
@@ -297,6 +304,7 @@ class IosCentral(private val deliveries: Lazy<BackgroundDeliveryHandler>) {
 
   private fun onConnected(peripheral: CBPeripheral) {
     val session = session(peripheral) ?: return
+    session.stage = "discovering services"
     // Only the services we read: discovering all 20 of the RD's ran past the timeout (the spike).
     val services = session.wanted.keys.map { KNOWN_SERVICES[it] }
     peripheral.discoverServices(
@@ -308,9 +316,11 @@ class IosCentral(private val deliveries: Lazy<BackgroundDeliveryHandler>) {
     val session = session(peripheral) ?: return
     val services = peripheral.services.orEmpty().filterIsInstance<CBService>()
     if (error != null || services.isEmpty()) {
-      session.result.complete(GattResult.Failed)
+      val why = error?.localizedDescription ?: "none of the services it reads"
+      session.result.complete(GattResult.Failed("service discovery failed: $why"))
       return
     }
+    session.stage = "reading characteristics"
     session.services = services.map { normalise(it.UUID.UUIDString) }
     session.pending = services.size
     services.forEach { peripheral.discoverCharacteristics(null, it) }
@@ -338,8 +348,12 @@ class IosCentral(private val deliveries: Lazy<BackgroundDeliveryHandler>) {
     session.finishIfDone()
   }
 
-  private fun onDisconnected(peripheral: CBPeripheral) {
-    session(peripheral)?.result?.complete(GattResult.Failed)
+  private fun onDisconnected(peripheral: CBPeripheral, error: NSError?, connected: Boolean) {
+    val session = session(peripheral) ?: return
+    val why = error?.localizedDescription?.let { ": $it" }.orEmpty()
+    val reason =
+      if (connected) "disconnected while ${session.stage}$why" else "couldn't connect$why"
+    session.result.complete(GattResult.Failed(reason))
   }
 
   private class CentralDelegate(private val owner: IosCentral) :
@@ -369,14 +383,14 @@ class IosCentral(private val deliveries: Lazy<BackgroundDeliveryHandler>) {
       central: CBCentralManager,
       didFailToConnectPeripheral: CBPeripheral,
       error: NSError?,
-    ) = owner.onDisconnected(didFailToConnectPeripheral)
+    ) = owner.onDisconnected(didFailToConnectPeripheral, error, connected = false)
 
     @ObjCSignatureOverride
     override fun centralManager(
       central: CBCentralManager,
       didDisconnectPeripheral: CBPeripheral,
       error: NSError?,
-    ) = owner.onDisconnected(didDisconnectPeripheral)
+    ) = owner.onDisconnected(didDisconnectPeripheral, error, connected = true)
   }
 
   private class PeripheralDelegate(private val owner: IosCentral) :

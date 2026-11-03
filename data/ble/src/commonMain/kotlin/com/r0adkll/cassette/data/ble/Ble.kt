@@ -69,7 +69,8 @@ sealed interface GattResult {
    */
   class Values(val values: Map<String, ByteArray>, val services: List<String>) : GattResult
 
-  data object Failed : GattResult
+  /** No answer; [reason] says why, for the capture log ("timed out after 12s while connecting"). */
+  data class Failed(val reason: String) : GattResult
 }
 
 /** Standard Battery Level (Quarq power meters answer it directly). */

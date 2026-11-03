@@ -51,7 +51,8 @@ internal fun ComponentDetail.toModel(range: HistoryRange, now: Instant): Compone
     stats =
       listOf(
         "Voltage" to (reading?.millivolts?.let { volts(it) } ?: "—"),
-        "Shifts" to (component.actuations?.let(::thousands) ?: "—"),
+        // Controllers, pods and forks send 0: they count nothing.
+        "Shifts" to (component.actuations?.takeIf { it > 0 }?.let(::thousands) ?: "—"),
         "Firmware" to (component.firmware ?: "—"),
         "Model" to (component.modelId?.toString() ?: "—"),
         "Serial" to (component.serial?.toString() ?: component.key),

@@ -130,7 +130,7 @@ class PermissionsPresenter(
             settings.setOnboarded()
             capture.ensureBackgroundCapture("onboarding finished")
             navigator.resetRoot(BikeScreen())
-            navigator.goTo(AddBikeScreen)
+            navigator.goTo(AddBikeScreen())
           }
       }
     }

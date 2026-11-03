@@ -3,7 +3,6 @@ package com.r0adkll.cassette.capture.impl
 import com.r0adkll.cassette.capture.api.CaptureEvent
 import com.r0adkll.cassette.capture.api.CaptureLog
 import com.r0adkll.cassette.capture.api.GattKind
-import com.r0adkll.cassette.capture.api.GattOutcome
 import com.r0adkll.cassette.data.ble.BATTERY_LEVEL_CHARACTERISTIC
 import com.r0adkll.cassette.data.ble.GattClient
 import com.r0adkll.cassette.data.ble.GattResult
@@ -33,8 +32,9 @@ data class RefreshOutcome(val hubRead: Boolean, val powerMeterRead: Boolean)
 
 /**
  * Fills in battery that adverts don't carry, over short read-only GATT sessions:
- * - the hub (rear derailleur) is asked for its battery table, which covers the shifters and front
- *   derailleur, so those are never connected to;
+ * - each of the bike's hubs (the rear derailleur on road) is asked for its battery table, which
+ *   covers the rest of its system, so those are never connected to; each hub keeps its own schedule
+ *   (decision 0028);
  * - the power meter is asked for the standard Battery Level.
  */
 @SingleIn(AppScope::class)
@@ -56,16 +56,18 @@ class BatteryRefresher(
     for (item in heard.distinctBy { it.component.id }) {
       val component = item.component
       val address = component.address ?: continue
-      val isHub =
-        item.reading.frame == FrameType.STATUS &&
-          component.serial != null &&
-          component.serial == item.bike.hubSerial
+      val hub =
+        component.serial
+          ?.takeIf { item.reading.frame == FrameType.STATUS }
+          ?.let { db.hubQueries.selectBySerial(it).executeAsOneOrNull() }
+          ?.takeIf { it.bike_id == item.bike.id.value }
+      val isHub = hub != null
       val isPowerMeter = item.reading.frame == FrameType.POWER_METER
       if (!isHub && !isPowerMeter) continue
 
       val now = clock.now()
       val lastRead =
-        if (isHub) item.bike.hubReadAt
+        if (hub != null) hub.read_at?.let { kotlin.time.Instant.fromEpochMilliseconds(it) }
         else
           db.batterySampleQueries
             .latestForComponent(component.id.value)
@@ -87,7 +89,8 @@ class BatteryRefresher(
             },
           )
         val started = clock.now()
-        val values = (gatt.read(address, wanted) as? GattResult.Values)?.values
+        val result = gatt.read(address, wanted)
+        val values = (result as? GattResult.Values)?.values
         val raw = values?.get(SystemBatteryTable.CHARACTERISTIC)
         val table = raw?.let(SystemBatteryTable::parse)
         logRead(
@@ -95,7 +98,7 @@ class BatteryRefresher(
           GattKind.HubTable,
           mode,
           started,
-          values,
+          result,
           table != null,
           raw?.toHex(),
         )
@@ -111,13 +114,13 @@ class BatteryRefresher(
         hubRead = true
       } else {
         val started = clock.now()
-        val values =
-          (gatt.read(address, listOf(BATTERY_LEVEL_CHARACTERISTIC)) as? GattResult.Values)?.values
+        val result = gatt.read(address, listOf(BATTERY_LEVEL_CHARACTERISTIC))
+        val values = (result as? GattResult.Values)?.values
         val level =
           values?.get(BATTERY_LEVEL_CHARACTERISTIC)?.firstOrNull()?.toInt()?.and(0xFF)?.takeIf {
             it <= 100
           }
-        logRead(component.key, GattKind.BatteryLevel, mode, started, values, level != null, null)
+        logRead(component.key, GattKind.BatteryLevel, mode, started, result, level != null, null)
         if (values == null) continue
         if (level == null) {
           lock.withLock { unsupported += component.id.value }
@@ -135,16 +138,10 @@ class BatteryRefresher(
     kind: GattKind,
     mode: CaptureMode,
     started: Instant,
-    values: Map<String, ByteArray>?,
+    result: GattResult,
     parsed: Boolean,
     hex: String?,
   ) {
-    val outcome =
-      when {
-        values == null -> GattOutcome.Failed
-        !parsed -> GattOutcome.Unsupported
-        else -> GattOutcome.Ok
-      }
     log.append(
       CaptureEvent.Gatt(
         at = clock.now().toEpochMilliseconds(),
@@ -152,8 +149,9 @@ class BatteryRefresher(
         kind = kind,
         background = mode == CaptureMode.Background,
         durationMillis = (clock.now() - started).inWholeMilliseconds,
-        outcome = outcome,
+        outcome = result.outcome(parsed),
         hex = hex,
+        detail = result.detail(parsed),
       )
     )
   }

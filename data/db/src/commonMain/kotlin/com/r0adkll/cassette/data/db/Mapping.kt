@@ -6,6 +6,7 @@ import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.core.BikeType
 import com.r0adkll.cassette.core.Component
 import com.r0adkll.cassette.core.ComponentId
+import com.r0adkll.cassette.core.Hub
 import com.r0adkll.cassette.core.ReadMethod
 import com.r0adkll.cassette.protocol.BatteryStatus
 import com.r0adkll.cassette.protocol.ComponentKind
@@ -42,6 +43,15 @@ fun com.r0adkll.cassette.data.db.Component.toDomain(): Component =
     lastSeenAt = last_seen_at?.let(Instant::fromEpochMilliseconds),
     removedAt = removed_at?.let(Instant::fromEpochMilliseconds),
     address = address,
+    hubSerial = hub_serial,
+  )
+
+fun com.r0adkll.cassette.data.db.Hub.toDomain(): Hub =
+  Hub(
+    serial = serial,
+    bikeId = BikeId(bike_id),
+    addedAt = Instant.fromEpochMilliseconds(added_at),
+    readAt = read_at?.let(Instant::fromEpochMilliseconds),
   )
 
 fun Battery_sample.toDomain(): BatteryReading =

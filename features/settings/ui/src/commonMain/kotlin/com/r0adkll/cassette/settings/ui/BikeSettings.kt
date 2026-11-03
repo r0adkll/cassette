@@ -2,6 +2,7 @@ package com.r0adkll.cassette.settings.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,8 +10,10 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +21,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,10 +42,12 @@ import com.r0adkll.cassette.bikes.api.BikeRepository
 import com.r0adkll.cassette.bikes.summary.code
 import com.r0adkll.cassette.common.compose.LocalScreenLayout
 import com.r0adkll.cassette.common.compose.ScreenLayout
+import com.r0adkll.cassette.common.compose.components.CassetteButton
 import com.r0adkll.cassette.common.compose.components.ChoiceChips
 import com.r0adkll.cassette.common.compose.components.CodeBadge
 import com.r0adkll.cassette.common.compose.components.DestructiveButton
 import com.r0adkll.cassette.common.compose.components.FloatingTopBar
+import com.r0adkll.cassette.common.compose.components.Kicker
 import com.r0adkll.cassette.common.compose.components.Panel
 import com.r0adkll.cassette.common.compose.components.SettingsSection
 import com.r0adkll.cassette.common.compose.components.SettingsSwitchRow
@@ -49,9 +55,11 @@ import com.r0adkll.cassette.common.compose.components.TopBarNavigation
 import com.r0adkll.cassette.common.compose.components.TopBarSpacer
 import com.r0adkll.cassette.common.compose.icons.LucideIcons
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
+import com.r0adkll.cassette.common.screens.AddBikeScreen
 import com.r0adkll.cassette.common.screens.BikeSettingsScreen
 import com.r0adkll.cassette.core.BikeId
 import com.r0adkll.cassette.core.BikeType
+import com.r0adkll.cassette.core.Component
 import com.r0adkll.cassette.settings.api.CassetteSettings
 import com.slack.circuit.codegen.annotations.CircuitInject
 import com.slack.circuit.retained.collectAsRetainedState
@@ -70,6 +78,8 @@ data class BikeSettingsUiState(
   val bike: BikeSettingsModel?,
   /** Remove was tapped once; the next tap removes. */
   val confirmRemove: Boolean,
+  /** The system whose remove was tapped once; the next tap removes it. */
+  val confirmRemoveSystem: Long? = null,
   val eventSink: (BikeSettingsEvent) -> Unit,
 ) : CircuitUiState
 
@@ -77,6 +87,19 @@ data class BikeSettingsModel(
   val name: String,
   val type: BikeType,
   val opensFirst: Boolean,
+  /** Its components under their systems, the one it was added with first (decision 0028). */
+  val systems: List<SystemLines>,
+  /** Components in no system: the power meter. */
+  val others: List<ComponentLine> = emptyList(),
+)
+
+/**
+ * One of the bike's systems: named after its hub ("Dropper post system"), with the hub's serial,
+ * and its components, the hub first.
+ */
+data class SystemLines(
+  val hubSerial: Long,
+  val name: String,
   val components: List<ComponentLine>,
 )
 
@@ -95,6 +118,12 @@ sealed interface BikeSettingsEvent : CircuitUiEvent {
 
   /** First tap asks, second (within [RemoveTimeout]) removes and goes back. */
   data object Remove : BikeSettingsEvent
+
+  /** Adds another system to the bike: waking and found (decision 0028). */
+  data object AddSystem : BikeSettingsEvent
+
+  /** First tap asks, second (within [RemoveTimeout]) takes the system and its components off. */
+  data class RemoveSystem(val hubSerial: Long) : BikeSettingsEvent
 }
 
 /** How long "Tap again to remove" waits for the second tap. */
@@ -116,6 +145,7 @@ class BikeSettingsPresenter(
     val overview by remember { bikes.observeOverview(id) }.collectAsRetainedState(null)
     val pinned by remember { settings.pinnedBike }.collectAsRetainedState(null)
     var confirmRemove by remember { mutableStateOf(false) }
+    var confirmRemoveSystem by remember { mutableStateOf<Long?>(null) }
     // An unanswered "Tap again to remove" goes back to Remove bike.
     LaunchedEffect(confirmRemove) {
       if (confirmRemove) {
@@ -123,25 +153,40 @@ class BikeSettingsPresenter(
         confirmRemove = false
       }
     }
+    LaunchedEffect(confirmRemoveSystem) {
+      if (confirmRemoveSystem != null) {
+        delay(RemoveTimeout)
+        confirmRemoveSystem = null
+      }
+    }
 
     val bike = overview?.bike
     val model = overview?.let { o ->
+      val (inSystems, others) = o.components.map { it.component }.partition { it.hubSerial != null }
       BikeSettingsModel(
         name = o.bike.name,
         type = o.bike.type,
         opensFirst = pinned == o.bike.id,
-        components =
-          o.components.map {
-            ComponentLine(
-              it.component.kind.code,
-              it.component.kind.label,
-              it.component.serial?.toString() ?: it.component.key,
-            )
-          },
+        systems =
+          inSystems
+            .groupBy { it.hubSerial!! }
+            .map { (serial, members) ->
+              val hub = members.firstOrNull { it.serial == serial }
+              SystemLines(
+                hubSerial = serial,
+                name = hub?.let { "${it.kind.label} system" } ?: "Components",
+                components = members.sortedByDescending { it == hub }.map { it.line() },
+              ) to (hub?.addedAt ?: members.minOf { it.addedAt })
+            }
+            // The system it was added with first, then the others as they joined.
+            .sortedWith(compareBy({ it.first.hubSerial != o.bike.hubSerial }, { it.second }))
+            .map { it.first },
+        others = others.map { it.line() },
       )
     }
 
-    return BikeSettingsUiState(model, confirmRemove) { event ->
+    return BikeSettingsUiState(model, confirmRemove, confirmRemoveSystem = confirmRemoveSystem) {
+      event ->
       when (event) {
         BikeSettingsEvent.Back -> navigator.pop()
         is BikeSettingsEvent.Rename -> {
@@ -161,9 +206,18 @@ class BikeSettingsPresenter(
               bikes.deleteBike(id)
               navigator.pop()
             }
+        BikeSettingsEvent.AddSystem -> navigator.goTo(AddBikeScreen(screen.bikeId))
+        is BikeSettingsEvent.RemoveSystem ->
+          if (confirmRemoveSystem != event.hubSerial) confirmRemoveSystem = event.hubSerial
+          else {
+            confirmRemoveSystem = null
+            scope.launch { bikes.removeSystem(id, event.hubSerial) }
+          }
       }
     }
   }
+
+  private fun Component.line() = ComponentLine(kind.code, kind.label, serial?.toString() ?: key)
 }
 
 /**
@@ -184,7 +238,8 @@ fun BikeSettingsUi(state: BikeSettingsUiState, modifier: Modifier = Modifier) {
       if (model == null) return@TitledScreen
       NameAndType(model, name, onNameChange = { name = it }, sink)
       OpensFirst(model, sink)
-      Components(model)
+      Components(model, state.confirmRemoveSystem, sink)
+      AddSystem(sink)
       Remove(state.confirmRemove, sink)
     }
   } else {
@@ -196,9 +251,10 @@ fun BikeSettingsUi(state: BikeSettingsUiState, modifier: Modifier = Modifier) {
         if (model == null) return@TwoColumnScreen
         NameAndType(model, name, onNameChange = { name = it }, sink)
         OpensFirst(model, sink)
+        AddSystem(sink)
         Remove(state.confirmRemove, sink)
       },
-      end = { if (model != null) Components(model) },
+      end = { if (model != null) Components(model, state.confirmRemoveSystem, sink) },
     )
   }
 }
@@ -297,28 +353,126 @@ private fun OpensFirst(model: BikeSettingsModel, sink: (BikeSettingsEvent) -> Un
   }
 }
 
+/**
+ * The bike's components under their systems (decision 0028), then the power meter. With two systems
+ * or more, each ends in its own remove.
+ */
 @Composable
-private fun Components(model: BikeSettingsModel) {
+private fun Components(
+  model: BikeSettingsModel,
+  confirmRemoveSystem: Long?,
+  sink: (BikeSettingsEvent) -> Unit,
+) {
+  val colors = CassetteTheme.colors
+  val removable = model.systems.size > 1
+  model.systems.forEach { system ->
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+      Row(verticalAlignment = Alignment.CenterVertically) {
+        Kicker(system.name, Modifier.weight(1f))
+        if (system.hubSerial > 0)
+          Text(
+            "SRAM ${system.hubSerial}",
+            style = CassetteTheme.type.mono,
+            color = colors.muted,
+          )
+      }
+      Panel {
+        Lines(system.components)
+        if (removable) {
+          HorizontalDivider(color = colors.line, thickness = 1.dp)
+          RemoveSystem(system, model.name, confirmRemoveSystem == system.hubSerial, sink)
+        }
+      }
+    }
+  }
+  if (model.others.isNotEmpty())
+    SettingsSection(if (model.others.size == 1) "Power meter" else "Power meters") {
+      Lines(model.others)
+    }
+}
+
+@Composable
+private fun ColumnScope.Lines(lines: List<ComponentLine>) {
   val colors = CassetteTheme.colors
   val type = CassetteTheme.type
-  SettingsSection("Components · ${model.components.size}") {
-    model.components.forEachIndexed { i, component ->
-      Row(
-        Modifier.padding(vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-      ) {
-        CodeBadge(component.code)
-        Text(
-          component.name,
-          style = type.itemTitle,
-          color = colors.text,
-          modifier = Modifier.weight(1f),
-        )
-        Text(component.serial, style = type.bodySmall, color = colors.muted)
-      }
-      if (i < model.components.lastIndex) HorizontalDivider(color = colors.line, thickness = 1.dp)
+  lines.forEachIndexed { i, component ->
+    Row(
+      Modifier.padding(vertical = 6.dp),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+      CodeBadge(component.code)
+      Text(
+        component.name,
+        style = type.itemTitle,
+        color = colors.text,
+        modifier = Modifier.weight(1f),
+      )
+      Text(component.serial, style = type.bodySmall, color = colors.muted)
     }
+    if (i < lines.lastIndex) HorizontalDivider(color = colors.line, thickness = 1.dp)
+  }
+}
+
+/** A system's remove, at the foot of its group: a red line, then the second-tap button. */
+@Composable
+private fun RemoveSystem(
+  system: SystemLines,
+  bike: String,
+  confirm: Boolean,
+  sink: (BikeSettingsEvent) -> Unit,
+) {
+  val colors = CassetteTheme.colors
+  val remove = { sink(BikeSettingsEvent.RemoveSystem(system.hubSerial)) }
+  if (confirm) {
+    Column(
+      Modifier.padding(vertical = 4.dp),
+      verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+      DestructiveButton(
+        "Tap again to remove",
+        onClick = remove,
+        armed = true,
+        icon = LucideIcons.Trash,
+      )
+      Text(
+        "Takes these ${system.components.size} components and their history off $bike. Add them again with Add a system.",
+        style = CassetteTheme.type.bodySmall,
+        color = colors.muted,
+      )
+    }
+  } else {
+    Row(
+      Modifier.fillMaxWidth()
+        .heightIn(min = 44.dp)
+        .clickable(onClickLabel = "Remove ${system.name.lowercase()}", onClick = remove),
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+      Icon(LucideIcons.Trash, null, tint = colors.critical, modifier = Modifier.size(18.dp))
+      Text(
+        "Remove this system".uppercase(),
+        style = CassetteTheme.type.label,
+        color = colors.critical,
+      )
+    }
+  }
+}
+
+@Composable
+private fun AddSystem(sink: (BikeSettingsEvent) -> Unit) {
+  Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    CassetteButton(
+      "Add a system",
+      onClick = { sink(BikeSettingsEvent.AddSystem) },
+      primary = false,
+      icon = LucideIcons.Plus,
+    )
+    Text(
+      "Wake the bike to add a hub that isn't on it yet. Each system has its own hub, such as a rear shock's or a dropper's.",
+      style = CassetteTheme.type.bodySmall,
+      color = CassetteTheme.colors.muted,
+    )
   }
 }
 

@@ -145,6 +145,7 @@ class AlertsTest {
       null,
       0,
       now.toEpochMilliseconds(),
+      null,
     )
     return db.componentQueries.lastInsertedId().executeAsOne()
   }

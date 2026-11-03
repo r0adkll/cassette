@@ -1,0 +1,27 @@
+-- A bike's systems, one row per hub: the component whose tables list the rest (decision 0028).
+CREATE TABLE hub (
+    serial INTEGER PRIMARY KEY,
+    bike_id INTEGER NOT NULL REFERENCES bike(id) ON DELETE CASCADE,
+    -- epoch milliseconds
+    added_at INTEGER NOT NULL,
+    -- When its battery table was last read; throttles reads across process restarts.
+    read_at INTEGER
+);
+
+CREATE INDEX hub_bike ON hub(bike_id);
+
+-- Oldest first: the system the bike was added with leads.
+selectForBike:
+SELECT * FROM hub WHERE bike_id = ? ORDER BY added_at, serial;
+
+selectBySerial:
+SELECT * FROM hub WHERE serial = ?;
+
+insert:
+INSERT INTO hub (serial, bike_id, added_at) VALUES (?, ?, ?);
+
+markRead:
+UPDATE hub SET read_at = :at WHERE serial = :serial;
+
+delete:
+DELETE FROM hub WHERE serial = ?;

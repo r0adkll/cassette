@@ -1,7 +1,12 @@
 package com.r0adkll.cassette.capture.impl
 
 import app.cash.turbine.test
+import com.r0adkll.cassette.capture.api.CaptureEvent
+import com.r0adkll.cassette.capture.api.FoundHub
 import com.r0adkll.cassette.capture.api.FoundPowerMeter
+import com.r0adkll.cassette.capture.api.GattKind
+import com.r0adkll.cassette.capture.api.GattOutcome
+import com.r0adkll.cassette.capture.api.HubDetails
 import com.r0adkll.cassette.core.BikeType
 import com.r0adkll.cassette.core.CassetteDispatchers
 import com.r0adkll.cassette.data.db.CassetteDatabase
@@ -13,6 +18,7 @@ import com.r0adkll.cassette.protocol.BatteryStatus
 import com.r0adkll.cassette.protocol.ComponentKind
 import com.r0adkll.cassette.protocol.FrameType
 import com.r0adkll.cassette.protocol.SystemBatteryTable
+import com.r0adkll.cassette.protocol.toHex
 import com.r0adkll.cassette.settings.test.InMemorySettings
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -20,6 +26,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.time.Clock
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
@@ -51,7 +58,7 @@ class DiscoveryTest {
       clock,
     )
   private val discovery =
-    DefaultBikeDiscovery(scanner, gatt, recorder, controller, db, dispatchers, clock)
+    DefaultBikeDiscovery(scanner, gatt, recorder, controller, db, captureLog, dispatchers, clock)
 
   @AfterTest fun close() = driver.close()
 
@@ -101,12 +108,18 @@ class DiscoveryTest {
       hub.components.map { it.kind },
     )
     assertEquals(78, hub.components.first().percent)
+    // Logged with its bytes, as background reads are.
+    val read = captureLog.list.value.filterIsInstance<CaptureEvent.Gatt>().single()
+    assertEquals(Fixtures.HUB.toString(), read.key)
+    assertEquals(GattKind.HubTable, read.kind)
+    assertEquals(GattOutcome.Ok, read.outcome)
+    assertEquals(Fixtures.RED_TABLE.toHex(), read.hex)
 
     val bikeId =
       discovery.addBike(
         "  Road bike ",
         BikeType.Road,
-        hub,
+        listOf(hub),
         FoundPowerMeter("Quarq AGN12387", PM_ADDRESS, 7, -60),
       )
 
@@ -128,23 +141,210 @@ class DiscoveryTest {
     )
     assertNotNull(scanner.armed)
 
-    // Once added, the bike's hub is no longer offered.
+    // Once added, the bike's hub is no longer offered, only known.
     discovery.discover().test {
       assertEquals(emptyList(), awaitItem().hubs)
       scanner.adverts.emit(hub(serial = Fixtures.HUB, rssi = -50))
-      expectNoEvents()
+      val found = awaitItem()
+      assertEquals(emptyList(), found.hubs)
+      assertEquals(listOf(Fixtures.HUB to bikeId), found.known.map { it.hub.serial to it.bike })
       cancelAndIgnoreRemainingEvents()
     }
+  }
+
+  @Test
+  fun aBikeWithTwoHubsIsTwoSystems() = runTest {
+    val bikeId =
+      discovery.addBike(
+        "Mountain bike",
+        BikeType.Mtb,
+        listOf(
+          details(Fixtures.DROPPER, Fixtures.DROPPER_TABLE),
+          details(Fixtures.SHOCK, Fixtures.SHOCK_TABLE),
+        ),
+        null,
+      )
+
+    // Known by the first hub; both are its systems.
+    assertEquals(
+      Fixtures.DROPPER,
+      db.bikeQueries.selectById(bikeId.value).executeAsOne().hub_serial,
+    )
+    assertEquals(
+      listOf(Fixtures.DROPPER, Fixtures.SHOCK),
+      db.hubQueries.selectForBike(bikeId.value).executeAsList().map { it.serial },
+    )
+    val systems =
+      db.componentQueries.selectForBike(bikeId.value).executeAsList().associate {
+        it.serial to it.hub_serial
+      }
+    assertEquals(
+      mapOf<Long?, Long?>(
+        Fixtures.DROPPER to Fixtures.DROPPER,
+        Fixtures.FORK to Fixtures.DROPPER,
+        Fixtures.POD to Fixtures.DROPPER,
+        Fixtures.SHOCK to Fixtures.SHOCK,
+        Fixtures.MTB_RD to Fixtures.SHOCK,
+        Fixtures.CONTROLLER to Fixtures.SHOCK,
+      ),
+      systems,
+    )
+  }
+
+  @Test
+  fun aHubAnotherHubListsStaysInItsOwnSystem() = runTest {
+    // The tester's save: the shock's system first, and its table lists the dropper.
+    val bikeId =
+      discovery.addBike(
+        "Mountain bike",
+        BikeType.Mtb,
+        listOf(
+          details(Fixtures.SHOCK, Fixtures.SHOCK_TABLE_LISTING_DROPPER),
+          details(Fixtures.DROPPER, Fixtures.DROPPER_TABLE),
+        ),
+        null,
+      )
+
+    val dropper = db.componentQueries.selectByKey(Fixtures.DROPPER.toString()).executeAsOne()
+    assertEquals(Fixtures.DROPPER, dropper.hub_serial)
+    // The shock's older copy of the dropper's voltage isn't saved as a reading.
+    assertEquals(
+      emptyList(),
+      db.batterySampleQueries.historyForComponent(dropper.id, 0).executeAsList().map {
+        it.millivolts
+      },
+    )
+    assertEquals(
+      listOf(
+        "Hub ${Fixtures.SHOCK}'s system added to bike ${bikeId.value}: " +
+          "Right AXS controller ${Fixtures.CONTROLLER}, Rear derailleur ${Fixtures.MTB_RD}, " +
+          "Left AXS controller ${Fixtures.OLD_POD}, Rear shock ${Fixtures.SHOCK}",
+        "Hub ${Fixtures.DROPPER}'s system added to bike ${bikeId.value}: " +
+          "Dropper post ${Fixtures.DROPPER}, Fork ${Fixtures.FORK}, Right pod ${Fixtures.POD}",
+      ),
+      captureLog.list.value.filterIsInstance<CaptureEvent.AddBike>().map { it.detail },
+    )
+  }
+
+  @Test
+  fun aHubSavedInAnotherSystemMovesBackOnTheNextRead() = runTest {
+    val bikeId =
+      discovery.addBike(
+        "Mountain bike",
+        BikeType.Mtb,
+        listOf(
+          details(Fixtures.DROPPER, Fixtures.DROPPER_TABLE),
+          details(Fixtures.SHOCK, Fixtures.SHOCK_TABLE),
+        ),
+        null,
+      )
+    // As the tester's earlier build saved it: the dropper in the shock's system.
+    val dropper = db.componentQueries.selectByKey(Fixtures.DROPPER.toString()).executeAsOne()
+    db.componentQueries.setHub(Fixtures.SHOCK, dropper.id)
+    val bike = db.bikeQueries.selectById(bikeId.value).executeAsOne().toDomain()
+
+    recorder.applyHubTable(
+      bike,
+      SystemBatteryTable.parse(Fixtures.SHOCK_TABLE_LISTING_DROPPER)!!,
+      null,
+      now + 1.hours,
+    )
+
+    assertEquals(
+      Fixtures.DROPPER,
+      db.componentQueries.selectById(dropper.id).executeAsOne().hub_serial,
+    )
+    assertEquals(
+      emptyList(),
+      db.batterySampleQueries.historyForComponent(dropper.id, 0).executeAsList().map {
+        it.millivolts
+      },
+    )
+    // The shock's own members still take its readings.
+    val rd = db.componentQueries.selectByKey(Fixtures.MTB_RD.toString()).executeAsOne()
+    assertEquals(
+      8_161L,
+      db.batterySampleQueries.latestForComponent(rd.id).executeAsOne().millivolts,
+    )
+  }
+
+  @Test
+  fun aSystemJoinsABikeItsMissing() = runTest {
+    // The tester's bike as Cassette first saved it: the dropper's system only.
+    val bikeId =
+      discovery.addBike(
+        "Mountain bike",
+        BikeType.Mtb,
+        listOf(details(Fixtures.DROPPER, Fixtures.DROPPER_TABLE)),
+        null,
+      )
+    assertEquals(3, db.componentQueries.selectForBike(bikeId.value).executeAsList().size)
+
+    discovery.addSystems(bikeId, listOf(details(Fixtures.SHOCK, Fixtures.SHOCK_TABLE)))
+
+    assertEquals(6, db.componentQueries.selectForBike(bikeId.value).executeAsList().size)
+    assertEquals(2, db.hubQueries.selectForBike(bikeId.value).executeAsList().size)
+    assertEquals(
+      Fixtures.SHOCK_ADDRESS,
+      db.componentQueries.selectByKey(Fixtures.SHOCK.toString()).executeAsOne().address,
+    )
+  }
+
+  @Test
+  fun anotherBikesHubDoesNotMove() = runTest {
+    val road =
+      discovery.addBike(
+        "Road bike",
+        BikeType.Road,
+        listOf(details(Fixtures.SHOCK, Fixtures.SHOCK_TABLE)),
+        null,
+      )
+    val mtb =
+      discovery.addBike(
+        "Mountain bike",
+        BikeType.Mtb,
+        listOf(details(Fixtures.DROPPER, Fixtures.DROPPER_TABLE)),
+        null,
+      )
+
+    discovery.addSystems(mtb, listOf(details(Fixtures.SHOCK, Fixtures.SHOCK_TABLE)))
+
+    assertEquals(road.value, db.hubQueries.selectBySerial(Fixtures.SHOCK).executeAsOne().bike_id)
+    assertEquals(3, db.componentQueries.selectForBike(mtb.value).executeAsList().size)
+    assertEquals(
+      "Hub ${Fixtures.SHOCK} is bike ${road.value}'s already: not added to bike ${mtb.value}",
+      captureLog.list.value.filterIsInstance<CaptureEvent.AddBike>().last().detail,
+    )
   }
 
   @Test
   fun aFailedHubReadReturnsNull() = runTest {
     gatt.fail = true
     assertNull(discovery.readHub(foundHub()))
+    val read = captureLog.list.value.filterIsInstance<CaptureEvent.Gatt>().single()
+    assertEquals(GattOutcome.Failed, read.outcome)
+    // Why, as the GATT client said it.
+    assertEquals("timed out after 12s while connecting", read.detail)
   }
 
+  private fun details(serial: Long, table: ByteArray) =
+    HubDetails(
+      FoundHub(
+        serial = serial,
+        address =
+          if (serial == Fixtures.SHOCK) Fixtures.SHOCK_ADDRESS else Fixtures.DROPPER_ADDRESS,
+        kind = ComponentKind.UNKNOWN,
+        modelId = null,
+        rssi = -60,
+        battery = null,
+        firmware = null,
+      ),
+      SystemBatteryTable.parse(table)!!,
+      null,
+    )
+
   private fun foundHub() =
-    com.r0adkll.cassette.capture.api.FoundHub(
+    FoundHub(
       serial = Fixtures.HUB,
       address = Fixtures.RD_ADDRESS,
       kind = ComponentKind.REAR_DERAILLEUR,
