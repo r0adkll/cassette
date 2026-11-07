@@ -9,8 +9,9 @@ All notable changes to Cassette are documented here. The format follows
 
 - Diagnostics → Live adverts also shows Shimano Di2 rear derailleurs, with a Shimano filter, and
   saves what they advertise to the diagnostics export. "Read battery" reads a derailleur's battery
-  and model in one short connection. It's groundwork for Di2 support, which needs a tester's export
-  first; nothing Shimano shows up on the bike screen yet.
+  and model in one short connection. Diagnostics → Di2 check walks a Di2 rider through it (wake the
+  bike, read it, check it still shifts) and shares the export. It's groundwork for Di2 support,
+  which needs a tester's export first; nothing Shimano shows up on the bike screen yet.
 - Diagnostics → Developer → Add a random bike adds a made-up bike beside the sample, with random
   parts and levels (some low), for trying the app with several bikes.
 - With two bikes or more, a phone switches bikes from a pill at the top of the bike screen: how many

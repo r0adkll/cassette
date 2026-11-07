@@ -21,6 +21,12 @@ on hardware before features are built on them.
   result as a `gatt` event of kind `ShimanoProbe`. It lists the services the derailleur offers
   (on Android; iOS lists only those it reads). The row warns not to use it while riding until we
   know a phone's connection leaves shifting alone.
+- **A guided check for testers.** Diagnostics → Di2 check walks a Di2 rider through it, using the
+  ride tests' checklist ([0018](0018-ride-tests.md)): the derailleur heard (the strongest; a read
+  fixes the choice), its battery read, then "Did the bike shift as it always does?", and Share
+  diagnostics. Each step lands in the capture log as a `di2_check` event beside the `shimano` and
+  `gatt` ones, so a stranger's export tells the whole story. A "didn't shift" answer says how to
+  recover: Bluetooth off for a moment ends any connection.
 - **Only while Diagnostics is open.** The background scan, capture, bikes, alerts and surfaces are
   unchanged: no Shimano filter wakes the app, and nothing heard is saved to a bike.
 - Rejected: **a Shimano background filter now.** It would wake the app for any Di2 derailleur or
@@ -41,7 +47,6 @@ on hardware before features are built on them.
 
 ## Next
 
-A tester with 12-speed Di2 sends an export from a session with Live adverts open: wake the bike,
-read the battery, shift. That answers whether adverts carry battery and whether the probe disturbs
+A tester with 12-speed Di2 runs the Di2 check and sends the export. That answers whether adverts carry battery and whether the probe disturbs
 shifting (`docs/protocol-shimano.md` §5). Supporting a Di2 bike, with one battery and shifters shown
 as not reported, gets its own decision and mockups ([0006](0006-design-process.md)) after that.

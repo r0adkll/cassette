@@ -9,6 +9,7 @@ import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Density
 import com.r0adkll.cassette.capture.api.CaptureEvent
+import com.r0adkll.cassette.capture.api.ShimanoProbe
 import com.r0adkll.cassette.capture.api.WearAction
 import com.r0adkll.cassette.common.compose.AppPlatform
 import com.r0adkll.cassette.common.compose.LocalAppPlatform
@@ -130,6 +131,42 @@ class ScreenRenderTest {
       ) {
         LiveAdvertsUi(state)
       }
+    }
+  }
+
+  /** The Di2 check's steps (decision 0029): listening, heard, the shifting question, answered. */
+  @Test
+  fun di2Check() {
+    val heard = HeardDi2("C4:7F:51:2A:90:11", "RDR9250", -58, others = 1)
+    val probe =
+      ShimanoProbe(
+        "C4:7F:51:2A:90:11",
+        now,
+        87,
+        mapOf("model" to "RD-R9250"),
+        listOf("1800", "180a", "180f", "18ef", "18ff"),
+        null,
+      )
+    val states =
+      listOf(
+        "listening" to Di2CheckUiState(null, false, null, null, false) {},
+        "heard" to Di2CheckUiState(heard, false, null, null, false) {},
+        "read" to Di2CheckUiState(heard, false, Di2Read.Done(probe), null, false) {},
+        "done" to Di2CheckUiState(heard, false, Di2Read.Done(probe), false, false) {},
+      )
+    for (dark in listOf(true, false)) {
+      val theme = if (dark) "dark" else "light"
+      for ((name, state) in states) {
+        render("di2-check-$name-$theme", dark, AppPlatform.Android) { Di2CheckUi(state) }
+      }
+      val read = states[2].second
+      render("di2-check-read-tablet-$theme", dark, AppPlatform.Android, 1280, 800) {
+        Di2CheckUi(read)
+      }
+      render("di2-check-read-landscape-$theme", dark, AppPlatform.Android, 892, 412) {
+        Di2CheckUi(read)
+      }
+      render("di2-check-read-ios-$theme", dark, AppPlatform.Ios) { Di2CheckUi(read) }
     }
   }
 

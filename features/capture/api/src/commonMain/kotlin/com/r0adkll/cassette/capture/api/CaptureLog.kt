@@ -125,6 +125,15 @@ sealed interface CaptureEvent {
     val raw: String? = null,
   ) : CaptureEvent
 
+  /**
+   * Diagnostics' Di2 check (decision 0029): opened, the derailleur it settled on, the rider's
+   * answer about shifting after the read, and sharing. The adverts and the read are their own
+   * `shimano` and `gatt` events.
+   */
+  @Serializable
+  @SerialName("di2_check")
+  data class Di2Check(override val at: Long, val detail: String) : CaptureEvent
+
   /** iOS widgets (decision 0017): their snapshot written to the App Group, or why it wasn't. */
   @Serializable
   @SerialName("widgets")
