@@ -107,6 +107,33 @@ sealed interface CaptureEvent {
   @SerialName("wear")
   data class Wear(override val at: Long, val action: WearAction, val detail: String) : CaptureEvent
 
+  /**
+   * A Shimano Di2 advert heard while Diagnostics' Live adverts was open (decision 0029): the first
+   * from each device, then whenever its bytes change, at most every few seconds. [services] are
+   * short UUIDs (`18ef`); [raw] is the whole advert where the platform gives it (Android).
+   */
+  @Serializable
+  @SerialName("shimano")
+  data class Shimano(
+    override val at: Long,
+    val address: String,
+    val name: String?,
+    val rssi: Int,
+    val mfg: String? = null,
+    val services: List<String> = emptyList(),
+    val serviceData: Map<String, String> = emptyMap(),
+    val raw: String? = null,
+  ) : CaptureEvent
+
+  /**
+   * Diagnostics' Di2 check (decision 0029): opened, the derailleur it settled on, the rider's
+   * answer about shifting after the read, and sharing. The adverts and the read are their own
+   * `shimano` and `gatt` events.
+   */
+  @Serializable
+  @SerialName("di2_check")
+  data class Di2Check(override val at: Long, val detail: String) : CaptureEvent
+
   /** iOS widgets (decision 0017): their snapshot written to the App Group, or why it wasn't. */
   @Serializable
   @SerialName("widgets")
@@ -138,6 +165,8 @@ enum class WearAction {
 enum class GattKind {
   HubTable,
   BatteryLevel,
+  /** Diagnostics' read of a Shimano derailleur's open characteristics (decision 0029). */
+  ShimanoProbe,
 }
 
 enum class GattOutcome {

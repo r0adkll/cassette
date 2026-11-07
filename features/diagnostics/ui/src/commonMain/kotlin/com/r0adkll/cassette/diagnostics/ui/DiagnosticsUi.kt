@@ -66,9 +66,15 @@ fun DiagnosticsUi(state: DiagnosticsUiState, modifier: Modifier = Modifier) {
     SettingsSection("Tools") {
       SettingsRow(
         "Live adverts",
-        subtitle = "Every AXS advert heard, with raw bytes",
+        subtitle = "Every AXS and Shimano advert heard, with raw bytes",
         icon = LucideIcons.Radio,
         onClick = { sink(DiagnosticsEvent.OpenLiveAdverts) },
+      )
+      SettingsRow(
+        "Di2 check",
+        subtitle = "For Shimano riders: read the derailleur and share what it sends",
+        icon = LucideIcons.BluetoothSearching,
+        onClick = { sink(DiagnosticsEvent.OpenDi2Check) },
       )
       SettingsRow(
         "Hub tables",

@@ -1,6 +1,6 @@
 package com.r0adkll.cassette.data.ble
 
-import com.r0adkll.cassette.protocol.AxsReading
+import com.r0adkll.cassette.protocol.Advert
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
@@ -19,7 +19,7 @@ class IosAdvertScanner(private val central: IosCentral) : AdvertScanner {
   override val isReady: Boolean
     get() = central.state.value.let { it == BluetoothState.On || it == BluetoothState.Starting }
 
-  override fun live(): Flow<AxsReading> = callbackFlow {
+  override fun live(): Flow<Advert> = callbackFlow {
     if (!central.addLiveListener(channel)) {
       close(IllegalStateException("Bluetooth is off or not allowed"))
       return@callbackFlow

@@ -9,14 +9,16 @@ import kotlin.time.Clock
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
 
 /**
- * [AdvertScanner.live] with its start and end in the capture log: how long it ran and what it
- * heard, or why it failed. Callers that swallow a scan's failure (Add bike) still leave a trace.
+ * [AdvertScanner.live]'s AXS readings with the scan's start and end in the capture log: how long it
+ * ran and what it heard, or why it failed. Callers that swallow a scan's failure (Add bike) still
+ * leave a trace.
  */
 internal fun AdvertScanner.loggedLive(
   purpose: String,
@@ -29,6 +31,7 @@ internal fun AdvertScanner.loggedLive(
   log.append(CaptureEvent.Scan(started.toEpochMilliseconds(), purpose, "started", ok = true))
   emitAll(
     live()
+      .filterIsInstance<AxsReading>()
       .onEach {
         adverts++
         devices += it.key

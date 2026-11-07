@@ -1,5 +1,6 @@
 package com.r0adkll.cassette.data.ble
 
+import com.r0adkll.cassette.protocol.Advert
 import com.r0adkll.cassette.protocol.AxsReading
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
@@ -13,10 +14,10 @@ interface AdvertScanner {
   val isReady: Boolean
 
   /**
-   * An unfiltered, low-latency scan while the app is open. Completes with an error if not
-   * [isReady].
+   * An unfiltered, low-latency scan while the app is open: AXS readings, and Shimano adverts for
+   * Diagnostics (decision 0029). Completes with an error if not [isReady].
    */
-  fun live(): Flow<AxsReading>
+  fun live(): Flow<Advert>
 
   /**
    * Arms the system-held background scan, which delivers to [BackgroundDeliveryHandler] even when

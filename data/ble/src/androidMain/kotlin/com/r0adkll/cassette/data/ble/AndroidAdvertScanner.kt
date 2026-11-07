@@ -14,8 +14,11 @@ import android.content.pm.PackageManager
 import android.os.ParcelUuid
 import android.os.SystemClock
 import android.util.Log
+import com.r0adkll.cassette.protocol.Advert
 import com.r0adkll.cassette.protocol.AxsAdvertParser
 import com.r0adkll.cassette.protocol.AxsReading
+import com.r0adkll.cassette.protocol.ShimanoAdvert
+import com.r0adkll.cassette.protocol.ShimanoAdvertParser
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.ContributesBinding
 import dev.zacsweers.metro.Inject
@@ -47,10 +50,10 @@ class AndroidAdvertScanner(private val application: Application) : AdvertScanner
 
   /**
    * Unfiltered so components that don't match the AXS filters (a power meter advertising as a
-   * standard sensor) still show up. Android pauses unfiltered scans with the screen off, which is
-   * fine while the app is open.
+   * standard sensor, a Shimano derailleur) still show up. Android pauses unfiltered scans with the
+   * screen off, which is fine while the app is open.
    */
-  override fun live(): Flow<AxsReading> = callbackFlow {
+  override fun live(): Flow<Advert> = callbackFlow {
     val scanner = adapter?.takeIf { it.isEnabled }?.bluetoothLeScanner
     if (scanner == null || !hasScanPermission()) {
       close(IllegalStateException("Bluetooth is off or the scan permission is missing"))
@@ -73,7 +76,7 @@ class AndroidAdvertScanner(private val application: Application) : AdvertScanner
     scanner.startScan(emptyList(), LIVE_SETTINGS, callback)
     awaitClose { runCatching { scanner.stopScan(callback) } }
   }
-    .mapNotNull { it.toReading() }
+    .mapNotNull { it.toReading() ?: it.toShimanoAdvert() }
 
   override fun startBackground(profile: ScanProfile): ArmResult {
     val scanner =
@@ -132,11 +135,7 @@ private fun ScanProfile.settings(): ScanSettings =
 /** Raw bytes stay in logcat (tag CassetteScan) for diagnostics (decision 0005). */
 internal fun ScanResult.toReading(): AxsReading? {
   val raw = scanRecord?.bytes ?: return null
-  // timestampNanos is elapsed-realtime; background results can arrive well after they were heard.
-  val ageMillis = (SystemClock.elapsedRealtimeNanos() - timestampNanos) / 1_000_000
-  val reading =
-    AxsAdvertParser.parse(raw, rssi, device.address, System.currentTimeMillis() - ageMillis)
-      ?: return null
+  val reading = AxsAdvertParser.parse(raw, rssi, device.address, heardAt()) ?: return null
   Log.d(
     TAG,
     "${reading.key} ${reading.frame} ${reading.kind} ${reading.battery?.millivolts ?: "-"}mV " +
@@ -145,6 +144,18 @@ internal fun ScanResult.toReading(): AxsReading? {
   )
   return reading
 }
+
+/** A Shimano Di2 advert, for Diagnostics (decision 0029); its bytes go to logcat too. */
+internal fun ScanResult.toShimanoAdvert(): ShimanoAdvert? {
+  val raw = scanRecord?.bytes ?: return null
+  val advert = ShimanoAdvertParser.parse(raw, rssi, device.address, heardAt()) ?: return null
+  Log.d(TAG, "Shimano ${advert.address} name=${advert.name} rssi=$rssi raw=[${advert.rawHex}]")
+  return advert
+}
+
+/** timestampNanos is elapsed-realtime; background results can arrive well after they were heard. */
+private fun ScanResult.heardAt(): Long =
+  System.currentTimeMillis() - (SystemClock.elapsedRealtimeNanos() - timestampNanos) / 1_000_000
 
 internal const val TAG = "CassetteScan"
 

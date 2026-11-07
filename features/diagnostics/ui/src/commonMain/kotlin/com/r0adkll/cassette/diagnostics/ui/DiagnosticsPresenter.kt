@@ -16,6 +16,7 @@ import com.r0adkll.cassette.capture.api.CaptureLog
 import com.r0adkll.cassette.capture.api.DiagnosticsSharer
 import com.r0adkll.cassette.capture.api.SharedRefresh
 import com.r0adkll.cassette.capture.api.WearAction
+import com.r0adkll.cassette.common.screens.Di2CheckScreen
 import com.r0adkll.cassette.common.screens.DiagnosticsScreen
 import com.r0adkll.cassette.common.screens.HubTablesScreen
 import com.r0adkll.cassette.common.screens.LiveAdvertsScreen
@@ -70,6 +71,8 @@ sealed interface DiagnosticsEvent : CircuitUiEvent {
   data object Back : DiagnosticsEvent
 
   data object OpenLiveAdverts : DiagnosticsEvent
+
+  data object OpenDi2Check : DiagnosticsEvent
 
   data object OpenHubTables : DiagnosticsEvent
 
@@ -144,6 +147,7 @@ class DiagnosticsPresenter(
       when (event) {
         DiagnosticsEvent.Back -> navigator.pop()
         DiagnosticsEvent.OpenLiveAdverts -> navigator.goTo(LiveAdvertsScreen)
+        DiagnosticsEvent.OpenDi2Check -> navigator.goTo(Di2CheckScreen)
         DiagnosticsEvent.OpenRideTests -> navigator.goTo(RideTestsScreen)
         DiagnosticsEvent.Share ->
           if (!sharing) {

@@ -5,7 +5,7 @@ import com.r0adkll.cassette.data.ble.ArmResult
 import com.r0adkll.cassette.data.ble.GattClient
 import com.r0adkll.cassette.data.ble.GattResult
 import com.r0adkll.cassette.data.ble.ScanProfile
-import com.r0adkll.cassette.protocol.AxsReading
+import com.r0adkll.cassette.protocol.Advert
 import kotlin.time.Duration
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -33,11 +33,11 @@ internal class FakeGatt : GattClient {
 }
 
 internal class FakeScanner : AdvertScanner {
-  val adverts = MutableSharedFlow<AxsReading>(replay = 10)
+  val adverts = MutableSharedFlow<Advert>(replay = 10)
   var armed: ScanProfile? = null
   override val isReady = true
 
-  override fun live(): Flow<AxsReading> = adverts
+  override fun live(): Flow<Advert> = adverts
 
   override fun startBackground(profile: ScanProfile): ArmResult {
     armed = profile

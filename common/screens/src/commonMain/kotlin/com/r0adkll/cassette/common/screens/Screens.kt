@@ -65,6 +65,9 @@ enum class SettingsCategory {
 
 @Parcelize data object LiveAdvertsScreen : ParcelableScreen
 
+/** A guided check for a Shimano Di2 rider: hear the derailleur, read it, shift, share (0029). */
+@Parcelize data object Di2CheckScreen : ParcelableScreen
+
 /** Ride tests: the one recording, the profiles compared and past tests. */
 @Parcelize data object RideTestsScreen : ParcelableScreen
 

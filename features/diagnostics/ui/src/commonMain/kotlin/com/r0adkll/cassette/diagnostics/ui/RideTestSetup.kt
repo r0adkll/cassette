@@ -391,7 +391,7 @@ private fun NameField(value: String, onChange: (String) -> Unit) {
 
 /** A check: its icon, what it is and what to do, and a green tick or an amber warning. */
 @Composable
-private fun Check(
+internal fun Check(
   title: String,
   detail: String,
   icon: ImageVector,

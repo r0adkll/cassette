@@ -1,7 +1,9 @@
 package com.r0adkll.cassette.data.ble
 
+import com.r0adkll.cassette.protocol.Advert
 import com.r0adkll.cassette.protocol.AxsAdvertParser
 import com.r0adkll.cassette.protocol.AxsReading
+import com.r0adkll.cassette.protocol.ShimanoAdvertParser
 import com.r0adkll.cassette.protocol.toHex
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
@@ -29,6 +31,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import platform.CoreBluetooth.CBAdvertisementDataLocalNameKey
 import platform.CoreBluetooth.CBAdvertisementDataManufacturerDataKey
 import platform.CoreBluetooth.CBAdvertisementDataServiceDataKey
+import platform.CoreBluetooth.CBAdvertisementDataServiceUUIDsKey
 import platform.CoreBluetooth.CBCentralManager
 import platform.CoreBluetooth.CBCentralManagerDelegateProtocol
 import platform.CoreBluetooth.CBCentralManagerOptionRestoreIdentifierKey
@@ -84,7 +87,7 @@ class IosCentral(private val deliveries: Lazy<BackgroundDeliveryHandler>) {
   private val peripheralDelegate = PeripheralDelegate(this)
 
   private var manager: CBCentralManager? = null
-  private val liveListeners = mutableSetOf<SendChannel<AxsReading>>()
+  private val liveListeners = mutableSetOf<SendChannel<Advert>>()
   private val pendingDeliveries = mutableListOf<AxsReading>()
   private val sessions = mutableMapOf<String, GattSession>()
 
@@ -145,7 +148,7 @@ class IosCentral(private val deliveries: Lazy<BackgroundDeliveryHandler>) {
 
   // Scanning
 
-  internal suspend fun addLiveListener(channel: SendChannel<AxsReading>): Boolean =
+  internal suspend fun addLiveListener(channel: SendChannel<Advert>): Boolean =
     withContext(Dispatchers.Main) {
       if (!awaitOn()) return@withContext false
       liveListeners += channel
@@ -153,7 +156,7 @@ class IosCentral(private val deliveries: Lazy<BackgroundDeliveryHandler>) {
       true
     }
 
-  internal fun removeLiveListener(channel: SendChannel<AxsReading>) {
+  internal fun removeLiveListener(channel: SendChannel<Advert>) {
     scope.launch {
       liveListeners -= channel
       updateScan()
@@ -194,17 +197,24 @@ class IosCentral(private val deliveries: Lazy<BackgroundDeliveryHandler>) {
   private fun onDiscover(peripheral: CBPeripheral, advertisement: Map<Any?, *>, rssi: Int) {
     val name = advertisement[CBAdvertisementDataLocalNameKey] as? String ?: peripheral.name
     // Core Bluetooth merges every 0x0933 structure into one blob (the spike, decision 0017).
+    val companyData =
+      (advertisement[CBAdvertisementDataManufacturerDataKey] as? NSData)?.toByteArray()?.takeIf {
+        it.size >= 2
+      }
     val manufacturer =
-      (advertisement[CBAdvertisementDataManufacturerDataKey] as? NSData)
-        ?.toByteArray()
-        ?.takeIf { it.size >= 2 && it.u16le(0) == AxsAdvertParser.COMPANY_ID }
+      companyData
+        ?.takeIf { it.u16le(0) == AxsAdvertParser.COMPANY_ID }
         ?.let { it.copyOfRange(2, it.size) }
     val serviceData =
       (advertisement[CBAdvertisementDataServiceDataKey] as? Map<*, *>)
         ?.entries
         ?.firstOrNull { (it.key as? CBUUID)?.UUIDString == SRAM_SERVICE.UUIDString }
         ?.let { (it.value as? NSData)?.toByteArray() }
-    if (manufacturer == null && serviceData == null) return
+    if (manufacturer == null && serviceData == null) {
+      if (liveListeners.isNotEmpty())
+        onDiscoverOther(peripheral, advertisement, name, companyData, rssi)
+      return
+    }
     val reading =
       AxsAdvertParser.parse(
         name = name,
@@ -222,6 +232,51 @@ class IosCentral(private val deliveries: Lazy<BackgroundDeliveryHandler>) {
     )
     liveListeners.forEach { it.trySend(reading) }
     if (armed) queueDelivery(reading)
+  }
+
+  /**
+   * A Shimano advert, for Diagnostics' live scan only (decision 0029): never delivered to the
+   * background handler.
+   */
+  private fun onDiscoverOther(
+    peripheral: CBPeripheral,
+    advertisement: Map<Any?, *>,
+    name: String?,
+    companyData: ByteArray?,
+    rssi: Int,
+  ) {
+    val services =
+      (advertisement[CBAdvertisementDataServiceUUIDsKey] as? List<*>).orEmpty().mapNotNull {
+        (it as? CBUUID)?.UUIDString
+      }
+    val serviceData =
+      (advertisement[CBAdvertisementDataServiceDataKey] as? Map<*, *>)
+        .orEmpty()
+        .entries
+        .mapNotNull { (key, value) ->
+          val uuid = (key as? CBUUID)?.UUIDString ?: return@mapNotNull null
+          val bytes = (value as? NSData)?.toByteArray() ?: return@mapNotNull null
+          uuid to bytes
+        }
+        .toMap()
+    val advert =
+      ShimanoAdvertParser.parse(
+        name = name,
+        manufacturer =
+          companyData
+            ?.takeIf { it.u16le(0) == ShimanoAdvertParser.COMPANY_ID }
+            ?.let { it.copyOfRange(2, it.size) },
+        services = services,
+        serviceData = serviceData,
+        rssi = rssi,
+        address = peripheral.identifier.UUIDString,
+        timestampMillis = Clock.System.now().toEpochMilliseconds(),
+      ) ?: return
+    println(
+      "$TAG Shimano ${advert.address} name=${advert.name} mfg=[${advert.manufacturerHex.orEmpty()}] " +
+        "services=${advert.shortServices}"
+    )
+    liveListeners.forEach { it.trySend(advert) }
   }
 
   /**
@@ -430,6 +485,10 @@ class IosCentral(private val deliveries: Lazy<BackgroundDeliveryHandler>) {
       put("d9050004-90aa-4c7c-b036-1e01fb8eb7ee", system)
       put("d905000a-90aa-4c7c-b036-1e01fb8eb7ee", "d9050005-90aa-4c7c-b036-1e01fb8eb7ee")
       put(BATTERY_LEVEL_CHARACTERISTIC, "0000180f$BASE_SUFFIX")
+      // Device Information, for Diagnostics' Shimano probe (decision 0029).
+      listOf("2a29", "2a24", "2a27", "2a26", "2a28").forEach {
+        put("0000$it$BASE_SUFFIX", "0000180a$BASE_SUFFIX")
+      }
     }
 
     /** Lower-case, full 128-bit: Core Bluetooth shortens standard UUIDs to "2A19". */

@@ -5,10 +5,10 @@ data class AxsReading(
   /** Stable identity: the component serial when we could find one, otherwise the BLE address. */
   val key: String,
   val serial: Long?,
-  val address: String,
-  val name: String?,
-  val rssi: Int,
-  val timestampMillis: Long,
+  override val address: String,
+  override val name: String?,
+  override val rssi: Int,
+  override val timestampMillis: Long,
   val frame: FrameType,
   val kind: ComponentKind,
   /** Only status frames carry battery; beacon and power meter frames need a GATT read. */
@@ -25,7 +25,7 @@ data class AxsReading(
    * The component advertising itself as the system's BLE bridge (the rear derailleur on AXS road).
    */
   val bridge: Boolean = false,
-)
+) : Advert
 
 data class AdvertBattery(
   val millivolts: Int,
