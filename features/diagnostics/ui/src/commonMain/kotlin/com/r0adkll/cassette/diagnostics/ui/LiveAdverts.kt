@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,8 +31,11 @@ import com.r0adkll.cassette.capture.api.Diagnostics
 import com.r0adkll.cassette.common.compose.components.ChoiceChips
 import com.r0adkll.cassette.common.compose.theme.CassetteTheme
 import com.r0adkll.cassette.common.screens.LiveAdvertsScreen
+import com.r0adkll.cassette.protocol.Advert
 import com.r0adkll.cassette.protocol.AxsReading
 import com.r0adkll.cassette.protocol.FrameType
+import com.r0adkll.cassette.protocol.ShimanoAdvert
+import com.r0adkll.cassette.protocol.shortUuid
 import com.slack.circuit.codegen.annotations.CircuitInject
 import com.slack.circuit.retained.rememberRetained
 import com.slack.circuit.runtime.CircuitUiEvent
@@ -42,12 +46,23 @@ import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import kotlin.time.Clock
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.launch
 
-enum class AdvertFilter(val label: String, val frame: FrameType?) {
+/** What a row heard: an AXS frame, or a Shimano advert (decision 0029). */
+enum class AdvertTag(val label: String) {
+  Status("STATUS"),
+  Beacon("BEACON"),
+  PowerMeter("POWER METER"),
+  HubEntry("HUB ENTRY"),
+  Shimano("SHIMANO"),
+}
+
+enum class AdvertFilter(val label: String, val tag: AdvertTag?) {
   All("All", null),
-  Status("Status", FrameType.STATUS),
-  Beacon("Beacon", FrameType.BEACON),
-  Power("Power", FrameType.POWER_METER),
+  Status("Status", AdvertTag.Status),
+  Beacon("Beacon", AdvertTag.Beacon),
+  Power("Power", AdvertTag.PowerMeter),
+  Shimano("Shimano", AdvertTag.Shimano),
 }
 
 data class LiveAdvertsUiState(
@@ -55,6 +70,7 @@ data class LiveAdvertsUiState(
   val filter: AdvertFilter,
   val paused: Boolean,
   val failed: Boolean,
+  val probes: Map<String, ProbeState> = emptyMap(),
   val eventSink: (LiveAdvertsEvent) -> Unit,
 ) : CircuitUiState
 
@@ -62,10 +78,19 @@ data class AdvertRow(
   val id: Long,
   val seconds: String,
   val code: String,
-  val frame: FrameType,
+  val tag: AdvertTag,
   val rssi: Int,
   val lines: List<String>,
+  /** Shimano rows: the address [LiveAdvertsEvent.ReadShimano] reads. */
+  val probeAddress: String? = null,
 )
+
+/** A Shimano probe's state, by address: reading, or what it found. */
+sealed interface ProbeState {
+  data object Reading : ProbeState
+
+  data class Done(val lines: List<String>) : ProbeState
+}
 
 sealed interface LiveAdvertsEvent : CircuitUiEvent {
   data object Back : LiveAdvertsEvent
@@ -73,6 +98,9 @@ sealed interface LiveAdvertsEvent : CircuitUiEvent {
   data object TogglePause : LiveAdvertsEvent
 
   data class Filter(val filter: AdvertFilter) : LiveAdvertsEvent
+
+  /** Reads a Shimano derailleur's battery and device information (decision 0029). */
+  data class ReadShimano(val address: String) : LiveAdvertsEvent
 }
 
 @CircuitInject(LiveAdvertsScreen::class, AppScope::class)
@@ -89,6 +117,8 @@ class LiveAdvertsPresenter(
     var filter by rememberRetained { mutableStateOf(AdvertFilter.All) }
     var paused by rememberRetained { mutableStateOf(false) }
     var failed by remember { mutableStateOf(false) }
+    var probes by rememberRetained { mutableStateOf(emptyMap<String, ProbeState>()) }
+    val scope = rememberCoroutineScope()
     val started = remember { clock.now().toEpochMilliseconds() }
 
     LaunchedEffect(paused) {
@@ -103,35 +133,64 @@ class LiveAdvertsPresenter(
     }
 
     return LiveAdvertsUiState(
-      adverts = rows.filter { filter.frame == null || it.frame == filter.frame },
+      adverts = rows.filter { filter.tag == null || it.tag == filter.tag },
       filter = filter,
       paused = paused,
       failed = failed,
+      probes = probes,
     ) { event ->
       when (event) {
         LiveAdvertsEvent.Back -> navigator.pop()
         LiveAdvertsEvent.TogglePause -> paused = !paused
         is LiveAdvertsEvent.Filter -> filter = event.filter
+        is LiveAdvertsEvent.ReadShimano ->
+          if (probes[event.address] != ProbeState.Reading) {
+            probes = probes + (event.address to ProbeState.Reading)
+            scope.launch {
+              val probe = diagnostics.probeShimano(event.address)
+              probes = probes + (event.address to ProbeState.Done(probe.lines))
+            }
+          }
       }
     }
   }
 
-  private fun AxsReading.toRow(id: Long, started: Long): AdvertRow {
+  private fun Advert.toRow(id: Long, started: Long): AdvertRow {
     val elapsed = (timestampMillis - started).coerceAtLeast(0)
-    return AdvertRow(
-      id = id,
-      seconds = "+${elapsed / 1000}.${(elapsed % 1000 / 100)} s",
-      code = kind.code,
-      frame = frame,
-      rssi = rssi,
-      lines =
-        listOfNotNull(
-          name?.let { "name $it" },
-          serial?.let { "serial $it" },
-          manufacturerHex?.let { "mfg $it" },
-          serviceDataHex?.let { "svc $it" },
-        ),
-    )
+    val seconds = "+${elapsed / 1000}.${(elapsed % 1000 / 100)} s"
+    return when (this) {
+      is AxsReading ->
+        AdvertRow(
+          id = id,
+          seconds = seconds,
+          code = kind.code,
+          tag = frame.tag,
+          rssi = rssi,
+          lines =
+            listOfNotNull(
+              name?.let { "name $it" },
+              serial?.let { "serial $it" },
+              manufacturerHex?.let { "mfg $it" },
+              serviceDataHex?.let { "svc $it" },
+            ),
+        )
+      is ShimanoAdvert ->
+        AdvertRow(
+          id = id,
+          seconds = seconds,
+          code = "Di2",
+          tag = AdvertTag.Shimano,
+          rssi = rssi,
+          lines =
+            listOfNotNull(
+              name?.let { "name $it" },
+              "address $address",
+              manufacturerHex?.let { "mfg $it" },
+              shortServices.takeIf { it.isNotEmpty() }?.joinToString(prefix = "services "),
+            ) + serviceData.map { (uuid, hex) -> "svc ${shortUuid(uuid)} $hex" },
+          probeAddress = address,
+        )
+    }
   }
 
   private companion object {
@@ -201,11 +260,14 @@ fun LiveAdvertsUi(state: LiveAdvertsUiState, modifier: Modifier = Modifier) {
           ) {
             Text(row.seconds, style = CassetteTheme.type.mono, color = colors.muted)
             Text(row.code, style = CassetteTheme.type.label, color = colors.text)
-            FrameTag(row.frame)
+            FrameTag(row.tag)
             Spacer(Modifier.weight(1f))
             Text("${row.rssi} dBm", style = CassetteTheme.type.mono, color = colors.muted)
           }
           row.lines.forEach { Text(it, style = CassetteTheme.type.mono, color = colors.text) }
+          row.probeAddress?.let { address ->
+            ProbeAction(state.probes[address]) { sink(LiveAdvertsEvent.ReadShimano(address)) }
+          }
         }
         HorizontalDivider(color = colors.line)
       }
@@ -213,17 +275,58 @@ fun LiveAdvertsUi(state: LiveAdvertsUiState, modifier: Modifier = Modifier) {
   }
 }
 
+private val FrameType.tag: AdvertTag
+  get() =
+    when (this) {
+      FrameType.STATUS -> AdvertTag.Status
+      FrameType.BEACON -> AdvertTag.Beacon
+      FrameType.POWER_METER -> AdvertTag.PowerMeter
+      FrameType.HUB_ENTRY -> AdvertTag.HubEntry
+    }
+
+/** A Shimano row's read: the button, then what it found (decision 0029). */
 @Composable
-private fun FrameTag(frame: FrameType) {
+private fun ProbeAction(state: ProbeState?, onRead: () -> Unit) {
+  val colors = CassetteTheme.colors
+  when (state) {
+    is ProbeState.Done ->
+      state.lines.forEach { Text(it, style = CassetteTheme.type.mono, color = colors.text) }
+    else ->
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+      ) {
+        Text(
+          if (state == ProbeState.Reading) "Reading…" else "Read battery",
+          style = CassetteTheme.type.label,
+          color = colors.text,
+          modifier =
+            Modifier.clip(RoundedCornerShape(14.dp))
+              .border(1.dp, colors.line, RoundedCornerShape(14.dp))
+              .clickable(enabled = state == null, onClick = onRead)
+              .padding(horizontal = 12.dp, vertical = 6.dp),
+        )
+        Text(
+          "Connects briefly. Not while riding.",
+          style = CassetteTheme.type.bodySmall,
+          color = colors.muted,
+        )
+      }
+  }
+}
+
+@Composable
+private fun FrameTag(tag: AdvertTag) {
   val colors = CassetteTheme.colors
   val color =
-    when (frame) {
-      FrameType.STATUS -> colors.good
-      FrameType.POWER_METER -> colors.low
+    when (tag) {
+      AdvertTag.Status -> colors.good
+      AdvertTag.PowerMeter -> colors.low
+      AdvertTag.Shimano -> colors.text
       else -> colors.muted
     }
   Text(
-    frame.name.replace('_', ' '),
+    tag.label,
     style = CassetteTheme.type.mono.copy(fontSize = CassetteTheme.type.bodySmall.fontSize * 0.85f),
     color = color,
     modifier =

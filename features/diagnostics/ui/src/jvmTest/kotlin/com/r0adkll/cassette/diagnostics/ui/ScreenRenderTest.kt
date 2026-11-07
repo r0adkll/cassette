@@ -70,6 +70,69 @@ class ScreenRenderTest {
     }
   }
 
+  /** AXS frames beside Shimano adverts, one read and one not (decision 0029). */
+  @Test
+  fun liveAdverts() {
+    val state =
+      LiveAdvertsUiState(
+        adverts =
+          listOf(
+            AdvertRow(
+              3,
+              "+12.4 s",
+              "Di2",
+              AdvertTag.Shimano,
+              -58,
+              listOf("name RDR9250", "address C4:7F:51:2A:90:11", "services 18ef, 18ff"),
+              probeAddress = "C4:7F:51:2A:90:11",
+            ),
+            AdvertRow(
+              2,
+              "+9.1 s",
+              "RD",
+              AdvertTag.Status,
+              -61,
+              listOf("serial 1016200351", "mfg 00 00 01 02 00 04 05 b6 1f 03 80 64"),
+            ),
+            AdvertRow(
+              1,
+              "+4.0 s",
+              "Di2",
+              AdvertTag.Shimano,
+              -74,
+              listOf("address D0:2E:61:7B:44:02", "mfg 01 02 03"),
+              probeAddress = "D0:2E:61:7B:44:02",
+            ),
+          ),
+        filter = AdvertFilter.All,
+        paused = false,
+        failed = false,
+        probes =
+          mapOf(
+            "D0:2E:61:7B:44:02" to
+              ProbeState.Done(
+                listOf("battery 87 %", "model RD-R7150", "services 1800, 180a, 180f, 18ef, 18ff")
+              )
+          ),
+      ) {}
+    for (dark in listOf(true, false)) {
+      val theme = if (dark) "dark" else "light"
+      render("live-adverts-$theme", dark, AppPlatform.Android) { LiveAdvertsUi(state) }
+      render("live-adverts-tablet-$theme", dark, AppPlatform.Android, width = 1280, height = 800) {
+        LiveAdvertsUi(state)
+      }
+      render(
+        "live-adverts-landscape-$theme",
+        dark,
+        AppPlatform.Android,
+        width = 892,
+        height = 412,
+      ) {
+        LiveAdvertsUi(state)
+      }
+    }
+  }
+
   private fun state(wear: WearDiagnostics, inPane: Boolean = false) =
     DiagnosticsUiState(
       health = CaptureHealth("Armed (AllLowPower) · app start", 3.hours.ago, 5.minutes.ago, 42),

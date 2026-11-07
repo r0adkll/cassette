@@ -6,6 +6,8 @@ seen.
 
 ## 1. Scope and sources
 
+Shimano Di2, which only Diagnostics hears so far, has its own notes: `docs/protocol-shimano.md`.
+
 Validated on **one** Red AXS bike: rear derailleur (model 1066), front derailleur (1002), right and left
 drop-bar shifters (1004 / 1005) and a Quarq DZero power meter. A tester's mountain bike adds adverts from a
 rear derailleur (1013), a Reverb AXS dropper (1019), a fork and a rear shock (1086 / 1085), an older AXS
